@@ -5,6 +5,9 @@ spring:
   profiles:
     default: dev
 
+  jackson:
+    time-zone: Asia/Seoul
+
   config:
     import: optional:file:.env[.properties]
 

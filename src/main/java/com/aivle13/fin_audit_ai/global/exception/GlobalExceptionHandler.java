@@ -1,38 +1,144 @@
 package com.aivle13.fin_audit_ai.global.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;   // ← 수정
+import org.springframework.validation.BindException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;  // ← Boot 3.2+
+
+import java.util.List;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
-        ErrorCode errorCode = e.getErrorCode();
+    protected ResponseEntity<ErrorResponse> handleBusinessException(
+            BusinessException ex, HttpServletRequest request) {
 
-        log.error("[BusinessException] Error Code: {}, Message: {}", errorCode.getCode(), errorCode.getMessage());
+        ErrorCode errorCode = ex.getErrorCode();
 
-        ErrorResponse response = ErrorResponse.builder()
-                .errorCode(errorCode.getCode())
-                .message(e.getMessage())
-                .build();
+        // 4xx는 클라이언트 잘못이므로 warn, 5xx만 error
+        if (errorCode.getHttpStatus().is5xxServerError()) {
+            log.error("BusinessException: code={}, path={}", errorCode.getCode(), request.getRequestURI(), ex);
+        } else {
+            log.warn("BusinessException: code={}, message={}, path={}",
+                    errorCode.getCode(), ex.getMessage(), request.getRequestURI());
+        }
 
-        return new ResponseEntity<>(response, errorCode.getHttpStatus());
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ErrorResponse.of(errorCode, ex.getMessage(), request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
+
+        log.warn("Validation failed: path={}", request.getRequestURI());
+
+        List<ErrorResponse.FieldError> fieldErrors = ex.getBindingResult()
+                .getFieldErrors().stream()
+                .map(ErrorResponse.FieldError::of)
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, fieldErrors, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(BindException.class)
+    protected ResponseEntity<ErrorResponse> handleBindException(
+            BindException ex, HttpServletRequest request) {
+
+        log.warn("BindException: path={}", request.getRequestURI());
+
+        List<ErrorResponse.FieldError> fieldErrors = ex.getBindingResult()
+                .getFieldErrors().stream()
+                .map(ErrorResponse.FieldError::of)
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, fieldErrors, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    protected ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+
+        log.warn("TypeMismatch: param={}, path={}", ex.getName(), request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(ErrorCode.INVALID_TYPE_VALUE, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    protected ResponseEntity<ErrorResponse> handleMissingParameter(
+            MissingServletRequestParameterException ex, HttpServletRequest request) {
+
+        log.warn("MissingParameter: {}, path={}", ex.getParameterName(), request.getRequestURI());
+
+        String message = String.format("필수 파라미터 '%s'가 누락되었습니다.", ex.getParameterName());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(ErrorCode.MISSING_REQUEST_PARAMETER, message, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    protected ResponseEntity<ErrorResponse> handleNotReadable(
+            HttpMessageNotReadableException ex, HttpServletRequest request) {
+
+        log.warn("HttpMessageNotReadable: path={}", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE,
+                        "요청 본문을 읽을 수 없습니다. JSON 형식을 확인해주세요.", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    protected ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+
+        log.warn("MethodNotSupported: {}, path={}", ex.getMethod(), request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    protected ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+
+        log.warn("AccessDenied: path={}", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(ErrorCode.ACCESS_DENIED, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    protected ResponseEntity<ErrorResponse> handleNoResourceFound(
+            NoResourceFoundException ex, HttpServletRequest request) {
+
+        log.warn("NoResourceFound: path={}", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND, request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+    protected ResponseEntity<ErrorResponse> handleException(
+            Exception ex, HttpServletRequest request) {
 
-        log.error("[Unhandled Exception] Message: {}", e.getMessage());
+        log.error("Unexpected Exception: path={}", request.getRequestURI(), ex);
 
-        ErrorResponse response = ErrorResponse.builder()
-                .errorCode("E999")
-                .message("알 수 없는 에러가 발생했습니다.")
-                .build();
-
-        return new ResponseEntity<>(response, ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, request.getRequestURI()));
     }
 }
