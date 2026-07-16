@@ -1,0 +1,16 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]   # 테스트에선 .env 무시. optional 이라 없어도 됨
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN

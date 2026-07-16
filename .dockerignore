@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env*
+!.env.example
+build/
+.gradle/
+docker/
+*.md
+.idea/
