@@ -18,9 +18,10 @@ class InfraIntegrationTest extends IntegrationTestSupport {
     @Test
     @DisplayName("컨텍스트가 로딩되고 PostgreSQL에 읽고 쓸 수 있다")
     void postgres() {
-        HealthCheck saved = healthCheckRepository.save(HealthCheck.now());
+        HealthCheck saved = healthCheckRepository.save(HealthCheck.create());
 
         assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getCreatedAt()).isNotNull();   // JPA Auditing 동작 검증
         assertThat(healthCheckRepository.findById(saved.getId())).isPresent();
     }
 
