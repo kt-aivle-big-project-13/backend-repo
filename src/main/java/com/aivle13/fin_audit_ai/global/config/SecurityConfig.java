@@ -11,6 +11,13 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final String[] PUBLIC_ENDPOINTS = {
+            "/actuator/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**"
+    };
+
     @Bean
     @SuppressWarnings("java:S4502")
     public SecurityFilterChain filterChain(HttpSecurity http) {
@@ -18,8 +25,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**").permitAll()
-                        .anyRequest().permitAll()       // TODO: JWT 붙일 때 authenticated() 로 변경
+                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .anyRequest().permitAll()   // TODO: JWT 도입 시 authenticated() 로 변경
                 );
         return http.build();
     }
