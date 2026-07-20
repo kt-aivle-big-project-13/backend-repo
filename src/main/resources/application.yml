@@ -37,7 +37,17 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD}
-      timeout: 2000ms
+      time  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
 
 management:
   endpoints:
@@ -51,3 +61,5 @@ management:
 server:
   port: 8080
   shutdown: graceful
+  tomcat:
+    max-swallow-size: -1   # 초과 요청 바디를 흘려보내야 응답이 정상 전달됨
