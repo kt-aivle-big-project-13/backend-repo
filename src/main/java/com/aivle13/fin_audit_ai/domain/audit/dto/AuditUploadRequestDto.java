@@ -11,7 +11,7 @@ public class AuditUploadRequestDto {
 
     private String auditName;
     private String modelName;
-    private String modelType;
+    private ModelType modelType;
     private Double targetApprovalRate;
     private Double threshold;
 }
