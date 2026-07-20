@@ -1,5 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
+import com.aivle13.fin_audit_ai.domain.aimodel.entity.AiModel;
+import com.aivle13.fin_audit_ai.domain.audit.entity.Audit;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import lombok.RequiredArgsConstructor;

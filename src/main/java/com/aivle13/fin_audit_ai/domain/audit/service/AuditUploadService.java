@@ -1,8 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
+import com.aivle13.fin_audit_ai.domain.aimodel.entity.AiModel;
 import com.aivle13.fin_audit_ai.domain.aimodel.service.AiModelService;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadRequestDto;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.entity.Audit;
 import com.aivle13.fin_audit_ai.domain.audit.validator.ThresholdPolicyValidator;
 import com.aivle13.fin_audit_ai.domain.file.dto.StoredFile;
 import com.aivle13.fin_audit_ai.domain.file.service.FileStorageService;

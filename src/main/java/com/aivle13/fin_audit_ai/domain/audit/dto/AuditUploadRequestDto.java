@@ -1,9 +1,11 @@
 package com.aivle13.fin_audit_ai.domain.audit.dto;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
 @Getter
+@Setter
 public class AuditUploadRequestDto {
     private MultipartFile modelFile;
     private MultipartFile auditDatasetFile;
