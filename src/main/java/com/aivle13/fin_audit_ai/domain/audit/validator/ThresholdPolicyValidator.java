@@ -2,7 +2,9 @@ package com.aivle13.fin_audit_ai.domain.audit.validator;
 
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadRequestDto;
 import com.aivle13.fin_audit_ai.global.exception.model.InvalidThresholdPolicyException;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ThresholdPolicyValidator {
 
     public void validate(AuditUploadRequestDto request) {
