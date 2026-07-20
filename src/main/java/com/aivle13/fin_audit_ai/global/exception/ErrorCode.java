@@ -34,7 +34,9 @@ public enum ErrorCode {
     AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "EA002", "AI 서버 응답 시간이 초과되었습니다."),
 
     // ===== File Storage (EF) =====
-    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EF001", "파일 업로드에 실패했습니다.");
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EF001", "파일 업로드에 실패했습니다."),
+    EMPTY_FILE(HttpStatus.BAD_REQUEST, "EF002", "업로드할 파일이 존재하지 않습니다."),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "EF003", "지원하지 않는 파일 형식입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
