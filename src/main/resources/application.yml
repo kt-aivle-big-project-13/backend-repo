@@ -39,6 +39,18 @@ spring:
       password: ${REDIS_PASSWORD}
       timeout: 2000ms
 
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
 management:
   endpoints:
     web:
@@ -51,6 +63,10 @@ management:
 server:
   port: 8080
   shutdown: graceful
+  tomcat:
+    # 업로드 한도(100MB)보다 여유 있게 잡아야 초과 요청도 응답이 정상 전달됨.
+    # 무제한(-1)은 공격자가 임의로 큰 바디를 보내도 서버가 끝까지 읽어들이는 리소스 고갈 위험이 있어 상한을 둔다.
+    max-swallow-size: 200MB
 
 cloud:
   aws:
