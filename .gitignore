@@ -39,5 +39,6 @@ out/
 ### VS Code ###
 .vscode/
 
+.claude
 .env*
 !.env.example
