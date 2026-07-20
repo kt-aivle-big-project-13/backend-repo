@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;  // ← Boot 3.2+
 
 import java.util.List;
@@ -129,6 +130,17 @@ public class GlobalExceptionHandler {
             NoResourceFoundException ex, HttpServletRequest request) {
 
         log.warn("NoResourceFound: path={}", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND, request.getRequestURI()));
+    }
+
+    // web.resources.add-mappings=false 라 정적 리소스 핸들러가 없어 NoResourceFoundException 대신 이쪽으로 들어옴
+    @ExceptionHandler(NoHandlerFoundException.class)
+    protected ResponseEntity<ErrorResponse> handleNoHandlerFound(
+            NoHandlerFoundException ex, HttpServletRequest request) {
+
+        log.warn("NoHandlerFound: path={}", request.getRequestURI());
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND, request.getRequestURI()));
