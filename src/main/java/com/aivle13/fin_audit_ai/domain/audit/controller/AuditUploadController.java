@@ -3,6 +3,7 @@ package com.aivle13.fin_audit_ai.domain.audit.controller;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadRequestDto;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadResponseDto;
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditUploadService;
+import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,10 @@ public class AuditUploadController {
             @AuthenticationPrincipal Long userId,
             @ModelAttribute AuditUploadRequestDto request
     ) {
+        if (userId == null) {
+            throw new UnauthorizedException();
+        }
+
         AuditUploadResponseDto response = auditUploadService.upload(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
