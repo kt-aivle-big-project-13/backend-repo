@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,39 +38,58 @@ public class AuditUploadService {
         // 2. 조건부 값(targetApprovalRate, threshold) 범위 검증
         thresholdValidator.validate(request);
 
-        // 3. 필수 파일 S3 저장
-        StoredFile modelStored = fileStorageService.store(request.getModelFile(), "models");
-        StoredFile datasetStored = fileStorageService.store(request.getAuditDatasetFile(), "datasets");
+        List<String> storedKeys = new ArrayList<>();
+        try {
+            // 3. 필수 파일 S3 저장
+            StoredFile modelStored = fileStorageService.store(request.getModelFile(), "models");
+            storedKeys.add(modelStored.s3Key());
+            StoredFile datasetStored = fileStorageService.store(request.getAuditDatasetFile(), "datasets");
+            storedKeys.add(datasetStored.s3Key());
 
-        // 4. 선택 파일(검증 데이터) — 실패해도 무시하고 기본 감사 진행
-        boolean validationUsable = false;
-        if (isPresent(request.getValidationDatasetFile())) {
+            // 4. 선택 파일(검증 데이터) — 실패해도 무시하고 기본 감사 진행
+            boolean validationUsable = false;
+            if (isPresent(request.getValidationDatasetFile())) {
+                try {
+                    fileValidator.validateCsvFile(request.getValidationDatasetFile(), "검증 데이터");
+                    StoredFile validationStored = fileStorageService.store(request.getValidationDatasetFile(), "datasets");
+                    storedKeys.add(validationStored.s3Key());
+                    validationUsable = true;
+                } catch (RuntimeException e) {
+                    log.warn("검증 데이터 사용 불가, 기본 감사만 진행: {}", e.getMessage());
+                }
+            }
+
+            // 5. AiModel 저장
+            AiModelEntity aiModel = aiModelService.create(
+                    userId, request.getModelName(), request.getModelType(), modelStored.s3Key()
+            );
+
+            // 6. Audit 생성
+            AuditEntity audit = auditService.create(
+                    userId, aiModel, datasetStored.s3Key(), request.getSensitiveFeatures()
+            );
+
+            // 7. 응답 조립
+            return new AuditUploadResponseDto(
+                    audit.getId(),
+                    aiModel.getId(),
+                    new AuditUploadResponseDto.UploadedFiles(true, true, validationUsable),
+                    audit.getStatus().name()
+            );
+        } catch (RuntimeException e) {
+            cleanupStoredFiles(storedKeys);
+            throw e;
+        }
+    }
+
+    private void cleanupStoredFiles(List<String> s3Keys) {
+        for (String s3Key : s3Keys) {
             try {
-                fileValidator.validateCsvFile(request.getValidationDatasetFile(), "검증 데이터");
-                fileStorageService.store(request.getValidationDatasetFile(), "datasets");
-                validationUsable = true;
+                fileStorageService.delete(s3Key);
             } catch (RuntimeException e) {
-                log.warn("검증 데이터 사용 불가, 기본 감사만 진행: {}", e.getMessage());
+                log.warn("S3 객체 정리 실패: key={}", s3Key, e);
             }
         }
-
-        // 5. AiModel 저장
-        AiModelEntity aiModel = aiModelService.create(
-                userId, request.getModelName(), request.getModelType(), modelStored.s3Key()
-        );
-
-        // 6. Audit 생성
-        AuditEntity audit = auditService.create(
-                userId, aiModel, datasetStored.s3Key(), request.getSensitiveFeatures()
-        );
-
-        // 7. 응답 조립
-        return new AuditUploadResponseDto(
-                audit.getId(),
-                aiModel.getId(),
-                new AuditUploadResponseDto.UploadedFiles(true, true, validationUsable),
-                audit.getStatus().name()
-        );
     }
 
     private boolean isPresent(MultipartFile file) {

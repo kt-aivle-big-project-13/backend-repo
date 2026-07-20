@@ -5,4 +5,5 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface FileStorageService {
     StoredFile store(MultipartFile file, String prefix);
+    void delete(String s3Key);
 }
