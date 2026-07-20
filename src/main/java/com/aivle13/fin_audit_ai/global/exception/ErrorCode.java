@@ -28,6 +28,7 @@ public enum ErrorCode {
     FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "EM003", "파일 크기가 허용 범위를 초과했습니다."),
     AUDIT_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "EM004", "이미 감사가 진행 중입니다."),
     AUDIT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EM005", "감사 처리 중 오류가 발생했습니다."),
+    INVALID_THRESHOLD_POLICY(HttpStatus.BAD_REQUEST, "EM006", "임계값 설정이 올바르지 않습니다."),
 
     // ===== AI Server 연동 (EA) =====
     AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA001", "AI 서버 요청에 실패했습니다."),
