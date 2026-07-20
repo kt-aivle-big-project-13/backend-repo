@@ -51,3 +51,8 @@ management:
 server:
   port: 8080
   shutdown: graceful
+
+cloud:
+  aws:
+    s3:
+      bucket: temp-bucket-name
