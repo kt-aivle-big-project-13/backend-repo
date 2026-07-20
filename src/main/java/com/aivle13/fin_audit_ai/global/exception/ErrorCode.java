@@ -31,7 +31,10 @@ public enum ErrorCode {
 
     // ===== AI Server 연동 (EA) =====
     AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA001", "AI 서버 요청에 실패했습니다."),
-    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "EA002", "AI 서버 응답 시간이 초과되었습니다.");
+    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "EA002", "AI 서버 응답 시간이 초과되었습니다."),
+
+    // ===== File Storage (EF) =====
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EF001", "파일 업로드에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
