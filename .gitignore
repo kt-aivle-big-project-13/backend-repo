@@ -42,3 +42,5 @@ out/
 .claude
 .env*
 !.env.example
+
+/image
