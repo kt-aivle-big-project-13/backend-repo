@@ -55,4 +55,14 @@ public class AuditEntity extends BaseEntity {
     // 완료일 + 5년 (시행령 27조②)
     @Column(name = "retention_until")
     private LocalDate retentionUntil;
+
+    public static AuditEntity create(AiModelEntity model, UserEntity user, String datasetPath, String sensitiveFeatures) {
+        AuditEntity audit = new AuditEntity();
+        audit.model = model;
+        audit.user = user;
+        audit.datasetPath = datasetPath;
+        audit.sensitiveFeatures = sensitiveFeatures;
+        audit.status = AuditStatus.IN_PROGRESS;
+        return audit;
+    }
 }

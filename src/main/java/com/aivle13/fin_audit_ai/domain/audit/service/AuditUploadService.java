@@ -1,11 +1,11 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
-import com.aivle13.fin_audit_ai.domain.aimodel.entity.AiModel;
-import com.aivle13.fin_audit_ai.domain.aimodel.service.AiModelService;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadRequestDto;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadResponseDto;
-import com.aivle13.fin_audit_ai.domain.audit.entity.Audit;
+import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.validator.ThresholdPolicyValidator;
+import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.service.AiModelService;
 import com.aivle13.fin_audit_ai.domain.file.dto.StoredFile;
 import com.aivle13.fin_audit_ai.domain.file.service.FileStorageService;
 import com.aivle13.fin_audit_ai.domain.file.validator.AuditFileValidator;
@@ -52,12 +52,14 @@ public class AuditUploadService {
         }
 
         // 5. AiModel 저장
-        AiModel aiModel = aiModelService.create(
+        AiModelEntity aiModel = aiModelService.create(
                 userId, request.getModelName(), request.getModelType(), modelStored.s3Key()
         );
 
         // 6. Audit 생성
-        Audit audit = auditService.create(userId, aiModel, datasetStored.s3Key());
+        AuditEntity audit = auditService.create(
+                userId, aiModel, datasetStored.s3Key(), request.getSensitiveFeatures()
+        );
 
         // 7. 응답 조립
         return new AuditUploadResponseDto(
