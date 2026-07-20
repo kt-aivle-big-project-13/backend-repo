@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * AI 모델의 자동심사 결과에 대한 고객 이의신청 처리 건.
@@ -77,14 +78,20 @@ public class ObjectionEntity extends BaseEntity {
     }
 
     public void approve(UserEntity approver, ObjectionDecision decision, LocalDateTime approvedAt) {
-        this.approver = approver;
-        this.decision = decision;
-        this.approvedAt = approvedAt;
+        if (status != ObjectionStatus.DRAFT) {
+            throw new IllegalStateException("DRAFT 상태에서만 승인할 수 있습니다. 현재 상태: " + status);
+        }
+        this.approver = Objects.requireNonNull(approver, "approver must not be null");
+        this.decision = Objects.requireNonNull(decision, "decision must not be null");
+        this.approvedAt = Objects.requireNonNull(approvedAt, "approvedAt must not be null");
         this.status = ObjectionStatus.APPROVED;
     }
 
     public void deliver(LocalDateTime deliveredAt) {
-        this.deliveredAt = deliveredAt;
+        if (status != ObjectionStatus.APPROVED) {
+            throw new IllegalStateException("APPROVED 상태에서만 전달할 수 있습니다. 현재 상태: " + status);
+        }
+        this.deliveredAt = Objects.requireNonNull(deliveredAt, "deliveredAt must not be null");
         this.status = ObjectionStatus.DELIVERED;
     }
 }
