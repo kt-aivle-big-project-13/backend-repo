@@ -44,4 +44,11 @@ public class PreDiagnosisEntity extends BaseEntity {
 
     @Column(name = "report_path", length = 255)
     private String reportPath;
+
+    public static PreDiagnosisEntity create(AiModelEntity model, DiagnosisResult result) {
+        PreDiagnosisEntity entity = new PreDiagnosisEntity();
+        entity.model = model;
+        entity.result = result;
+        return entity;
+    }
 }

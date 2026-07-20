@@ -39,4 +39,15 @@ public class LawRevisionEntity {
 
     @Column(name = "collected_at", nullable = false)
     private LocalDateTime collectedAt;
+
+    public static LawRevisionEntity of(String source, String title, RevisionType revisionType,
+                                        LocalDate revisedAt, LocalDateTime collectedAt) {
+        LawRevisionEntity entity = new LawRevisionEntity();
+        entity.source = source;
+        entity.title = title;
+        entity.revisionType = revisionType;
+        entity.revisedAt = revisedAt;
+        entity.collectedAt = collectedAt;
+        return entity;
+    }
 }

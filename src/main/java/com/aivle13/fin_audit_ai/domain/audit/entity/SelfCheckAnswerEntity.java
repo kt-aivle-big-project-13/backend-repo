@@ -12,7 +12,10 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "self_check_answers")
+@Table(name = "self_check_answers",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_self_check_answers_audit_item",
+                columnNames = {"audit_id", "item_code"}))
 public class SelfCheckAnswerEntity {
 
     @Id

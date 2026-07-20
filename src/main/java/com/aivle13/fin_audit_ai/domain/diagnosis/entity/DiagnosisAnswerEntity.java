@@ -11,7 +11,10 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "diagnosis_answers")
+@Table(name = "diagnosis_answers",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_diagnosis_answers_diagnosis_question",
+                columnNames = {"diagnosis_id", "question_code"}))
 public class DiagnosisAnswerEntity {
 
     @Id
@@ -31,4 +34,13 @@ public class DiagnosisAnswerEntity {
 
     @Column(nullable = false)
     private int score = 0;
+
+    public static DiagnosisAnswerEntity of(PreDiagnosisEntity diagnosis, String questionCode, boolean answer, int score) {
+        DiagnosisAnswerEntity entity = new DiagnosisAnswerEntity();
+        entity.diagnosis = diagnosis;
+        entity.questionCode = questionCode;
+        entity.answer = answer;
+        entity.score = score;
+        return entity;
+    }
 }

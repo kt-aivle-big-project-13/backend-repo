@@ -52,7 +52,7 @@ Actions가 ssh로 EC2에 접속해 방금 push한 이미지를 pull → 기동�
 도메인 주도(domain-driven) 방식의 패키지 구조를 따른다. 각 도메인은 `controller / dto / entity / repository / service / type` 하위 패키지를 가지며,
 도메인에 속하지 않는 공통 요소는 `global`에 둔다.
 
-```
+```text
 com.aivle13.fin_audit_ai
 ├── FinAuditAiApplication.java
 ├── domain/

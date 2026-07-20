@@ -43,5 +43,24 @@ public class UserEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role;
+
+    public static UserEntity create(String institution, String name, String email, String passwordHash, UserRole role) {
+        UserEntity user = new UserEntity();
+        user.institution = institution;
+        user.name = name;
+        user.email = email;
+        user.passwordHash = passwordHash;
+        user.role = role;
+        return user;
+    }
+
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
+
+    public void updateNotificationPreferences(boolean lawSmsEnabled, boolean reauditAlertEnabled) {
+        this.lawSmsEnabled = lawSmsEnabled;
+        this.reauditAlertEnabled = reauditAlertEnabled;
+    }
 }
 

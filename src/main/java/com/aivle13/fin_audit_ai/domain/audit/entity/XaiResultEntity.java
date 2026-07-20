@@ -40,4 +40,14 @@ public class XaiResultEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private XaiStatus status;
+
+    public static XaiResultEntity of(AuditEntity audit, XaiMetricCode metricCode, BigDecimal value, BigDecimal threshold, XaiStatus status) {
+        XaiResultEntity entity = new XaiResultEntity();
+        entity.audit = audit;
+        entity.metricCode = metricCode;
+        entity.value = value;
+        entity.threshold = threshold;
+        entity.status = status;
+        return entity;
+    }
 }

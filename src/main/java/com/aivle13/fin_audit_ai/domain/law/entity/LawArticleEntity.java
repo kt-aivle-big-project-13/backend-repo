@@ -45,4 +45,13 @@ public class LawArticleEntity {
 
     @Column(name = "revision_date")
     private LocalDate revisionDate;
+
+    public static LawArticleEntity of(String lawName, String articleNo, String content, LocalDate effectiveDate) {
+        LawArticleEntity entity = new LawArticleEntity();
+        entity.lawName = lawName;
+        entity.articleNo = articleNo;
+        entity.content = content;
+        entity.effectiveDate = effectiveDate;
+        return entity;
+    }
 }

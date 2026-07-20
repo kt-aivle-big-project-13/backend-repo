@@ -66,4 +66,25 @@ public class ObjectionEntity extends BaseEntity {
     // 승인 문서 은행 시스템 전달 일시
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
+
+    public static ObjectionEntity create(String objectionNo, AiModelEntity model, String customerRef) {
+        ObjectionEntity objection = new ObjectionEntity();
+        objection.objectionNo = objectionNo;
+        objection.model = model;
+        objection.customerRef = customerRef;
+        objection.status = ObjectionStatus.DRAFT;
+        return objection;
+    }
+
+    public void approve(UserEntity approver, ObjectionDecision decision, LocalDateTime approvedAt) {
+        this.approver = approver;
+        this.decision = decision;
+        this.approvedAt = approvedAt;
+        this.status = ObjectionStatus.APPROVED;
+    }
+
+    public void deliver(LocalDateTime deliveredAt) {
+        this.deliveredAt = deliveredAt;
+        this.status = ObjectionStatus.DELIVERED;
+    }
 }

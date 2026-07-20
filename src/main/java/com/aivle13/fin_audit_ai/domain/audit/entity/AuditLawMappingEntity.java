@@ -13,7 +13,10 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "audit_law_mappings")
+@Table(name = "audit_law_mappings",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_audit_law_mappings_audit_article",
+                columnNames = {"audit_id", "article_id"}))
 public class AuditLawMappingEntity {
 
     @Id
