@@ -1,6 +1,6 @@
-package com.aivle13.fin_audit_ai.domain.file.service;
+package com.aivle13.fin_audit_ai.global.s3.service;
 
-import com.aivle13.fin_audit_ai.domain.file.dto.StoredFile;
+import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface FileStorageService {
