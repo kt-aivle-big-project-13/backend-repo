@@ -60,8 +60,11 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: audit-node-exporter
-    ports:
-      - "9100:9100"
+    command:
+      - "--path.rootfs=/host"
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
     restart: unless-stopped
 
 volumes:
