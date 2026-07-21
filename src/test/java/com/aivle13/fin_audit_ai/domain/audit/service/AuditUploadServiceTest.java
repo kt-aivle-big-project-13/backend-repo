@@ -15,7 +15,6 @@ import com.aivle13.fin_audit_ai.global.exception.model.InvalidThresholdPolicyExc
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import com.aivle13.fin_audit_ai.global.s3.validator.AuditFileValidator;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,9 +22,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,7 +35,6 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -74,25 +72,8 @@ class AuditUploadServiceTest {
 
     @BeforeEach
     void setUp() {
-        // upload()가 등록하는 TransactionSynchronization을 실제 트랜잭션 없이도 받아줄 수 있게 활성화
-        TransactionSynchronizationManager.initSynchronization();
-
         aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
         audit = AuditEntity.create(aiModel, null, "audit-name", "datasets/audit.csv", null, "age,gender");
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
-    }
-
-    // 실제 트랜잭션 매니저가 롤백 완료 후 호출하는 afterCompletion을 테스트에서 흉내낸다.
-    private void triggerRollback() {
-        for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
-            synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
-        }
     }
 
     private AuditUploadRequest requestWith(MultipartFile validationDatasetFile) {
@@ -120,7 +101,6 @@ class AuditUploadServiceTest {
         assertThat(response.uploadedFiles().validationDataset()).isFalse();
         assertThat(response.status()).isEqualTo(AuditStatus.IN_PROGRESS.name());
         verify(fileStorageService, times(2)).store(any(), anyString());
-        verify(fileStorageService, never()).delete(anyString());
     }
 
     @Test
@@ -155,9 +135,8 @@ class AuditUploadServiceTest {
         AuditUploadResponse response = auditUploadService.upload(USER_ID, requestWith(validationDatasetFile));
 
         assertThat(response.uploadedFiles().validationDataset()).isFalse();
-        verify(fileStorageService, never()).store(validationDatasetFile, "datasets");
+        verify(fileStorageService, times(0)).store(validationDatasetFile, "datasets");
         verify(fileStorageService, times(2)).store(any(), anyString());
-        verify(fileStorageService, never()).delete(anyString());
     }
 
     @Test
@@ -185,7 +164,7 @@ class AuditUploadServiceTest {
     }
 
     @Test
-    void 필수_파일_저장_중_실패하면_이미_저장된_파일을_정리하고_예외를_전파한다() {
+    void 필수_파일_저장_중_실패하면_이미_저장된_파일을_롤백_정리_대상으로_등록한다() {
         given(fileStorageService.store(modelFile, "models"))
                 .willReturn(new StoredFile("models/model-key.json", "model.json", "application/json", 2));
         given(fileStorageService.store(auditDatasetFile, "datasets"))
@@ -195,13 +174,12 @@ class AuditUploadServiceTest {
         assertThatThrownBy(() -> auditUploadService.upload(USER_ID, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("S3 업로드 실패");
-        triggerRollback();
 
-        verify(fileStorageService).delete("models/model-key.json");
+        verify(fileStorageService).deleteOnRollback(List.of("models/model-key.json"));
     }
 
     @Test
-    void AiModel_저장에_실패하면_필수_파일들을_모두_정리한다() {
+    void AiModel_저장에_실패하면_필수_파일들을_모두_롤백_정리_대상으로_등록한다() {
         given(fileStorageService.store(modelFile, "models"))
                 .willReturn(new StoredFile("models/model-key.json", "model.json", "application/json", 2));
         given(fileStorageService.store(auditDatasetFile, "datasets"))
@@ -213,9 +191,7 @@ class AuditUploadServiceTest {
         assertThatThrownBy(() -> auditUploadService.upload(USER_ID, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("DB 저장 실패");
-        triggerRollback();
 
-        verify(fileStorageService).delete("models/model-key.json");
-        verify(fileStorageService).delete("datasets/audit-key.csv");
+        verify(fileStorageService).deleteOnRollback(List.of("models/model-key.json", "datasets/audit-key.csv"));
     }
 }

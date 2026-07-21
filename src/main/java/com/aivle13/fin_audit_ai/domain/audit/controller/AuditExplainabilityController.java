@@ -1,6 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.audit.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponse;
 import com.aivle13.fin_audit_ai.domain.audit.service.ExplainabilityService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +37,7 @@ public class AuditExplainabilityController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(
-                                    implementation = ExplainabilityResponseDto.class
+                                    implementation = ExplainabilityResponse.class
                             )
                     )
             ),
@@ -55,7 +55,7 @@ public class AuditExplainabilityController {
             )
     })
     @GetMapping("/{auditId}/explainability")
-    public ResponseEntity<ExplainabilityResponseDto> getExplainability(
+    public ResponseEntity<ExplainabilityResponse> getExplainability(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long auditId
     ) {
@@ -63,7 +63,7 @@ public class AuditExplainabilityController {
             throw new UnauthorizedException();
         }
 
-        ExplainabilityResponseDto response =
+        ExplainabilityResponse response =
                 explainabilityService.getExplainability(userId, auditId);
 
         return ResponseEntity.ok(response);
