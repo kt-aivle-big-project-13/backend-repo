@@ -22,7 +22,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: validate      # 안전한 기본값. dev가 override 한다
     open-in-view: false
     properties:
       hibernate:
@@ -36,21 +36,8 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD}
       timeout: 2000ms
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
 
   servlet:
     multipart:
@@ -64,9 +51,6 @@ spring:
     resources:
       add-mappings: false
 
-app:
-  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
-
 management:
   endpoints:
     web:
@@ -75,9 +59,23 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: fin-audit-ai
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 server:
   port: 8080
   shutdown: graceful
   tomcat:
+    # 업로드 한도(100MB)보다 여유 있게 잡아야 초과 요청도 응답이 정상 전달됨.
+    # 무제한(-1)은 공격자가 임의로 큰 바디를 보내도 서버가 끝까지 읽어들이는 리소스 고갈 위험이 있어 상한을 둔다.
     max-swallow-size: 200MB
+
+cloud:
+  aws:
+    region: ${AWS_REGION}
+    s3:
+      bucket: ${AWS_S3_BUCKET}
