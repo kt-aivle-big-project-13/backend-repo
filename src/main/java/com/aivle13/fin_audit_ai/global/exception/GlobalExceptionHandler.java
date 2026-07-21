@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -144,6 +145,12 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND, request.getRequestURI()));
+    }
+
+    // 클라이언트가 응답을 다 받기 전에 연결을 끊은 경우 (예: Prometheus 스크레이핑 중단) — 이미 끊긴 연결에는 바디를 쓸 수 없으므로 응답을 시도하지 않는다.
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    protected void handleAsyncRequestNotUsable(AsyncRequestNotUsableException ex, HttpServletRequest request) {
+        log.warn("Client disconnected before response completed: path={}", request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
