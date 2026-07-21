@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.file.dto.StoredFile;
-import com.aivle13.fin_audit_ai.domain.file.service.FileStorageService;
+import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
+import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;

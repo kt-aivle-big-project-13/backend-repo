@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.model.service;
 
-import com.aivle13.fin_audit_ai.domain.file.dto.StoredFile;
-import com.aivle13.fin_audit_ai.domain.file.service.FileStorageService;
-import com.aivle13.fin_audit_ai.domain.file.validator.AuditFileValidator;
+import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
+import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
+import com.aivle13.fin_audit_ai.global.s3.validator.AuditFileValidator;
 import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadRequestDto;
 import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadResponseDto;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
