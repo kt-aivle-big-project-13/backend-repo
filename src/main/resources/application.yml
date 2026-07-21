@@ -59,6 +59,12 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: fin-audit-ai
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 server:
   port: 8080
