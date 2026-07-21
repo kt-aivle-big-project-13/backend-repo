@@ -17,7 +17,12 @@ public class AiModelService {
 
     public AiModelEntity create(Long userId, String modelName, ModelType modelType, String artifactPath) {
         UserEntity user = userRepository.getReferenceById(userId);
-        AiModelEntity aiModel = AiModelEntity.create(user, modelName, modelType, artifactPath);
+
+        int nextVersion = aiModelRepository.findTopByUser_IdAndModelNameOrderByVersionDesc(userId, modelName)
+                .map(existing -> existing.getVersion() + 1)
+                .orElse(1);
+
+        AiModelEntity aiModel = AiModelEntity.create(user, modelName, modelType, artifactPath, nextVersion);
 
         return aiModelRepository.save(aiModel);
     }

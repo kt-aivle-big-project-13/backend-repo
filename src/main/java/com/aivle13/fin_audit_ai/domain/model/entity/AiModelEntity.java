@@ -35,7 +35,7 @@ public class AiModelEntity extends BaseEntity {
     private ModelType modelType;
 
     @Column(nullable = false)
-    private Integer version = 1;
+    private Integer version;
 
     // STORAGE_ROOT 기준 상대경로
     @Column(name = "artifact_path", nullable = false, length = 255)
@@ -49,12 +49,13 @@ public class AiModelEntity extends BaseEntity {
     @Column(nullable = false, length = 20)
     private ModelStatus status;
 
-    public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, String artifactPath) {
+    public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, String artifactPath, int version) {
         AiModelEntity model = new AiModelEntity();
         model.user = user;
         model.modelName = modelName;
         model.modelType = modelType;
         model.artifactPath = artifactPath;
+        model.version = version;
         model.status = ModelStatus.ACTIVE;
         return model;
     }
