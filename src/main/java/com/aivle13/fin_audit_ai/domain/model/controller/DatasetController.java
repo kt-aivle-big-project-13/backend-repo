@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.request.DatasetUploadRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.DatasetUploadResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.DatasetUploadRequest;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.DatasetUploadResponse;
 import com.aivle13.fin_audit_ai.domain.model.service.DatasetUploadService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
@@ -18,16 +18,16 @@ public class DatasetController {
     private final DatasetUploadService datasetUploadService;
 
     @PostMapping(path = "/{modelId}/datasets", consumes = "multipart/form-data")
-    public ResponseEntity<DatasetUploadResponseDto> upload(
+    public ResponseEntity<DatasetUploadResponse> upload(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long modelId,
-            @ModelAttribute DatasetUploadRequestDto request
+            @ModelAttribute DatasetUploadRequest request
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
-        DatasetUploadResponseDto response = datasetUploadService.upload(modelId, request);
+        DatasetUploadResponse response = datasetUploadService.upload(modelId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

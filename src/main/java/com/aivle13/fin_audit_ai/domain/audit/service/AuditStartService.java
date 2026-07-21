@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.request.AuditStartRequestDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditStartResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.request.AuditStartRequest;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditStartResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
@@ -31,7 +31,7 @@ public class AuditStartService {
     private final AuditService auditService;
 
     @Transactional
-    public AuditStartResponseDto start(Long userId, AuditStartRequestDto request) {
+    public AuditStartResponse start(Long userId, AuditStartRequest request) {
         AiModelEntity model = aiModelRepository.findById(request.modelId())
                 .orElseThrow(ModelNotFoundException::new);
 
@@ -53,6 +53,6 @@ public class AuditStartService {
                 userId, model, dataset, request.auditName(), model.getSensitiveAttributes(), request.assessmentId()
         );
 
-        return new AuditStartResponseDto(audit.getId(), audit.getStatus().name(), audit.getCreatedAt());
+        return new AuditStartResponse(audit.getId(), audit.getStatus().name(), audit.getCreatedAt());
     }
 }

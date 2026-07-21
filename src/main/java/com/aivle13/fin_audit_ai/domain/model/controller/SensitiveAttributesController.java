@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequest;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponse;
 import com.aivle13.fin_audit_ai.domain.model.service.SensitiveAttributesService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;
@@ -18,16 +18,16 @@ public class SensitiveAttributesController {
     private final SensitiveAttributesService sensitiveAttributesService;
 
     @PatchMapping("/{modelId}/sensitive-attributes")
-    public ResponseEntity<SensitiveAttributesResponseDto> update(
+    public ResponseEntity<SensitiveAttributesResponse> update(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long modelId,
-            @Valid @RequestBody SensitiveAttributesRequestDto request
+            @Valid @RequestBody SensitiveAttributesRequest request
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
-        SensitiveAttributesResponseDto response = sensitiveAttributesService.update(modelId, request);
+        SensitiveAttributesResponse response = sensitiveAttributesService.update(modelId, request);
         return ResponseEntity.ok(response);
     }
 }

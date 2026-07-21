@@ -272,3 +272,40 @@ class SomeIntegrationTest extends IntegrationTestSupport {
 - 리소스명은 복수 명사를 사용한다.
 - 동사 사용을 금지한다.
 - 단어 구분이 필요하면 하이픈(`-`)을 사용한다.
+
+<br><br>
+
+## Swagger 연동 확인
+(http://localhost:8080/swagger-ui/index.html#)
+
+<img width="1747" height="1228" alt="img" src="https://github.com/user-attachments/assets/805bb87a-1290-41b2-9900-44e3ee2aa6c7" />
+
+<br><br>
+
+## 모니터링 지표 (3가지)
+Grafana (http://localhost:3001)
+
+### 📝 JVM (Micrometer)
+힙 사용량과 GC를 추적해 메모리 누수·OOM을 조기에 발견
+
+<img width="1265" height="665" alt="image" src="https://github.com/user-attachments/assets/6470513c-0b06-4ab5-8191-6b2d5e09ae85" />
+
+
+<br><br>
+
+### 📝 Node Exporter Full
+서버 하드웨어 자원(CPU·메모리·디스크)이 한계에 도달했는지 감시
+
+<img width="1262" height="667" alt="image" src="https://github.com/user-attachments/assets/f8bd998a-0e5a-405e-a9ad-5b5636a174cd" />
+
+
+<br><br>
+
+### 📝 Spring Boot 3.x Statistics
+API 트래픽·응답시간·에러율로 서비스가 정상 작동하는지 확인
+
+<img width="1268" height="546" alt="image" src="https://github.com/user-attachments/assets/d7e41eb8-b17e-4131-a55b-649eb1adface" />
+
+
+
+

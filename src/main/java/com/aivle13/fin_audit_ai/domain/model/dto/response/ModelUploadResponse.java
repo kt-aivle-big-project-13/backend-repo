@@ -2,7 +2,7 @@ package com.aivle13.fin_audit_ai.domain.model.dto.response;
 
 import java.time.LocalDateTime;
 
-public record ModelUploadResponseDto(
+public record ModelUploadResponse(
         Long modelId,
         String modelName,
         String version,

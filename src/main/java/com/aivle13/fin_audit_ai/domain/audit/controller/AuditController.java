@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.request.AuditStartRequestDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditStartResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.request.AuditStartRequest;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditStartResponse;
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditStartService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;
@@ -19,15 +19,15 @@ public class AuditController {
     private final AuditStartService auditStartService;
 
     @PostMapping
-    public ResponseEntity<AuditStartResponseDto> start(
+    public ResponseEntity<AuditStartResponse> start(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody AuditStartRequestDto request
+            @Valid @RequestBody AuditStartRequest request
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
-        AuditStartResponseDto response = auditStartService.start(userId, request);
+        AuditStartResponse response = auditStartService.start(userId, request);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 }

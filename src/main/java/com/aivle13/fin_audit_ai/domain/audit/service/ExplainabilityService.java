@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponseDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.request.ExplainabilityResultRequestDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponse;
+import com.aivle13.fin_audit_ai.domain.audit.dto.request.ExplainabilityResultRequest;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
@@ -36,7 +36,7 @@ public class ExplainabilityService {
     private final AuditRepository auditRepository;
     private final XaiResultRepository xaiResultRepository;
 
-    public ExplainabilityResponseDto getExplainability(
+    public ExplainabilityResponse getExplainability(
             Long userId,
             Long auditId
     ) {
@@ -62,20 +62,20 @@ public class ExplainabilityService {
             throw new ExplainabilityResultNotFoundException();
         }
 
-        return ExplainabilityResponseDto.of(auditId, results);
+        return ExplainabilityResponse.of(auditId, results);
     }
 
     @Transactional
     public void saveExplainabilityResult(
             Long auditId,
-            ExplainabilityResultRequestDto request
+            ExplainabilityResultRequest request
     ) {
         AuditEntity audit = auditRepository.findById(auditId)
                 .orElseThrow(AuditNotFoundException::new);
 
         validateCompletedResult(request);
 
-        ExplainabilityResultRequestDto.KeyMetrics metrics =
+        ExplainabilityResultRequest.KeyMetrics metrics =
                 request.keyMetrics();
 
         List<XaiResultEntity> results = List.of(
@@ -105,7 +105,7 @@ public class ExplainabilityService {
     }
 
     private void validateCompletedResult(
-            ExplainabilityResultRequestDto request
+            ExplainabilityResultRequest request
     ) {
         if (request == null
                 || !"COMPLETED".equalsIgnoreCase(request.pipelineStatus())
@@ -117,7 +117,7 @@ public class ExplainabilityService {
     private XaiResultEntity toEntity(
             AuditEntity audit,
             XaiMetricCode metricCode,
-            ExplainabilityResultRequestDto.Metric metric
+            ExplainabilityResultRequest.Metric metric
     ) {
         if (metric == null
                 || metric.value() == null

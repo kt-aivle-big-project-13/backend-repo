@@ -4,21 +4,21 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 
 import java.util.List;
 
-public record ExplainabilityResponseDto(
+public record ExplainabilityResponse(
         Long auditId,
         String method,
-        List<XaiMetricResponseDto> metrics
+        List<XaiMetricResponse> metrics
 ) {
 
-    public static ExplainabilityResponseDto of(
+    public static ExplainabilityResponse of(
             Long auditId,
             List<XaiResultEntity> results
     ) {
-        List<XaiMetricResponseDto> metrics = results.stream()
-                .map(XaiMetricResponseDto::from)
+        List<XaiMetricResponse> metrics = results.stream()
+                .map(XaiMetricResponse::from)
                 .toList();
 
-        return new ExplainabilityResponseDto(
+        return new ExplainabilityResponse(
                 auditId,
                 "SHAP",
                 metrics

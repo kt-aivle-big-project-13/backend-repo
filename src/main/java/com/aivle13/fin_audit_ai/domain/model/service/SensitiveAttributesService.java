@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.service;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequest;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponse;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
@@ -25,7 +25,7 @@ public class SensitiveAttributesService {
     private final DatasetRepository datasetRepository;
 
     @Transactional
-    public SensitiveAttributesResponseDto update(Long modelId, SensitiveAttributesRequestDto request) {
+    public SensitiveAttributesResponse update(Long modelId, SensitiveAttributesRequest request) {
         AiModelEntity model = aiModelRepository.findById(modelId)
                 .orElseThrow(ModelNotFoundException::new);
 
@@ -45,6 +45,6 @@ public class SensitiveAttributesService {
 
         model.updateSensitiveAttributes(String.join(",", sensitiveAttributes));
 
-        return new SensitiveAttributesResponseDto(model.getId(), sensitiveAttributes);
+        return new SensitiveAttributesResponse(model.getId(), sensitiveAttributes);
     }
 }

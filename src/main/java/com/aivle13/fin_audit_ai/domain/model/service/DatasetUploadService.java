@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.service;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.request.DatasetUploadRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.DatasetUploadResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.DatasetUploadRequest;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.DatasetUploadResponse;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
@@ -43,20 +43,20 @@ public class DatasetUploadService {
     private record CsvSummary(List<String> columns, int rowCount) {}
 
     @Transactional
-    public DatasetUploadResponseDto upload(Long modelId, DatasetUploadRequestDto request) {
+    public DatasetUploadResponse upload(Long modelId, DatasetUploadRequest request) {
         AiModelEntity model = aiModelRepository.findById(modelId)
                 .orElseThrow(ModelNotFoundException::new);
 
-        DataSource dataSource = request.getDataSource() != null ? request.getDataSource() : DataSource.CUSTOMER;
+        DataSource dataSource = request.dataSource() != null ? request.dataSource() : DataSource.CUSTOMER;
 
-        fileValidator.validateCsvFile(request.getDatasetFile(), "감사 데이터셋");
+        fileValidator.validateCsvFile(request.datasetFile(), "감사 데이터셋");
 
-        CsvSummary summary = readCsv(request.getDatasetFile());
+        CsvSummary summary = readCsv(request.datasetFile());
 
         List<String> storedKeys = new ArrayList<>();
         registerCleanupOnRollback(storedKeys);
 
-        StoredFile stored = fileStorageService.store(request.getDatasetFile(), "datasets");
+        StoredFile stored = fileStorageService.store(request.datasetFile(), "datasets");
         storedKeys.add(stored.s3Key());
 
         DatasetEntity dataset = DatasetEntity.create(
@@ -64,7 +64,7 @@ public class DatasetUploadService {
         );
         datasetRepository.save(dataset);
 
-        return new DatasetUploadResponseDto(
+        return new DatasetUploadResponse(
                 dataset.getId(), model.getId(), dataset.getDataSource().name(),
                 dataset.getRowCount(), summary.columns()
         );

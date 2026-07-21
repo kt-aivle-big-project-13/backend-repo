@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
 
-public record ExplainabilityResultRequestDto(
+public record ExplainabilityResultRequest(
 
         @JsonProperty("pipeline_status")
         String pipelineStatus,

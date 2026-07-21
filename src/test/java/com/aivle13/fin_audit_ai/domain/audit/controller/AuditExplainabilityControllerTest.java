@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponseDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.response.XaiMetricResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponse;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.XaiMetricResponse;
 import com.aivle13.fin_audit_ai.domain.audit.service.ExplainabilityService;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
@@ -36,12 +36,12 @@ class AuditExplainabilityControllerTest {
 
     @Test
     void returnsExplainabilityResult() {
-        ExplainabilityResponseDto expected =
-                new ExplainabilityResponseDto(
+        ExplainabilityResponse expected =
+                new ExplainabilityResponse(
                         AUDIT_ID,
                         "SHAP",
                         List.of(
-                                new XaiMetricResponseDto(
+                                new XaiMetricResponse(
                                         XaiMetricCode.FIDELITY,
                                         new BigDecimal("0.4843"),
                                         new BigDecimal("0.5000"),
@@ -53,7 +53,7 @@ class AuditExplainabilityControllerTest {
         given(explainabilityService.getExplainability(USER_ID, AUDIT_ID))
                 .willReturn(expected);
 
-        ResponseEntity<ExplainabilityResponseDto> response =
+        ResponseEntity<ExplainabilityResponse> response =
                 controller.getExplainability(USER_ID, AUDIT_ID);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
