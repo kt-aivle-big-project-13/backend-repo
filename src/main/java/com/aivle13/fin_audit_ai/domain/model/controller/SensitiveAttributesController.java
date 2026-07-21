@@ -27,7 +27,7 @@ public class SensitiveAttributesController {
             throw new UnauthorizedException();
         }
 
-        SensitiveAttributesResponse response = sensitiveAttributesService.update(modelId, request);
+        SensitiveAttributesResponse response = sensitiveAttributesService.update(userId, modelId, request);
         return ResponseEntity.ok(response);
     }
 }

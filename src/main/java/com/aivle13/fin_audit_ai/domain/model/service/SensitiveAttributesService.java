@@ -25,8 +25,8 @@ public class SensitiveAttributesService {
     private final DatasetRepository datasetRepository;
 
     @Transactional
-    public SensitiveAttributesResponse update(Long modelId, SensitiveAttributesRequest request) {
-        AiModelEntity model = aiModelRepository.findById(modelId)
+    public SensitiveAttributesResponse update(Long userId, Long modelId, SensitiveAttributesRequest request) {
+        AiModelEntity model = aiModelRepository.findByIdAndUser_Id(modelId, userId)
                 .orElseThrow(ModelNotFoundException::new);
 
         // 데이터셋이 없으면 검증 기준 컬럼 자체가 없어 어떤 값도 유효할 수 없음

@@ -27,7 +27,7 @@ public class DatasetController {
             throw new UnauthorizedException();
         }
 
-        DatasetUploadResponse response = datasetUploadService.upload(modelId, request);
+        DatasetUploadResponse response = datasetUploadService.upload(userId, modelId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

@@ -43,8 +43,8 @@ public class DatasetUploadService {
     private record CsvSummary(List<String> columns, int rowCount) {}
 
     @Transactional
-    public DatasetUploadResponse upload(Long modelId, DatasetUploadRequest request) {
-        AiModelEntity model = aiModelRepository.findById(modelId)
+    public DatasetUploadResponse upload(Long userId, Long modelId, DatasetUploadRequest request) {
+        AiModelEntity model = aiModelRepository.findByIdAndUser_Id(modelId, userId)
                 .orElseThrow(ModelNotFoundException::new);
 
         DataSource dataSource = request.dataSource() != null ? request.dataSource() : DataSource.CUSTOMER;
