@@ -1,4 +1,4 @@
-package com.aivle13.fin_audit_ai.domain.model.dto;
+package com.aivle13.fin_audit_ai.domain.model.dto.request;
 
 import jakarta.validation.constraints.NotEmpty;
 

@@ -1,4 +1,4 @@
-package com.aivle13.fin_audit_ai.domain.audit.dto;
+package com.aivle13.fin_audit_ai.domain.audit.dto.response;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 

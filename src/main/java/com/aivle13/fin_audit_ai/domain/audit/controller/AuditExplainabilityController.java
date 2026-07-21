@@ -1,6 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.audit.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponseDto;
 import com.aivle13.fin_audit_ai.domain.audit.service.ExplainabilityService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;

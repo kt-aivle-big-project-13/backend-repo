@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResponseDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResultRequestDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.request.ExplainabilityResultRequestDto;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;

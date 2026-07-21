@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.service;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.SensitiveAttributesRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.SensitiveAttributesResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequestDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponseDto;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;

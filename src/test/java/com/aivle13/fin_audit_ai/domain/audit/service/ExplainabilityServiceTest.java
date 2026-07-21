@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResponseDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.XaiMetricResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.XaiMetricResponseDto;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
@@ -29,7 +29,7 @@ import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedExceptio
 import com.aivle13.fin_audit_ai.global.exception.model.ExplainabilityResultNotFoundException;
 
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResultRequestDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.request.ExplainabilityResultRequestDto;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.tuple;

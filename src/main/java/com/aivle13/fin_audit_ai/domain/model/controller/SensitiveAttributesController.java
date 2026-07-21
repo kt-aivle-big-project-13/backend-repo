@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.SensitiveAttributesRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.SensitiveAttributesResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequestDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponseDto;
 import com.aivle13.fin_audit_ai.domain.model.service.SensitiveAttributesService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;

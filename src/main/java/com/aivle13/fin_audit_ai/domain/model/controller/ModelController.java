@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.ModelUploadRequestDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.ModelUploadResponseDto;
 import com.aivle13.fin_audit_ai.domain.model.service.ModelUploadService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;
