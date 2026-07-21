@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface DatasetRepository extends JpaRepository<DatasetEntity, Long> {
-    Optional<DatasetEntity> findTopByModel_IdOrderByCreatedAtDesc(Long modelId);
+    Optional<DatasetEntity> findByIdAndModel_IdAndModel_User_Id(Long id, Long modelId, Long userId);
 }

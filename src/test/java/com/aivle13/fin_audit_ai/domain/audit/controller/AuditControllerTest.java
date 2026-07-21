@@ -68,8 +68,8 @@ class AuditControllerTest extends IntegrationTestSupport {
     }
 
     private void selectSensitiveAttributes() {
-        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
-        model.updateSensitiveAttributes("gender");
+        DatasetEntity dataset = datasetRepository.findById(datasetId).orElseThrow();
+        dataset.updateSensitiveAttributes("gender");
     }
 
     private String requestJson(Long modelId, Long datasetId, Long assessmentId, String auditName) {

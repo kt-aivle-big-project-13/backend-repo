@@ -63,23 +63,23 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
         return new UsernamePasswordAuthenticationToken(userId, null, List.of());
     }
 
-    private void uploadDataset(String columns) {
+    private Long uploadDataset(String columns) {
         AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
         DatasetEntity dataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/test-key.csv", 100, columns);
-        datasetRepository.save(dataset);
+        return datasetRepository.save(dataset).getId();
     }
 
     @Test
     @DisplayName("데이터셋 컬럼에 있는 값이면 200과 함께 저장된다")
     void update_success() throws Exception {
-        uploadDataset("age,income,gender,default");
+        Long datasetId = uploadDataset("age,income,gender,default");
 
-        mockMvc.perform(patch("/api/models/" + modelId + "/sensitive-attributes")
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sensitiveAttributes\": [\"gender\", \"age\"]}")
                         .with(authentication(asUser())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.modelId").value(modelId))
+                .andExpect(jsonPath("$.datasetId").value(datasetId))
                 .andExpect(jsonPath("$.sensitiveAttributes[0]").value("gender"))
                 .andExpect(jsonPath("$.sensitiveAttributes[1]").value("age"));
     }
@@ -87,9 +87,9 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("데이터셋에 없는 컬럼이면 400을 반환한다")
     void update_invalidColumn() throws Exception {
-        uploadDataset("age,income,default");
+        Long datasetId = uploadDataset("age,income,default");
 
-        mockMvc.perform(patch("/api/models/" + modelId + "/sensitive-attributes")
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sensitiveAttributes\": [\"gender\"]}")
                         .with(authentication(asUser())))
@@ -97,19 +97,21 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("업로드된 데이터셋이 없으면 400을 반환한다")
-    void update_noDataset() throws Exception {
-        mockMvc.perform(patch("/api/models/" + modelId + "/sensitive-attributes")
+    @DisplayName("존재하지 않는 데이터셋이면 404를 반환한다")
+    void update_datasetNotFound() throws Exception {
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/999999/sensitive-attributes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sensitiveAttributes\": [\"gender\"]}")
                         .with(authentication(asUser())))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("존재하지 않는 모델이면 404를 반환한다")
     void update_modelNotFound() throws Exception {
-        mockMvc.perform(patch("/api/models/999999/sensitive-attributes")
+        Long datasetId = uploadDataset("age,income,gender");
+
+        mockMvc.perform(patch("/api/models/999999/datasets/" + datasetId + "/sensitive-attributes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sensitiveAttributes\": [\"gender\"]}")
                         .with(authentication(asUser())))
@@ -119,9 +121,9 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("빈 목록이면 400을 반환한다")
     void update_emptyList() throws Exception {
-        uploadDataset("age,income,gender");
+        Long datasetId = uploadDataset("age,income,gender");
 
-        mockMvc.perform(patch("/api/models/" + modelId + "/sensitive-attributes")
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sensitiveAttributes\": []}")
                         .with(authentication(asUser())))
@@ -131,7 +133,9 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("인증 정보가 없으면 401을 반환한다")
     void update_unauthorized() throws Exception {
-        mockMvc.perform(patch("/api/models/" + modelId + "/sensitive-attributes")
+        Long datasetId = uploadDataset("age,income,gender");
+
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sensitiveAttributes\": [\"gender\"]}"))
                 .andExpect(status().isUnauthorized());

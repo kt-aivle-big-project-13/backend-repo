@@ -2,12 +2,10 @@ package com.aivle13.fin_audit_ai.domain.model.service;
 
 import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequest;
 import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponse;
-import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
-import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.InvalidSensitiveAttributeException;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,17 +19,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SensitiveAttributesService {
 
-    private final AiModelRepository aiModelRepository;
     private final DatasetRepository datasetRepository;
 
     @Transactional
-    public SensitiveAttributesResponse update(Long userId, Long modelId, SensitiveAttributesRequest request) {
-        AiModelEntity model = aiModelRepository.findByIdAndUser_Id(modelId, userId)
-                .orElseThrow(ModelNotFoundException::new);
-
-        // 데이터셋이 없으면 검증 기준 컬럼 자체가 없어 어떤 값도 유효할 수 없음
-        DatasetEntity dataset = datasetRepository.findTopByModel_IdOrderByCreatedAtDesc(modelId)
-                .orElseThrow(InvalidSensitiveAttributeException::new);
+    public SensitiveAttributesResponse update(Long userId, Long modelId, Long datasetId, SensitiveAttributesRequest request) {
+        DatasetEntity dataset = datasetRepository.findByIdAndModel_IdAndModel_User_Id(datasetId, modelId, userId)
+                .orElseThrow(DatasetNotFoundException::new);
 
         Set<String> datasetColumns = Arrays.stream(dataset.getColumns().split(","))
                 .map(String::trim)
@@ -43,8 +36,8 @@ public class SensitiveAttributesService {
             throw new InvalidSensitiveAttributeException();
         }
 
-        model.updateSensitiveAttributes(String.join(",", sensitiveAttributes));
+        dataset.updateSensitiveAttributes(String.join(",", sensitiveAttributes));
 
-        return new SensitiveAttributesResponse(model.getId(), sensitiveAttributes);
+        return new SensitiveAttributesResponse(dataset.getId(), sensitiveAttributes);
     }
 }

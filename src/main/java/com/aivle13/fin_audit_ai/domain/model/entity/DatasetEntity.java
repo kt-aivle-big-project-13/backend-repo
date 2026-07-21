@@ -41,6 +41,11 @@ public class DatasetEntity extends BaseEntity {
     @Column(nullable = false, length = 1000)
     private String columns;
 
+    // 공정성 분석 대상 민감정보 컬럼명 (콤마 구분). 데이터셋 버전마다 컬럼 구성이 달라질 수 있어
+    // 모델이 아닌 이 데이터셋 자체에 귀속시킨다. 선택 전엔 null
+    @Column(name = "sensitive_attributes", length = 1000)
+    private String sensitiveAttributes;
+
     public static DatasetEntity create(AiModelEntity model, DataSource dataSource, String datasetFileKey,
                                         int rowCount, String columns) {
         DatasetEntity dataset = new DatasetEntity();
@@ -50,5 +55,9 @@ public class DatasetEntity extends BaseEntity {
         dataset.rowCount = rowCount;
         dataset.columns = columns;
         return dataset;
+    }
+
+    public void updateSensitiveAttributes(String sensitiveAttributes) {
+        this.sensitiveAttributes = sensitiveAttributes;
     }
 }
