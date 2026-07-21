@@ -47,11 +47,15 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
 
     private Long userId;
     private Long modelId;
+    private Long otherUserId;
 
     @BeforeEach
     void setUp() {
         UserEntity user = UserEntity.create("테스트기관", "홍길동", "sensitive-test@example.com", "hash", UserRole.AUDITOR);
         userId = userRepository.save(user).getId();
+
+        UserEntity otherUser = UserEntity.create("다른기관", "김철수", "other-user-test@example.com", "hash", UserRole.AUDITOR);
+        otherUserId = userRepository.save(otherUser).getId();
 
         AiModelEntity model = AiModelEntity.create(
                 user, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model-key.pkl", "1.0.0"
@@ -61,6 +65,10 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
 
     private Authentication asUser() {
         return new UsernamePasswordAuthenticationToken(userId, null, List.of());
+    }
+
+    private Authentication asOtherUser() {
+        return new UsernamePasswordAuthenticationToken(otherUserId, null, List.of());
     }
 
     private Long uploadDataset(String columns) {
@@ -128,6 +136,18 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
                         .content("{\"sensitiveAttributes\": []}")
                         .with(authentication(asUser())))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("모델 소유자가 아닌 사용자가 요청하면 404를 반환한다")
+    void update_notOwner() throws Exception {
+        Long datasetId = uploadDataset("age,income,gender");
+
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sensitiveAttributes\": [\"gender\"]}")
+                        .with(authentication(asOtherUser())))
+                .andExpect(status().isNotFound());
     }
 
     @Test
