@@ -7,4 +7,8 @@ public class InvalidModelFileException extends BusinessException {
     public InvalidModelFileException() {
         super(ErrorCode.INVALID_MODEL_FILE);
     }
+
+    public InvalidModelFileException(String message) {
+        super(ErrorCode.INVALID_MODEL_FILE, message);
+    }
 }

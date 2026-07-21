@@ -7,4 +7,8 @@ public class FileSizeExceededException extends BusinessException {
     public FileSizeExceededException() {
         super(ErrorCode.FILE_SIZE_EXCEEDED);
     }
+
+    public FileSizeExceededException(String message) {
+        super(ErrorCode.FILE_SIZE_EXCEEDED, message);
+    }
 }

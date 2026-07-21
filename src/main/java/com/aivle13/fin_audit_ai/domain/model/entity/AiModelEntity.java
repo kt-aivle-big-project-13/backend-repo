@@ -48,4 +48,14 @@ public class AiModelEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ModelStatus status;
+
+    public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, String artifactPath) {
+        AiModelEntity model = new AiModelEntity();
+        model.user = user;
+        model.modelName = modelName;
+        model.modelType = modelType;
+        model.artifactPath = artifactPath;
+        model.status = ModelStatus.ACTIVE;
+        return model;
+    }
 }
