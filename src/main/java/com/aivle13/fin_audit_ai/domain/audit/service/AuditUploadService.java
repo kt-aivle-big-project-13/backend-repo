@@ -48,12 +48,12 @@ public class AuditUploadService {
             storedKeys.add(datasetStored.s3Key());
 
             // 4. 선택 파일(검증 데이터) — 실패해도 무시하고 기본 감사 진행
-            boolean validationUsable = false;
+            String validationDatasetKey = null;
             if (isPresent(request.validationDatasetFile())) {
                 StoredFile validationStored = tryStoreValidationDataset(request.validationDatasetFile());
                 if (validationStored != null) {
                     storedKeys.add(validationStored.s3Key());
-                    validationUsable = true;
+                    validationDatasetKey = validationStored.s3Key();
                 }
             }
 
@@ -64,14 +64,14 @@ public class AuditUploadService {
 
             // 6. Audit 생성
             AuditEntity audit = auditService.create(
-                    userId, aiModel, datasetStored.s3Key(), request.sensitiveFeatures()
+                    userId, aiModel, datasetStored.s3Key(), validationDatasetKey, request.sensitiveFeatures()
             );
 
             // 7. 응답 조립
             return new AuditUploadResponse(
                     audit.getId(),
                     aiModel.getId(),
-                    new UploadedFiles(true, true, validationUsable),
+                    new UploadedFiles(true, true, validationDatasetKey != null),
                     audit.getStatus().name()
             );
         } catch (RuntimeException e) {
