@@ -11,13 +11,17 @@ import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.InvalidSensitiveAttributeException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +47,18 @@ public class AuditStartService {
 
         if (model.getSensitiveAttributes() == null) {
             throw new SensitiveAttributesNotSelectedException();
+        }
+
+        // 민감정보는 모델 단위로 저장되지만, 이후 다른 데이터셋이 재업로드되면
+        // 컬럼명이 바뀌거나 사라질 수 있어 실제로 선택된 데이터셋 기준으로 다시 검증한다.
+        Set<String> datasetColumns = Arrays.stream(dataset.getColumns().split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        boolean allSensitiveAttributesExist = Arrays.stream(model.getSensitiveAttributes().split(","))
+                .map(String::trim)
+                .allMatch(datasetColumns::contains);
+        if (!allSensitiveAttributesExist) {
+            throw new InvalidSensitiveAttributeException();
         }
 
         if (auditRepository.existsByModel_IdAndStatusIn(model.getId(), ACTIVE_STATUSES)) {
