@@ -143,6 +143,22 @@ class AuditControllerTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("같은 모델의 다른 데이터셋에서 선택한 민감정보는 적용되지 않아 400을 반환한다")
+    void start_sensitiveAttributesNotSelectedForRequestedDataset() throws Exception {
+        selectSensitiveAttributes();
+
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity otherDataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/other-key.csv", 50, "age,gender,income");
+        Long otherDatasetId = datasetRepository.save(otherDataset).getId();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, otherDatasetId, null, "1차 정기감사"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("동일 모델의 감사가 이미 진행 중이면 409를 반환한다")
     void start_alreadyInProgress() throws Exception {
         selectSensitiveAttributes();
