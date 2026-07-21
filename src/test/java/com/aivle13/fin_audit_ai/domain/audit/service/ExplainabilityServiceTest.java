@@ -34,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ExplainabilityServiceTest {
@@ -116,6 +117,9 @@ class ExplainabilityServiceTest {
     void throwsWhenAuditIsInProgress() {
         given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+
+        given(audit.getStatus())
+                .willReturn(AuditStatus.COMPLIANT);
 
         given(audit.getStatus())
                 .willReturn(AuditStatus.IN_PROGRESS);

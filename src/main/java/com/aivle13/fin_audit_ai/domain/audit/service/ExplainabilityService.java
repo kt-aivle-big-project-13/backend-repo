@@ -44,6 +44,10 @@ public class ExplainabilityService {
                 .findByIdAndUser_Id(auditId, userId)
                 .orElseThrow(AuditNotFoundException::new);
 
+        if (audit.getStatus() == AuditStatus.IN_PROGRESS) {
+            throw new AuditNotCompletedException();
+        }
+
         List<XaiResultEntity> results =
                 xaiResultRepository.findAllByAudit_IdAndMetricCodeIn(
                         auditId,
@@ -55,10 +59,6 @@ public class ExplainabilityService {
                 .collect(Collectors.toSet());
 
         if (!resultMetricCodes.equals(REQUIRED_METRICS)) {
-            if (audit.getStatus() == AuditStatus.IN_PROGRESS) {
-                throw new AuditNotCompletedException();
-            }
-
             throw new ExplainabilityResultNotFoundException();
         }
 
