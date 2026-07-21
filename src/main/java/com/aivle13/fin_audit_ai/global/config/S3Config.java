@@ -18,4 +18,5 @@ public class S3Config {
                 .region(Region.of(region))
                 .build();
     }
+
 }

@@ -4,11 +4,11 @@ import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordFindRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordFindResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
+import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
 import com.aivle13.fin_audit_ai.global.mail.MailService;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Transactional(readOnly = true)
@@ -37,9 +37,8 @@ public class UserService {
                         request.name().trim()
                 )
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "일치하는 회원 정보 없음"
+                        new BusinessException(
+                                ErrorCode.PASSWORD_RESET_USER_NOT_FOUND
                         )
                 );
 
