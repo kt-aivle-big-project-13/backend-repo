@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.model.entity;
 
+import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelStatus;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
@@ -34,8 +35,12 @@ public class AiModelEntity extends BaseEntity {
     @Column(name = "model_type", nullable = false, length = 20)
     private ModelType modelType;
 
-    @Column(nullable = false)
-    private Integer version;
+    @Column(nullable = false, length = 20)
+    private String version;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ModelDomain domain;
 
     // STORAGE_ROOT 기준 상대경로
     @Column(name = "artifact_path", nullable = false, length = 255)
@@ -49,11 +54,12 @@ public class AiModelEntity extends BaseEntity {
     @Column(nullable = false, length = 20)
     private ModelStatus status;
 
-    public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, String artifactPath, int version) {
+    public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, ModelDomain domain, String artifactPath, String version) {
         AiModelEntity model = new AiModelEntity();
         model.user = user;
         model.modelName = modelName;
         model.modelType = modelType;
+        model.domain = domain;
         model.artifactPath = artifactPath;
         model.version = version;
         model.status = ModelStatus.ACTIVE;

@@ -72,7 +72,7 @@ public class AuditUploadService {
 
             // 5. AiModel 저장
             AiModelEntity aiModel = aiModelService.create(
-                    userId, request.getModelName(), request.getModelType(), modelStored.s3Key()
+                    userId, request.getModelName(), request.getModelType(), null, modelStored.s3Key(), null
             );
 
             // 6. Audit 생성
