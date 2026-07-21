@@ -36,7 +36,9 @@ public class AuditStartService {
 
     @Transactional
     public AuditStartResponse start(Long userId, AuditStartRequest request) {
-        AiModelEntity model = aiModelRepository.findById(request.modelId())
+        // 락으로 같은 모델에 대한 동시 감사 시작 요청을 직렬화해, 중복 체크와 생성 사이의
+        // race condition으로 진행 중 감사가 2건 이상 생기는 것을 막는다.
+        AiModelEntity model = aiModelRepository.findByIdForUpdate(request.modelId())
                 .orElseThrow(ModelNotFoundException::new);
 
         DatasetEntity dataset = datasetRepository.findById(request.datasetId())
