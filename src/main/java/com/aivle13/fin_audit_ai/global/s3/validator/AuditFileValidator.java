@@ -7,13 +7,22 @@ import com.aivle13.fin_audit_ai.global.exception.model.InvalidModelFileException
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Component
 public class AuditFileValidator {
     private static final long MAX_FILE_SIZE = 200L * 1024 * 1024; // 200MB
+    private static final List<String> MODEL_ARTIFACT_EXTENSIONS = List.of(".pkl", ".joblib", ".json");
 
     public void validateModelFile(MultipartFile file) {
         requireNotEmpty(file, "모델 파일");
         requireModelExtension(file);
+        requireSizeLimit(file);
+    }
+
+    public void validateModelArtifactFile(MultipartFile file) {
+        requireNotEmpty(file, "모델 파일");
+        requireModelArtifactExtension(file);
         requireSizeLimit(file);
     }
 
@@ -32,6 +41,13 @@ public class AuditFileValidator {
     private void requireModelExtension(MultipartFile file) {
         String name = file.getOriginalFilename();
         if (name == null || !name.toLowerCase().endsWith(".json")) {
+            throw new InvalidModelFileException("지원하지 않는 파일 확장자: " + name);
+        }
+    }
+
+    private void requireModelArtifactExtension(MultipartFile file) {
+        String name = file.getOriginalFilename();
+        if (name == null || MODEL_ARTIFACT_EXTENSIONS.stream().noneMatch(ext -> name.toLowerCase().endsWith(ext))) {
             throw new InvalidModelFileException("지원하지 않는 파일 확장자: " + name);
         }
     }

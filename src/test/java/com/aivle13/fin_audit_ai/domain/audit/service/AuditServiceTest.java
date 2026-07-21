@@ -3,6 +3,7 @@ package com.aivle13.fin_audit_ai.domain.audit.service;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
@@ -35,12 +36,12 @@ class AuditServiceTest {
 
     @Test
     void validationDatasetPath를_포함해_AuditEntity를_저장한다() {
-        AiModelEntity aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, "models/model.json");
+        AiModelEntity aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
         given(userRepository.getReferenceById(USER_ID)).willReturn(user);
         given(auditRepository.save(any(AuditEntity.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        auditService.create(USER_ID, aiModel, "datasets/audit-key.csv", "datasets/validation-key.csv", "age,gender");
+        auditService.create(USER_ID, aiModel, "audit-name", "datasets/audit-key.csv", "datasets/validation-key.csv", "age,gender");
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());
@@ -52,12 +53,12 @@ class AuditServiceTest {
 
     @Test
     void validationDatasetPath가_없으면_null로_저장한다() {
-        AiModelEntity aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, "models/model.json");
+        AiModelEntity aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
         given(userRepository.getReferenceById(USER_ID)).willReturn(user);
         given(auditRepository.save(any(AuditEntity.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        auditService.create(USER_ID, aiModel, "datasets/audit-key.csv", null, "age,gender");
+        auditService.create(USER_ID, aiModel, "audit-name", "datasets/audit-key.csv", null, "age,gender");
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());

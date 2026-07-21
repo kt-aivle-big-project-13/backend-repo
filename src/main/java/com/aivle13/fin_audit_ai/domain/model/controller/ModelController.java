@@ -1,8 +1,8 @@
-package com.aivle13.fin_audit_ai.domain.audit.controller;
+package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.request.AuditUploadRequest;
-import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditUploadResponse;
-import com.aivle13.fin_audit_ai.domain.audit.service.AuditUploadService;
+import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadRequestDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.service.ModelUploadService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,22 +12,22 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/audits")
+@RequestMapping("/api/models")
 @RequiredArgsConstructor
-public class AuditUploadController {
+public class ModelController {
 
-    private final AuditUploadService auditUploadService;
+    private final ModelUploadService modelUploadService;
 
     @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<AuditUploadResponse> upload(
+    public ResponseEntity<ModelUploadResponseDto> upload(
             @AuthenticationPrincipal Long userId,
-            @Valid @ModelAttribute AuditUploadRequest request
+            @Valid @ModelAttribute ModelUploadRequestDto request
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
-        AuditUploadResponse response = auditUploadService.upload(userId, request);
+        ModelUploadResponseDto response = modelUploadService.upload(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
