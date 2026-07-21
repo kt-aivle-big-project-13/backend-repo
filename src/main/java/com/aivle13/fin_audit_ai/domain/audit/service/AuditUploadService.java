@@ -17,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
@@ -49,7 +47,7 @@ public class AuditUploadService {
 
         List<String> storedKeys = new ArrayList<>();
         List<PendingFile> pendingFiles = new ArrayList<>();
-        registerCleanupOnRollback(storedKeys);
+        fileStorageService.deleteOnRollback(storedKeys);
 
         // 3. 필수 파일 S3 저장
         StoredFile modelStored = fileStorageService.store(request.modelFile(), "models");
@@ -98,18 +96,6 @@ public class AuditUploadService {
         );
     }
 
-    // 커밋 실패 등 메서드 반환 이후에 트랜잭션이 롤백되는 경우까지 포함해 S3 객체를 정리한다.
-    private void registerCleanupOnRollback(List<String> s3Keys) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(int status) {
-                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
-                    cleanupStoredFiles(s3Keys);
-                }
-            }
-        });
-    }
-
     private StoredFile tryStoreValidationDataset(MultipartFile file) {
         try {
             fileValidator.validateCsvFile(file, "검증 데이터");
@@ -117,16 +103,6 @@ public class AuditUploadService {
         } catch (RuntimeException e) {
             log.warn("검증 데이터 사용 불가, 기본 감사만 진행: {}", e.getMessage());
             return null;
-        }
-    }
-
-    private void cleanupStoredFiles(List<String> s3Keys) {
-        for (String s3Key : s3Keys) {
-            try {
-                fileStorageService.delete(s3Key);
-            } catch (RuntimeException e) {
-                log.warn("S3 객체 정리 실패: key={}", s3Key, e);
-            }
         }
     }
 

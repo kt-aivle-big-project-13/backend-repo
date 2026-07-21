@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResponseDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.XaiMetricResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.ExplainabilityResponse;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.XaiMetricResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
@@ -29,12 +29,11 @@ import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedExceptio
 import com.aivle13.fin_audit_ai.global.exception.model.ExplainabilityResultNotFoundException;
 
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.ExplainabilityResultRequestDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.request.ExplainabilityResultRequest;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ExplainabilityServiceTest {
@@ -88,14 +87,14 @@ class ExplainabilityServiceTest {
                 anyCollection()
         )).willReturn(results);
 
-        ExplainabilityResponseDto response =
+        ExplainabilityResponse response =
                 explainabilityService.getExplainability(USER_ID, AUDIT_ID);
 
         assertThat(response.auditId()).isEqualTo(AUDIT_ID);
         assertThat(response.method()).isEqualTo("SHAP");
 
         assertThat(response.metrics())
-                .extracting(XaiMetricResponseDto::metricCode)
+                .extracting(XaiMetricResponse::metricCode)
                 .containsExactlyInAnyOrder(
                         XaiMetricCode.SENSITIVE_CONTRIB,
                         XaiMetricCode.GLOBAL_STABILITY,
@@ -159,11 +158,11 @@ class ExplainabilityServiceTest {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
-        ExplainabilityResultRequestDto request =
-                new ExplainabilityResultRequestDto(
+        ExplainabilityResultRequest request =
+                new ExplainabilityResultRequest(
                         "COMPLETED",
                         "WARNING",
-                        new ExplainabilityResultRequestDto.KeyMetrics(
+                        new ExplainabilityResultRequest.KeyMetrics(
                                 metric("0.0647", "0.2000", "PASS"),
                                 metric("0.9996", "0.7000", "PASS"),
                                 metric("0.4843", "0.5000", "WARNING")
@@ -202,12 +201,12 @@ class ExplainabilityServiceTest {
                 );
     }
 
-    private ExplainabilityResultRequestDto.Metric metric(
+    private ExplainabilityResultRequest.Metric metric(
             String value,
             String threshold,
             String status
     ) {
-        return new ExplainabilityResultRequestDto.Metric(
+        return new ExplainabilityResultRequest.Metric(
                 "test_metric",
                 "Test metric",
                 new BigDecimal(value),
