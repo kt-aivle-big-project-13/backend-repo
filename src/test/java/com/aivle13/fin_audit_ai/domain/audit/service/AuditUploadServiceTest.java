@@ -15,6 +15,7 @@ import com.aivle13.fin_audit_ai.global.exception.model.InvalidThresholdPolicyExc
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import com.aivle13.fin_audit_ai.global.s3.validator.AuditFileValidator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,8 +74,25 @@ class AuditUploadServiceTest {
 
     @BeforeEach
     void setUp() {
+        // upload()가 등록하는 TransactionSynchronization을 실제 트랜잭션 없이도 받아줄 수 있게 활성화
+        TransactionSynchronizationManager.initSynchronization();
+
         aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
         audit = AuditEntity.create(aiModel, null, "audit-name", "datasets/audit.csv", null, "age,gender");
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    // 실제 트랜잭션 매니저가 롤백 완료 후 호출하는 afterCompletion을 테스트에서 흉내낸다.
+    private void triggerRollback() {
+        for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
+            synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+        }
     }
 
     private AuditUploadRequest requestWith(MultipartFile validationDatasetFile) {
@@ -175,6 +195,7 @@ class AuditUploadServiceTest {
         assertThatThrownBy(() -> auditUploadService.upload(USER_ID, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("S3 업로드 실패");
+        triggerRollback();
 
         verify(fileStorageService).delete("models/model-key.json");
     }
@@ -192,6 +213,7 @@ class AuditUploadServiceTest {
         assertThatThrownBy(() -> auditUploadService.upload(USER_ID, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("DB 저장 실패");
+        triggerRollback();
 
         verify(fileStorageService).delete("models/model-key.json");
         verify(fileStorageService).delete("datasets/audit-key.csv");
