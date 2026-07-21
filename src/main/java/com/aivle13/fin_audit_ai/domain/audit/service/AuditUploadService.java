@@ -51,6 +51,8 @@ public class AuditUploadService {
             // 3. 필수 파일 S3 저장
             StoredFile modelStored = fileStorageService.store(request.modelFile(), "models");
             storedKeys.add(modelStored.s3Key());
+            pendingFiles.add(new PendingFile(FileRole.MODEL, modelStored));
+
             StoredFile datasetStored = fileStorageService.store(request.auditDatasetFile(), "datasets");
             storedKeys.add(datasetStored.s3Key());
             pendingFiles.add(new PendingFile(FileRole.AUDIT_DATASET, datasetStored));
@@ -61,6 +63,7 @@ public class AuditUploadService {
                 StoredFile validationStored = tryStoreValidationDataset(request.validationDatasetFile());
                 if (validationStored != null) {
                     storedKeys.add(validationStored.s3Key());
+                    pendingFiles.add(new PendingFile(FileRole.VALIDATION_DATASET, validationStored));
                     validationDatasetKey = validationStored.s3Key();
                 }
             }
