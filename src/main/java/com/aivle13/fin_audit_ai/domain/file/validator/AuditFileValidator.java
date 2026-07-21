@@ -1,4 +1,4 @@
-package com.aivle13.fin_audit_ai.global.s3.validator;
+package com.aivle13.fin_audit_ai.domain.file.validator;
 
 import com.aivle13.fin_audit_ai.global.exception.file.EmptyFileException;
 import com.aivle13.fin_audit_ai.global.exception.file.InvalidFileFormatException;
