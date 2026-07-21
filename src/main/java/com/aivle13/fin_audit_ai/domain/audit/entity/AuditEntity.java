@@ -34,9 +34,13 @@ public class AuditEntity extends BaseEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    // 검증 데이터 상대경로 (원본 미저장, 경로 참조)
+    // 감사 데이터 상대경로 (원본 미저장, 경로 참조)
     @Column(name = "dataset_path", nullable = false, length = 255)
     private String datasetPath;
+
+    // 검증 데이터 상대경로 (선택 업로드이므로 nullable)
+    @Column(name = "validation_dataset_path", length = 255)
+    private String validationDatasetPath;
 
     // 민감변수 목록 (콤마 구분)
     @Column(name = "sensitive_features", nullable = false, length = 255)
@@ -56,11 +60,13 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "retention_until")
     private LocalDate retentionUntil;
 
-    public static AuditEntity create(AiModelEntity model, UserEntity user, String datasetPath, String sensitiveFeatures) {
+    public static AuditEntity create(AiModelEntity model, UserEntity user, String datasetPath,
+                                      String validationDatasetPath, String sensitiveFeatures) {
         AuditEntity audit = new AuditEntity();
         audit.model = model;
         audit.user = user;
         audit.datasetPath = datasetPath;
+        audit.validationDatasetPath = validationDatasetPath;
         audit.sensitiveFeatures = sensitiveFeatures;
         audit.status = AuditStatus.IN_PROGRESS;
         return audit;

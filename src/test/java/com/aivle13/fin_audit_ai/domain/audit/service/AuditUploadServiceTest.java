@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
@@ -67,7 +68,7 @@ class AuditUploadServiceTest {
     @BeforeEach
     void setUp() {
         aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, "models/model.json");
-        audit = AuditEntity.create(aiModel, null, "datasets/audit.csv", "age,gender");
+        audit = AuditEntity.create(aiModel, null, "datasets/audit.csv", null, "age,gender");
     }
 
     private AuditUploadRequest requestWith(MultipartFile validationDatasetFile) {
@@ -86,7 +87,7 @@ class AuditUploadServiceTest {
         given(fileStorageService.store(auditDatasetFile, "datasets"))
                 .willReturn(new StoredFile("datasets/audit-key.csv", "audit.csv", "text/csv", 7));
         given(aiModelService.create(eq(USER_ID), anyString(), any(), anyString())).willReturn(aiModel);
-        given(auditService.create(eq(USER_ID), eq(aiModel), anyString(), anyString())).willReturn(audit);
+        given(auditService.create(eq(USER_ID), eq(aiModel), anyString(), isNull(), anyString())).willReturn(audit);
 
         AuditUploadResponse response = auditUploadService.upload(USER_ID, requestWith(null));
 
@@ -107,7 +108,8 @@ class AuditUploadServiceTest {
         given(fileStorageService.store(validationDatasetFile, "datasets"))
                 .willReturn(new StoredFile("datasets/validation-key.csv", "validation.csv", "text/csv", 7));
         given(aiModelService.create(eq(USER_ID), anyString(), any(), anyString())).willReturn(aiModel);
-        given(auditService.create(eq(USER_ID), eq(aiModel), anyString(), anyString())).willReturn(audit);
+        given(auditService.create(eq(USER_ID), eq(aiModel), anyString(), eq("datasets/validation-key.csv"), anyString()))
+                .willReturn(audit);
 
         AuditUploadResponse response = auditUploadService.upload(USER_ID, requestWith(validationDatasetFile));
 
@@ -124,7 +126,7 @@ class AuditUploadServiceTest {
         lenient().doThrow(new EmptyFileException("검증 데이터 파일이 존재하지 않습니다."))
                 .when(fileValidator).validateCsvFile(validationDatasetFile, "검증 데이터");
         given(aiModelService.create(eq(USER_ID), anyString(), any(), anyString())).willReturn(aiModel);
-        given(auditService.create(eq(USER_ID), eq(aiModel), anyString(), anyString())).willReturn(audit);
+        given(auditService.create(eq(USER_ID), eq(aiModel), anyString(), isNull(), anyString())).willReturn(audit);
 
         AuditUploadResponse response = auditUploadService.upload(USER_ID, requestWith(validationDatasetFile));
 
