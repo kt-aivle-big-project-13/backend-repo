@@ -70,5 +70,6 @@ server:
 
 cloud:
   aws:
+    region: ${AWS_REGION}
     s3:
-      bucket: temp-bucket-name
+      bucket: ${AWS_S3_BUCKET}

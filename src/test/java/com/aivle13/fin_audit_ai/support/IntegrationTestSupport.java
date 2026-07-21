@@ -35,5 +35,7 @@ public abstract class IntegrationTestSupport {
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
         registry.add("spring.data.redis.password", () -> "");
         registry.add("JWT_SECRET", () -> "test-secret-must-be-at-least-32-bytes-long!!");
+        registry.add("AWS_REGION", () -> "us-east-1");
+        registry.add("AWS_S3_BUCKET", () -> "test-bucket");
     }
 }
