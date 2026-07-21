@@ -15,7 +15,13 @@ import java.math.BigDecimal;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "xai_results")
+@Table(
+        name = "xai_results",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_xai_results_audit_metric_code",
+                columnNames = {"audit_id", "metric_code"}
+        )
+)
 public class XaiResultEntity {
 
     @Id
