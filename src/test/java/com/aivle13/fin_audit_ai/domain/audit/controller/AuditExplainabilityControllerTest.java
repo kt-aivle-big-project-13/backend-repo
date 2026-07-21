@@ -17,9 +17,12 @@ import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,5 +70,28 @@ class AuditExplainabilityControllerTest {
         ).isInstanceOf(UnauthorizedException.class);
 
         verifyNoInteractions(explainabilityService);
+    }
+
+    @Test
+    void delegatesToServiceWithGivenUserAndAuditId() {
+        ExplainabilityResponseDto expected =
+                new ExplainabilityResponseDto(AUDIT_ID, "SHAP", List.of());
+
+        given(explainabilityService.getExplainability(USER_ID, AUDIT_ID))
+                .willReturn(expected);
+
+        controller.getExplainability(USER_ID, AUDIT_ID);
+
+        verify(explainabilityService).getExplainability(USER_ID, AUDIT_ID);
+    }
+
+    @Test
+    void propagatesExceptionThrownByService() {
+        given(explainabilityService.getExplainability(USER_ID, AUDIT_ID))
+                .willThrow(new AuditNotFoundException());
+
+        assertThatThrownBy(() ->
+                controller.getExplainability(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditNotFoundException.class);
     }
 }

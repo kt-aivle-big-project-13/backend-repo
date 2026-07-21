@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.ExplainabilityResultNotFoundException;
 
 
@@ -199,6 +200,176 @@ class ExplainabilityServiceTest {
                                 XaiMetricCode.FIDELITY,
                                 XaiStatus.REVIEW
                         )
+                );
+    }
+
+    @Test
+    void throwsWhenSavingResultForMissingAudit() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.empty());
+
+        ExplainabilityResultRequestDto request =
+                new ExplainabilityResultRequestDto(
+                        "COMPLETED",
+                        "COMPLIANT",
+                        new ExplainabilityResultRequestDto.KeyMetrics(
+                                metric("0.0647", "0.2000", "PASS"),
+                                metric("0.9996", "0.7000", "PASS"),
+                                metric("0.4843", "0.5000", "PASS")
+                        )
+                );
+
+        assertThatThrownBy(() ->
+                explainabilityService.saveExplainabilityResult(AUDIT_ID, request)
+        ).isInstanceOf(AuditNotFoundException.class);
+
+        verifyNoInteractions(xaiResultRepository);
+    }
+
+    @Test
+    void throwsWhenPipelineStatusIsNotCompleted() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        ExplainabilityResultRequestDto request =
+                new ExplainabilityResultRequestDto(
+                        "FAILED",
+                        "COMPLIANT",
+                        new ExplainabilityResultRequestDto.KeyMetrics(
+                                metric("0.0647", "0.2000", "PASS"),
+                                metric("0.9996", "0.7000", "PASS"),
+                                metric("0.4843", "0.5000", "PASS")
+                        )
+                );
+
+        assertThatThrownBy(() ->
+                explainabilityService.saveExplainabilityResult(AUDIT_ID, request)
+        ).isInstanceOf(AuditNotCompletedException.class);
+
+        verifyNoInteractions(xaiResultRepository);
+    }
+
+    @Test
+    void throwsWhenKeyMetricsIsMissing() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        ExplainabilityResultRequestDto request =
+                new ExplainabilityResultRequestDto(
+                        "COMPLETED",
+                        "COMPLIANT",
+                        null
+                );
+
+        assertThatThrownBy(() ->
+                explainabilityService.saveExplainabilityResult(AUDIT_ID, request)
+        ).isInstanceOf(AuditNotCompletedException.class);
+
+        verifyNoInteractions(xaiResultRepository);
+    }
+
+    @Test
+    void throwsWhenPipelineStatusIsNull() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        ExplainabilityResultRequestDto request =
+                new ExplainabilityResultRequestDto(
+                        null,
+                        "COMPLIANT",
+                        new ExplainabilityResultRequestDto.KeyMetrics(
+                                metric("0.0647", "0.2000", "PASS"),
+                                metric("0.9996", "0.7000", "PASS"),
+                                metric("0.4843", "0.5000", "PASS")
+                        )
+                );
+
+        assertThatThrownBy(() ->
+                explainabilityService.saveExplainabilityResult(AUDIT_ID, request)
+        ).isInstanceOf(AuditNotCompletedException.class);
+    }
+
+    @Test
+    void throwsWhenMetricValueIsMissing() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        ExplainabilityResultRequestDto request =
+                new ExplainabilityResultRequestDto(
+                        "COMPLETED",
+                        "COMPLIANT",
+                        new ExplainabilityResultRequestDto.KeyMetrics(
+                                new ExplainabilityResultRequestDto.Metric(
+                                        "sensitive_contribution_ratio",
+                                        "label",
+                                        null,
+                                        new BigDecimal("0.2000"),
+                                        "PASS"
+                                ),
+                                metric("0.9996", "0.7000", "PASS"),
+                                metric("0.4843", "0.5000", "PASS")
+                        )
+                );
+
+        assertThatThrownBy(() ->
+                explainabilityService.saveExplainabilityResult(AUDIT_ID, request)
+        ).isInstanceOf(AuditFailedException.class);
+
+        verify(xaiResultRepository, org.mockito.Mockito.never())
+                .deleteAllByAudit_IdAndMetricCodeIn(eq(AUDIT_ID), anyCollection());
+    }
+
+    @Test
+    void throwsWhenMetricStatusIsUnrecognized() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        ExplainabilityResultRequestDto request =
+                new ExplainabilityResultRequestDto(
+                        "COMPLETED",
+                        "COMPLIANT",
+                        new ExplainabilityResultRequestDto.KeyMetrics(
+                                metric("0.0647", "0.2000", "UNKNOWN"),
+                                metric("0.9996", "0.7000", "PASS"),
+                                metric("0.4843", "0.5000", "PASS")
+                        )
+                );
+
+        assertThatThrownBy(() ->
+                explainabilityService.saveExplainabilityResult(AUDIT_ID, request)
+        ).isInstanceOf(AuditFailedException.class);
+    }
+
+    @Test
+    void savesExplainabilityResultWithLowercaseAndWhitespaceStatus() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        ExplainabilityResultRequestDto request =
+                new ExplainabilityResultRequestDto(
+                        "completed",
+                        "compliant",
+                        new ExplainabilityResultRequestDto.KeyMetrics(
+                                metric("0.0647", "0.2000", " pass "),
+                                metric("0.9996", "0.7000", "review"),
+                                metric("0.4843", "0.5000", "warning")
+                        )
+                );
+
+        explainabilityService.saveExplainabilityResult(AUDIT_ID, request);
+
+        verify(xaiResultRepository)
+                .saveAll(resultCaptor.capture());
+
+        assertThat(resultCaptor.getValue())
+                .extracting(
+                        XaiResultEntity::getMetricCode,
+                        XaiResultEntity::getStatus
+                )
+                .containsExactlyInAnyOrder(
+                        tuple(XaiMetricCode.SENSITIVE_CONTRIB, XaiStatus.PASS),
+                        tuple(XaiMetricCode.GLOBAL_STABILITY, XaiStatus.REVIEW),
+                        tuple(XaiMetricCode.FIDELITY, XaiStatus.REVIEW)
                 );
     }
 
