@@ -8,7 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 모델에 업로드된 검증 데이터셋(X, y).
+ * 모델에 업로드된 감사 데이터셋. Fairlearn 파이프라인의 audit_dataset_file과
+ * 동일하게, 실제 라벨·민감변수·모델 입력 피처가 한 파일에 합쳐진 형태로 받는다.
  */
 @Entity
 @Getter
@@ -29,13 +30,9 @@ public class DatasetEntity extends BaseEntity {
     @Column(name = "data_source", nullable = false, length = 20)
     private DataSource dataSource;
 
-    // X 데이터 S3 키 (dataSource=DUMMY면 없음)
-    @Column(name = "feature_file_key", length = 255)
-    private String featureFileKey;
-
-    // y 데이터 S3 키 (dataSource=DUMMY면 없음)
-    @Column(name = "label_file_key", length = 255)
-    private String labelFileKey;
+    // 감사 데이터셋 S3 키 (dataSource=DUMMY면 없음)
+    @Column(name = "dataset_file_key", length = 255)
+    private String datasetFileKey;
 
     @Column(name = "row_count", nullable = false)
     private int rowCount;
@@ -44,13 +41,12 @@ public class DatasetEntity extends BaseEntity {
     @Column(nullable = false, length = 1000)
     private String columns;
 
-    public static DatasetEntity create(AiModelEntity model, DataSource dataSource, String featureFileKey,
-                                        String labelFileKey, int rowCount, String columns) {
+    public static DatasetEntity create(AiModelEntity model, DataSource dataSource, String datasetFileKey,
+                                        int rowCount, String columns) {
         DatasetEntity dataset = new DatasetEntity();
         dataset.model = model;
         dataset.dataSource = dataSource;
-        dataset.featureFileKey = featureFileKey;
-        dataset.labelFileKey = labelFileKey;
+        dataset.datasetFileKey = datasetFileKey;
         dataset.rowCount = rowCount;
         dataset.columns = columns;
         return dataset;

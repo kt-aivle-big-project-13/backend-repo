@@ -40,6 +40,8 @@ dependencies {
 	implementation platform('software.amazon.awssdk:bom:2.29.15')
 	implementation 'software.amazon.awssdk:s3'
 
+	implementation 'org.apache.commons:commons-csv:1.12.0'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
