@@ -36,6 +36,9 @@ public enum ErrorCode {
     AUDIT_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "EM004", "이미 감사가 진행 중입니다."),
     AUDIT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EM005", "감사 처리 중 오류가 발생했습니다."),
     INVALID_THRESHOLD_POLICY(HttpStatus.BAD_REQUEST, "EM006", "임계값 설정이 올바르지 않습니다."),
+    AUDIT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM007", "감사를 찾을 수 없습니다."),
+    EXPLAINABILITY_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM008", "설명가능성 감사 결과를 찾을 수 없습니다."),
+    AUDIT_NOT_COMPLETED(HttpStatus.CONFLICT, "EM009", "아직 완료되지 않은 감사입니다."),
 
     // ===== External API 연동 (EA) =====
     AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA001", "AI 서버 요청에 실패했습니다."),
