@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadRequestDto;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadResponseDto;
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditUploadService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class AuditUploadController {
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<AuditUploadResponseDto> upload(
             @AuthenticationPrincipal Long userId,
-            @ModelAttribute AuditUploadRequestDto request
+            @Valid @ModelAttribute AuditUploadRequestDto request
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
