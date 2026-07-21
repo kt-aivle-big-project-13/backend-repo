@@ -15,9 +15,9 @@ public class AuditService {
     private final AuditRepository auditRepository;
     private final UserRepository userRepository;
 
-    public AuditEntity create(Long userId, AiModelEntity aiModel, String datasetPath, String sensitiveFeatures) {
+    public AuditEntity create(Long userId, AiModelEntity aiModel, String auditName, String datasetPath, String sensitiveFeatures) {
         UserEntity user = userRepository.getReferenceById(userId);
-        AuditEntity audit = AuditEntity.create(aiModel, user, datasetPath, sensitiveFeatures);
+        AuditEntity audit = AuditEntity.create(aiModel, user, auditName, datasetPath, sensitiveFeatures);
 
         return auditRepository.save(audit);
     }

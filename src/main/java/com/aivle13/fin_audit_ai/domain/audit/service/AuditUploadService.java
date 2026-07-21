@@ -66,7 +66,7 @@ public class AuditUploadService {
 
             // 6. Audit 생성
             AuditEntity audit = auditService.create(
-                    userId, aiModel, datasetStored.s3Key(), request.getSensitiveFeatures()
+                    userId, aiModel, request.getAuditName(), datasetStored.s3Key(), request.getSensitiveFeatures()
             );
 
             // 7. 응답 조립

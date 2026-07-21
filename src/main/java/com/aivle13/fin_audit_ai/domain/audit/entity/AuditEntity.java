@@ -34,6 +34,9 @@ public class AuditEntity extends BaseEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
+    @Column(name = "audit_name", nullable = false, length = 100)
+    private String auditName;
+
     // 검증 데이터 상대경로 (원본 미저장, 경로 참조)
     @Column(name = "dataset_path", nullable = false, length = 255)
     private String datasetPath;
@@ -56,10 +59,11 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "retention_until")
     private LocalDate retentionUntil;
 
-    public static AuditEntity create(AiModelEntity model, UserEntity user, String datasetPath, String sensitiveFeatures) {
+    public static AuditEntity create(AiModelEntity model, UserEntity user, String auditName, String datasetPath, String sensitiveFeatures) {
         AuditEntity audit = new AuditEntity();
         audit.model = model;
         audit.user = user;
+        audit.auditName = auditName;
         audit.datasetPath = datasetPath;
         audit.sensitiveFeatures = sensitiveFeatures;
         audit.status = AuditStatus.IN_PROGRESS;
