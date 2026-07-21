@@ -54,6 +54,10 @@ public class AiModelEntity extends BaseEntity {
     @Column(nullable = false, length = 20)
     private ModelStatus status;
 
+    // 공정성 분석 대상 민감정보 컬럼명 (콤마 구분). 선택 전엔 null
+    @Column(name = "sensitive_attributes", length = 1000)
+    private String sensitiveAttributes;
+
     public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, ModelDomain domain, String artifactPath, String version) {
         AiModelEntity model = new AiModelEntity();
         model.user = user;
@@ -64,5 +68,9 @@ public class AiModelEntity extends BaseEntity {
         model.version = version;
         model.status = ModelStatus.ACTIVE;
         return model;
+    }
+
+    public void updateSensitiveAttributes(String sensitiveAttributes) {
+        this.sensitiveAttributes = sensitiveAttributes;
     }
 }
