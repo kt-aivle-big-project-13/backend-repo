@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadRequestDto;
-import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadResponseDto;
+import com.aivle13.fin_audit_ai.domain.audit.dto.request.AuditUploadRequest;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditUploadResponse;
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditUploadService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
@@ -18,15 +18,15 @@ public class AuditUploadController {
     private final AuditUploadService auditUploadService;
 
     @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<AuditUploadResponseDto> upload(
+    public ResponseEntity<AuditUploadResponse> upload(
             @AuthenticationPrincipal Long userId,
-            @ModelAttribute AuditUploadRequestDto request
+            @ModelAttribute AuditUploadRequest request
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
-        AuditUploadResponseDto response = auditUploadService.upload(userId, request);
+        AuditUploadResponse response = auditUploadService.upload(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
