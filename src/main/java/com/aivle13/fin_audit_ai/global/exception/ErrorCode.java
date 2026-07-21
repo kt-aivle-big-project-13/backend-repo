@@ -40,6 +40,8 @@ public enum ErrorCode {
     EXPLAINABILITY_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM008", "설명가능성 감사 결과를 찾을 수 없습니다."),
     AUDIT_NOT_COMPLETED(HttpStatus.CONFLICT, "EM009", "아직 완료되지 않은 감사입니다."),
     INVALID_SENSITIVE_ATTRIBUTE(HttpStatus.BAD_REQUEST, "EM010", "데이터셋에 존재하지 않는 컬럼입니다."),
+    DATASET_NOT_FOUND(HttpStatus.NOT_FOUND, "EM011", "데이터셋을 찾을 수 없습니다."),
+    SENSITIVE_ATTRIBUTES_NOT_SELECTED(HttpStatus.BAD_REQUEST, "EM012", "민감정보가 선택되지 않았습니다."),
 
     // ===== External API 연동 (EA) =====
     AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA001", "AI 서버 요청에 실패했습니다."),
