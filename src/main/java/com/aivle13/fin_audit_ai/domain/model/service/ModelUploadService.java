@@ -3,8 +3,8 @@ package com.aivle13.fin_audit_ai.domain.model.service;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import com.aivle13.fin_audit_ai.global.s3.validator.AuditFileValidator;
-import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadRequestDto;
-import com.aivle13.fin_audit_ai.domain.model.dto.ModelUploadResponseDto;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.ModelUploadRequest;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.ModelUploadResponse;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,18 +23,18 @@ public class ModelUploadService {
     private final AiModelService aiModelService;
 
     @Transactional
-    public ModelUploadResponseDto upload(Long userId, ModelUploadRequestDto request) {
-        fileValidator.validateModelArtifactFile(request.getFile());
+    public ModelUploadResponse upload(Long userId, ModelUploadRequest request) {
+        fileValidator.validateModelArtifactFile(request.file());
 
-        StoredFile stored = fileStorageService.store(request.getFile(), "models");
+        StoredFile stored = fileStorageService.store(request.file(), "models");
         registerCleanupOnRollback(stored.s3Key());
 
         AiModelEntity aiModel = aiModelService.create(
-                userId, request.getModelName(), request.getModelType(),
-                request.getDomain(), stored.s3Key(), request.getVersion()
+                userId, request.modelName(), request.modelType(),
+                request.domain(), stored.s3Key(), request.version()
         );
 
-        return new ModelUploadResponseDto(
+        return new ModelUploadResponse(
                 aiModel.getId(),
                 aiModel.getModelName(),
                 aiModel.getVersion(),
