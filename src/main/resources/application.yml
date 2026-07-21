@@ -67,3 +67,9 @@ server:
     # 업로드 한도(100MB)보다 여유 있게 잡아야 초과 요청도 응답이 정상 전달됨.
     # 무제한(-1)은 공격자가 임의로 큰 바디를 보내도 서버가 끝까지 읽어들이는 리소스 고갈 위험이 있어 상한을 둔다.
     max-swallow-size: 200MB
+
+cloud:
+  aws:
+    region: ${AWS_REGION}
+    s3:
+      bucket: ${AWS_S3_BUCKET}
