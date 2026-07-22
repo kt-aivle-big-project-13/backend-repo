@@ -226,7 +226,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_thresholdMethodMissing() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사", null, null, "0.5"))
                         .with(authentication(asUser())))
@@ -238,7 +238,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_validationDatasetMethod_withoutTargetApprovalRate_succeeds() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사", "VALIDATION_DATASET", null, null))
                         .with(authentication(asUser())))
@@ -254,7 +254,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_savesTargetApprovalRate() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "VALIDATION_DATASET", "0.8", null))
@@ -271,7 +271,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_targetApprovalRate_tooLow() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "VALIDATION_DATASET", "0", null))
@@ -284,7 +284,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_targetApprovalRate_tooHigh() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "VALIDATION_DATASET", "1", null))
@@ -312,7 +312,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_manualThreshold_outOfRange() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "MANUAL", null, "1.5"))
