@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -16,7 +18,13 @@ public class SecurityConfig {
             "/actuator/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+
+            "/api/v1/auth/signup",
+            "/api/v1/auth/login",
+            "/api/v1/auth/password/find",
+            "/api/v1/auth/password/reset"
+
     };
 
     @Bean
@@ -28,8 +36,17 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().permitAll()   // TODO: JWT 도입 시 authenticated() 로 변경
+                        // JWT 인증 적용 전
+                        .anyRequest().permitAll()
+
+                        // JWT 인증 필터 구현 후, 아래 코드 사용
+                        // .anyRequest().authenticated()
                 );
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

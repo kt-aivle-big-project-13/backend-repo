@@ -1,10 +1,13 @@
 package com.aivle13.fin_audit_ai.domain.user.controller;
 
 import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordFindRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordResetRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordFindResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordResetResponse;
 import com.aivle13.fin_audit_ai.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +33,16 @@ public class UserController {
     ) {
         PasswordFindResponse response =
                 userService.findPassword(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<PasswordResetResponse> resetPassword(
+            @Valid @RequestBody PasswordResetRequest request
+    ) {
+        PasswordResetResponse response =
+                userService.resetPassword(request);
 
         return ResponseEntity.ok(response);
     }
