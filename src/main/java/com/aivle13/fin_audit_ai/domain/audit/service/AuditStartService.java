@@ -5,14 +5,12 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditStartResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.model.InvalidThresholdPolicyException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
 import lombok.RequiredArgsConstructor;
@@ -55,8 +53,6 @@ public class AuditStartService {
             throw new AuditAlreadyInProgressException();
         }
 
-        validateThresholdPolicy(request);
-
         AuditEntity audit = auditService.create(
                 userId, model, dataset, request.auditName(), dataset.getSensitiveAttributes(), request.assessmentId(),
                 request.thresholdMethod(), request.targetApprovalRate(), request.manualThreshold()
@@ -64,17 +60,5 @@ public class AuditStartService {
         dataset.markAudited();
 
         return new AuditStartResponse(audit.getId(), audit.getStatus().name(), audit.getCreatedAt());
-    }
-
-    private void validateThresholdPolicy(AuditStartRequest request) {
-        if (request.thresholdMethod() == ThresholdMethod.VALIDATION_DATASET) {
-            if (request.targetApprovalRate() == null) {
-                throw new InvalidThresholdPolicyException("목표 승인율은 필수입니다.");
-            }
-        } else {
-            if (request.manualThreshold() == null) {
-                throw new InvalidThresholdPolicyException("수동 임계값은 필수입니다.");
-            }
-        }
     }
 }
