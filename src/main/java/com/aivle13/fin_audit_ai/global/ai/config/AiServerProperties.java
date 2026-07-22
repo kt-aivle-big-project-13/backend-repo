@@ -7,6 +7,7 @@ import java.time.Duration;
 
 @ConfigurationProperties(prefix = "app.ai-server")
 public record AiServerProperties(
+        boolean enabled,
         URI baseUrl,
         Duration connectTimeout,
         Duration readTimeout
