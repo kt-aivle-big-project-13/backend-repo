@@ -293,6 +293,21 @@ class AuditControllerTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("검증용(VALIDATION) 데이터셋을 감사 데이터셋으로 지정하면 404를 반환한다")
+    void start_datasetIsValidationPurpose() throws Exception {
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity validationDataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/valid-key.csv", 50, "age,gender,income");
+        validationDataset.markAsValidation();
+        Long validationDatasetId = datasetRepository.save(validationDataset).getId();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, validationDatasetId, null, "1차 정기감사"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("수동 임계값이 범위(0~1)를 벗어나면 400을 반환한다")
     void start_manualThreshold_outOfRange() throws Exception {
         selectSensitiveAttributes();

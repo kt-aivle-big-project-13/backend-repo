@@ -6,6 +6,7 @@ public record DatasetUploadResponse(
         Long datasetId,
         Long modelId,
         String dataSource,
+        String purpose,
         int rowCount,
         List<String> columns
 ) {

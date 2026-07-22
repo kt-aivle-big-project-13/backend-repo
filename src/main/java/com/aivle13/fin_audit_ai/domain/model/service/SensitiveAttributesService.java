@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.model.dto.request.SensitiveAttributesRequ
 import com.aivle13.fin_audit_ai.domain.model.dto.response.SensitiveAttributesResponse;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
+import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetAlreadyAuditedException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.InvalidSensitiveAttributeException;
@@ -26,6 +27,10 @@ public class SensitiveAttributesService {
     public SensitiveAttributesResponse update(Long userId, Long modelId, Long datasetId, SensitiveAttributesRequest request) {
         DatasetEntity dataset = datasetRepository.findByIdAndModel_IdAndModel_User_Id(datasetId, modelId, userId)
                 .orElseThrow(DatasetNotFoundException::new);
+
+        if (dataset.getPurpose() != DatasetPurpose.AUDIT) {
+            throw new DatasetNotFoundException();
+        }
 
         if (dataset.isAudited()) {
             throw new DatasetAlreadyAuditedException();
