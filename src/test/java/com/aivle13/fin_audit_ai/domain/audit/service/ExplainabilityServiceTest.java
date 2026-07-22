@@ -34,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ExplainabilityServiceTest {
@@ -60,8 +61,16 @@ class ExplainabilityServiceTest {
     void returnsThreeExplainabilityMetrics() {
         given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(audit.getStatus())
+                .willReturn(AuditStatus.COMPLIANT);
 
         List<XaiResultEntity> results = List.of(
+                createResult(
+                        XaiMetricCode.FIDELITY,
+                        "0.4843",
+                        "0.5000",
+                        XaiStatus.REVIEW
+                ),
                 createResult(
                         XaiMetricCode.SENSITIVE_CONTRIB,
                         "0.0647",
@@ -73,12 +82,6 @@ class ExplainabilityServiceTest {
                         "0.9996",
                         "0.7000",
                         XaiStatus.PASS
-                ),
-                createResult(
-                        XaiMetricCode.FIDELITY,
-                        "0.4843",
-                        "0.5000",
-                        XaiStatus.REVIEW
                 )
         );
 
@@ -95,7 +98,7 @@ class ExplainabilityServiceTest {
 
         assertThat(response.metrics())
                 .extracting(XaiMetricResponse::metricCode)
-                .containsExactlyInAnyOrder(
+                .containsExactly(
                         XaiMetricCode.SENSITIVE_CONTRIB,
                         XaiMetricCode.GLOBAL_STABILITY,
                         XaiMetricCode.FIDELITY
@@ -118,14 +121,13 @@ class ExplainabilityServiceTest {
                 .willReturn(Optional.of(audit));
 
         given(audit.getStatus())
-                .willReturn(AuditStatus.COMPLIANT);
-
-        given(audit.getStatus())
                 .willReturn(AuditStatus.IN_PROGRESS);
 
         assertThatThrownBy(() ->
                 explainabilityService.getExplainability(USER_ID, AUDIT_ID)
         ).isInstanceOf(AuditNotCompletedException.class);
+
+        verifyNoInteractions(xaiResultRepository);
     }
 
     @Test
@@ -145,6 +147,49 @@ class ExplainabilityServiceTest {
                         "0.0647",
                         "0.2000",
                         XaiStatus.PASS
+                )
+        ));
+
+        assertThatThrownBy(() ->
+                explainabilityService.getExplainability(USER_ID, AUDIT_ID)
+        ).isInstanceOf(ExplainabilityResultNotFoundException.class);
+    }
+
+    @Test
+    void throwsWhenMetricRowsContainDuplicates() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        given(audit.getStatus())
+                .willReturn(AuditStatus.COMPLIANT);
+
+        given(xaiResultRepository.findAllByAudit_IdAndMetricCodeIn(
+                eq(AUDIT_ID),
+                anyCollection()
+        )).willReturn(List.of(
+                createResult(
+                        XaiMetricCode.SENSITIVE_CONTRIB,
+                        "0.0647",
+                        "0.2000",
+                        XaiStatus.PASS
+                ),
+                createResult(
+                        XaiMetricCode.GLOBAL_STABILITY,
+                        "0.9996",
+                        "0.7000",
+                        XaiStatus.PASS
+                ),
+                createResult(
+                        XaiMetricCode.FIDELITY,
+                        "0.4843",
+                        "0.5000",
+                        XaiStatus.REVIEW
+                ),
+                createResult(
+                        XaiMetricCode.FIDELITY,
+                        "0.4900",
+                        "0.5000",
+                        XaiStatus.REVIEW
                 )
         ));
 
