@@ -4,8 +4,8 @@ import com.aivle13.fin_audit_ai.domain.audit.service.AuditProgressService;
 import com.aivle13.fin_audit_ai.domain.audit.service.ShapAnalysisService;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import com.aivle13.fin_audit_ai.global.ai.config.AiServerProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -14,15 +14,14 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(
-        prefix = "app.ai-server",
-        name = "enabled",
-        havingValue = "true"
-)
+
 public class ShapAnalysisEventListener {
+
+    private static final int FAILED_STATUS_MAX_ATTEMPTS = 3;
 
     private final ShapAnalysisService shapAnalysisService;
     private final AuditProgressService auditProgressService;
+    private final AiServerProperties aiServerProperties;
 
     @Async("auditTaskExecutor")
     @TransactionalEventListener(
@@ -30,6 +29,16 @@ public class ShapAnalysisEventListener {
     )
     public void handle(AuditStartedEvent event) {
         Long auditId = event.auditId();
+
+        if (!aiServerProperties.enabled()) {
+            log.warn(
+                    "AI 서버 비활성화로 SHAP 분석을 실행할 수 없습니다: auditId={}",
+                    auditId
+            );
+
+            markFailedSafely(auditId);
+            return;
+        }
 
         try {
             auditProgressService.markInProgress(auditId);
@@ -63,14 +72,42 @@ public class ShapAnalysisEventListener {
     }
 
     private void markFailedSafely(Long auditId) {
-        try {
-            auditProgressService.markFailed(auditId);
-        } catch (RuntimeException statusUpdateException) {
-            log.error(
-                    "감사 실패 상태 저장 실패: auditId={}",
-                    auditId,
-                    statusUpdateException
-            );
+        RuntimeException lastException = null;
+
+        for (int attempt = 1;
+             attempt <= FAILED_STATUS_MAX_ATTEMPTS;
+             attempt++) {
+
+            try {
+                auditProgressService.markFailed(auditId);
+
+                if (attempt > 1) {
+                    log.info(
+                            "감사 실패 상태 저장 재시도 성공: auditId={}, attempt={}",
+                            auditId,
+                            attempt
+                    );
+                }
+
+                return;
+            } catch (RuntimeException statusUpdateException) {
+                lastException = statusUpdateException;
+
+                log.warn(
+                        "감사 실패 상태 저장 실패: auditId={}, attempt={}/{}",
+                        auditId,
+                        attempt,
+                        FAILED_STATUS_MAX_ATTEMPTS,
+                        statusUpdateException
+                );
+            }
         }
+
+        log.error(
+                "감사 실패 상태 저장 최종 실패: auditId={}, attempts={}",
+                auditId,
+                FAILED_STATUS_MAX_ATTEMPTS,
+                lastException
+        );
     }
 }

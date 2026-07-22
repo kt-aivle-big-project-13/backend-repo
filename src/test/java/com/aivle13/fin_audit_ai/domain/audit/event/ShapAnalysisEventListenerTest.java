@@ -10,12 +10,17 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.aivle13.fin_audit_ai.global.ai.config.AiServerProperties;
+import org.junit.jupiter.api.BeforeEach;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ShapAnalysisEventListenerTest {
@@ -27,6 +32,15 @@ class ShapAnalysisEventListenerTest {
 
     @Mock
     private AuditProgressService auditProgressService;
+
+    @Mock
+    private AiServerProperties aiServerProperties;
+
+    @BeforeEach
+    void setUp() {
+        given(aiServerProperties.enabled())
+                .willReturn(true);
+    }
 
     @InjectMocks
     private ShapAnalysisEventListener listener;
@@ -113,7 +127,42 @@ class ShapAnalysisEventListenerTest {
                 listener.handle(new AuditStartedEvent(AUDIT_ID))
         ).doesNotThrowAnyException();
 
+        verify(auditProgressService, times(3))
+                .markFailed(AUDIT_ID);
+        verify(auditProgressService, never())
+                .markShapCompleted(AUDIT_ID);
+    }
+
+    @Test
+    void marksAuditAsFailedWithoutCallingAiServerWhenAiIsDisabled() {
+        given(aiServerProperties.enabled())
+                .willReturn(false);
+
+        listener.handle(new AuditStartedEvent(AUDIT_ID));
+
         verify(auditProgressService)
+                .markFailed(AUDIT_ID);
+        verify(auditProgressService, never())
+                .markInProgress(AUDIT_ID);
+        verify(auditProgressService, never())
+                .markShapCompleted(AUDIT_ID);
+        verifyNoInteractions(shapAnalysisService);
+    }
+
+    @Test
+    void retriesFailedStatusUpdateAndStopsWhenRetrySucceeds() {
+        willThrow(new AiServerErrorException())
+                .given(shapAnalysisService)
+                .analyzeAndSave(AUDIT_ID);
+
+        willThrow(new IllegalStateException("temporary failure"))
+                .willDoNothing()
+                .given(auditProgressService)
+                .markFailed(AUDIT_ID);
+
+        listener.handle(new AuditStartedEvent(AUDIT_ID));
+
+        verify(auditProgressService, times(2))
                 .markFailed(AUDIT_ID);
         verify(auditProgressService, never())
                 .markShapCompleted(AUDIT_ID);

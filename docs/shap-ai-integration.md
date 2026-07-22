@@ -161,6 +161,7 @@ Presigned URL이 필요해질 경우 `ShapAnalysisRequest`와 파일 접근 방�
 | SHAP 분석 시작 | `IN_PROGRESS` | 1 |
 | SHAP 분석 및 저장 성공 | `IN_PROGRESS` | 3 |
 | AI 서버 오류 또는 타임아웃 | `FAILED` | 기존 단계 유지 |
+| AI 서버 비활성화 | `FAILED` | 기존 단계 유지 |
 
 SHAP 분석 성공은 전체 감사 완료를 의미하지 않는다. 이후 Fairlearn 등 다음 감사 단계가 남아 있으므로 최종 감사 상태는 `IN_PROGRESS`로 유지하고 `currentStep`만 3으로 이동한다.
 
@@ -194,12 +195,12 @@ AI_SERVER_READ_TIMEOUT=120s
 
 | 환경변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `AI_SERVER_ENABLED` | `false` | SHAP 비동기 이벤트 리스너 활성화 여부 |
+| `AI_SERVER_ENABLED` | `false` | FastAPI SHAP 분석 실행 여부. `false`이면 AI 서버를 호출하지 않고 감사를 `FAILED`로 전환 |
 | `AI_SERVER_BASE_URL` | `http://localhost:8000` | FastAPI AI 서버 주소 |
 | `AI_SERVER_CONNECT_TIMEOUT` | `3s` | AI 서버 연결 제한 시간 |
 | `AI_SERVER_READ_TIMEOUT` | `120s` | SHAP 응답 대기 제한 시간 |
 
-로컬에서 FastAPI 서버 없이 백엔드만 실행할 때는 `AI_SERVER_ENABLED=false`를 사용한다. 실제 연동 환경에서는 `true`로 설정한다.
+`AI_SERVER_ENABLED=false`이면 감사 생성 이벤트는 처리되지만 FastAPI를 호출하지 않고 감사 상태를 `FAILED`로 변경한다. 실제 SHAP 감사를 실행하는 환경에서는 반드시 `true`로 설정해야 한다.
 
 ---
 
