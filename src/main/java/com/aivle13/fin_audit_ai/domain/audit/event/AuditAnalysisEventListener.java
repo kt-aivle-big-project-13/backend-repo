@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditProgressService;
+import com.aivle13.fin_audit_ai.domain.audit.service.FairnessAnalysisService;
 import com.aivle13.fin_audit_ai.domain.audit.service.ShapAnalysisService;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +16,12 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 
-public class ShapAnalysisEventListener {
+public class AuditAnalysisEventListener {
 
     private static final int FAILED_STATUS_MAX_ATTEMPTS = 3;
 
     private final ShapAnalysisService shapAnalysisService;
+    private final FairnessAnalysisService fairnessAnalysisService;
     private final AuditProgressService auditProgressService;
     private final AiServerProperties aiServerProperties;
 
@@ -32,7 +34,7 @@ public class ShapAnalysisEventListener {
 
         if (!aiServerProperties.enabled()) {
             log.warn(
-                    "AI 서버 비활성화로 SHAP 분석을 실행할 수 없습니다: auditId={}",
+                    "AI 서버 비활성화로 감사 분석을 실행할 수 없습니다: auditId={}",
                     auditId
             );
 
@@ -51,11 +53,20 @@ public class ShapAnalysisEventListener {
                     "SHAP 분석 및 결과 저장 완료: auditId={}",
                     auditId
             );
+
+            fairnessAnalysisService.analyzeAndSave(auditId);
+
+            auditProgressService.markFairnessCompleted(auditId);
+
+            log.info(
+                    "공정성(Fairlearn) 분석 및 결과 저장 완료: auditId={}",
+                    auditId
+            );
         } catch (BusinessException exception) {
             markFailedSafely(auditId);
 
             log.error(
-                    "SHAP 분석 실패: auditId={}, errorCode={}",
+                    "감사 분석 실패: auditId={}, errorCode={}",
                     auditId,
                     exception.getErrorCode().getCode(),
                     exception
@@ -64,7 +75,7 @@ public class ShapAnalysisEventListener {
             markFailedSafely(auditId);
 
             log.error(
-                    "예상하지 못한 SHAP 분석 오류: auditId={}",
+                    "예상하지 못한 감사 분석 오류: auditId={}",
                     auditId,
                     exception
             );
