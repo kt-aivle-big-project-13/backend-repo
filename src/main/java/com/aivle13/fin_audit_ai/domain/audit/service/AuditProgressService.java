@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuditProgressService {
 
     private static final int FAIRNESS_STEP = 3;
+    private static final int COMPLETED_STEP = 4;
 
     private final AuditRepository auditRepository;
 
@@ -25,6 +26,12 @@ public class AuditProgressService {
     public void markShapCompleted(Long auditId) {
         AuditEntity audit = findAudit(auditId);
         audit.moveToStep(FAIRNESS_STEP);
+    }
+
+    @Transactional
+    public void markFairnessCompleted(Long auditId) {
+        AuditEntity audit = findAudit(auditId);
+        audit.moveToStep(COMPLETED_STEP);
     }
 
     @Transactional
