@@ -17,6 +17,8 @@ import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSel
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class AuditStartService {
     private final DatasetRepository datasetRepository;
     private final AuditRepository auditRepository;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public AuditStartResponse start(Long userId, AuditStartRequest request) {
@@ -62,6 +65,10 @@ public class AuditStartService {
                 request.thresholdMethod(), request.targetApprovalRate(), request.manualThreshold()
         );
         dataset.markAudited();
+
+        eventPublisher.publishEvent(
+                new AuditStartedEvent(audit.getId())
+        );
 
         return new AuditStartResponse(audit.getId(), audit.getStatus().name(), audit.getCreatedAt());
     }

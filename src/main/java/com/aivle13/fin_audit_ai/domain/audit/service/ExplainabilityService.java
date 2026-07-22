@@ -58,7 +58,8 @@ public class ExplainabilityService {
                 .map(XaiResultEntity::getMetricCode)
                 .collect(Collectors.toSet());
 
-        if (!resultMetricCodes.equals(REQUIRED_METRICS)) {
+        if (results.size() != REQUIRED_METRICS.size()
+                || !resultMetricCodes.equals(REQUIRED_METRICS)) {
             throw new ExplainabilityResultNotFoundException();
         }
 
