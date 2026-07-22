@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -156,6 +157,24 @@ class AuditControllerTest extends IntegrationTestSupport {
                         .content(requestJson(modelId, otherDatasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("감사가 시작되면 데이터셋이 잠겨 이후 민감정보 수정 API가 409를 반환한다")
+    void start_locksDatasetSensitiveAttributes() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted());
+
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sensitiveAttributes\": [\"age\"]}")
+                        .with(authentication(asUser())))
+                .andExpect(status().isConflict());
     }
 
     @Test

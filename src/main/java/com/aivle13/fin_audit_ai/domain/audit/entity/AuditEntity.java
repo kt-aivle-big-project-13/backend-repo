@@ -48,8 +48,9 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "audit_name", nullable = false, length = 100)
     private String auditName;
 
-    // 감사 생성 시점 모델의 민감정보 스냅샷(콤마 구분). AiModelEntity.sensitiveAttributes는
-    // PATCH로 이후에 바뀔 수 있어서, 이 감사가 실제로 사용한 값을 그대로 복사해 불변으로 남긴다.
+    // 감사 생성 시점 데이터셋의 민감정보 스냅샷(콤마 구분). 감사가 시작되면 데이터셋은
+    // markAudited()로 잠겨 이후 수정이 막히지만, 이 감사가 실제로 사용한 값을 그대로
+    // 복사해 데이터셋과 무관하게 불변으로 남긴다.
     @Column(name = "sensitive_features", nullable = false, length = 255)
     private String sensitiveFeatures;
 

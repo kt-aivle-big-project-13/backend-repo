@@ -139,6 +139,20 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("이미 감사에 사용된 데이터셋이면 409를 반환한다")
+    void update_alreadyAudited() throws Exception {
+        Long datasetId = uploadDataset("age,income,gender,default");
+        DatasetEntity dataset = datasetRepository.findById(datasetId).orElseThrow();
+        dataset.markAudited();
+
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sensitiveAttributes\": [\"gender\"]}")
+                        .with(authentication(asUser())))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     @DisplayName("모델 소유자가 아닌 사용자가 요청하면 404를 반환한다")
     void update_notOwner() throws Exception {
         Long datasetId = uploadDataset("age,income,gender");

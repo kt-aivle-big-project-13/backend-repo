@@ -46,6 +46,12 @@ public class DatasetEntity extends BaseEntity {
     @Column(name = "sensitive_attributes", length = 1000)
     private String sensitiveAttributes;
 
+    // 이 데이터셋으로 감사가 시작된 적이 있는지. 감사는 시작 시점의 민감정보를 스냅샷으로
+    // 복사해 불변으로 남기지만(AuditEntity.sensitiveFeatures), 스냅샷과 원본이 어긋나면
+    // 조회 화면에서 혼란을 줄 수 있어 감사에 쓰인 데이터셋은 민감정보 수정 자체를 막는다
+    @Column(name = "audited", nullable = false)
+    private boolean audited = false;
+
     public static DatasetEntity create(AiModelEntity model, DataSource dataSource, String datasetFileKey,
                                         int rowCount, String columns) {
         DatasetEntity dataset = new DatasetEntity();
@@ -59,5 +65,9 @@ public class DatasetEntity extends BaseEntity {
 
     public void updateSensitiveAttributes(String sensitiveAttributes) {
         this.sensitiveAttributes = sensitiveAttributes;
+    }
+
+    public void markAudited() {
+        this.audited = true;
     }
 }
