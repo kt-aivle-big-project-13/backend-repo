@@ -2,7 +2,10 @@ package com.aivle13.fin_audit_ai.domain.audit.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
+import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
@@ -34,34 +37,47 @@ class AuditServiceTest {
 
     private static final Long USER_ID = 1L;
 
+    private AiModelEntity aiModel() {
+        return AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
+    }
+
+    private DatasetEntity dataset(AiModelEntity model) {
+        return DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/audit-key.csv", 100, "age,gender,income");
+    }
+
     @Test
-    void validationDatasetPath를_포함해_AuditEntity를_저장한다() {
-        AiModelEntity aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
+    void 모델과_데이터셋을_참조하는_AuditEntity를_PENDING_상태로_저장한다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
         given(userRepository.getReferenceById(USER_ID)).willReturn(user);
         given(auditRepository.save(any(AuditEntity.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        auditService.create(USER_ID, aiModel, "audit-name", "datasets/audit-key.csv", "datasets/validation-key.csv", "age,gender");
+        auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", 7L);
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());
         AuditEntity saved = captor.getValue();
-        assertThat(saved.getDatasetPath()).isEqualTo("datasets/audit-key.csv");
-        assertThat(saved.getValidationDatasetPath()).isEqualTo("datasets/validation-key.csv");
+        assertThat(saved.getModel()).isEqualTo(model);
+        assertThat(saved.getDataset()).isEqualTo(dataset);
+        assertThat(saved.getAuditName()).isEqualTo("audit-name");
         assertThat(saved.getSensitiveFeatures()).isEqualTo("age,gender");
+        assertThat(saved.getAssessmentId()).isEqualTo(7L);
+        assertThat(saved.getStatus()).isEqualTo(AuditStatus.PENDING);
     }
 
     @Test
-    void validationDatasetPath가_없으면_null로_저장한다() {
-        AiModelEntity aiModel = AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
+    void assessmentId가_없으면_null로_저장한다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
         given(userRepository.getReferenceById(USER_ID)).willReturn(user);
         given(auditRepository.save(any(AuditEntity.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        auditService.create(USER_ID, aiModel, "audit-name", "datasets/audit-key.csv", null, "age,gender");
+        auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", null);
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());
-        assertThat(captor.getValue().getValidationDatasetPath()).isNull();
+        assertThat(captor.getValue().getAssessmentId()).isNull();
     }
 }

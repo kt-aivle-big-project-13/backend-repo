@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.audit.entity;
 
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -30,6 +31,16 @@ public class AuditEntity extends BaseEntity {
     @JoinColumn(name = "model_id")
     private AiModelEntity model;
 
+    // 데이터셋은 재업로드해도 새 row로 쌓이고 수정 API가 없어 FK 참조만으로 안전함
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "dataset_id")
+    private DatasetEntity dataset;
+
+    // 고영향 AI 사전진단 건 ID (스킵 시 미전달, nullable). 사전진단 도메인은
+    // 별도로 개발 중이라 FK로 엮지 않고 참조값만 보관한다.
+    @Column(name = "assessment_id")
+    private Long assessmentId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     private UserEntity user;
@@ -37,15 +48,9 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "audit_name", nullable = false, length = 100)
     private String auditName;
 
-    // 감사 데이터 상대경로 (원본 미저장, 경로 참조)
-    @Column(name = "dataset_path", nullable = false, length = 255)
-    private String datasetPath;
-
-    // 검증 데이터 상대경로 (선택 업로드이므로 nullable)
-    @Column(name = "validation_dataset_path", length = 255)
-    private String validationDatasetPath;
-
-    // 민감변수 목록 (콤마 구분)
+    // 감사 생성 시점 데이터셋의 민감정보 스냅샷(콤마 구분). 감사가 시작되면 데이터셋은
+    // markAudited()로 잠겨 이후 수정이 막히지만, 이 감사가 실제로 사용한 값을 그대로
+    // 복사해 데이터셋과 무관하게 불변으로 남긴다.
     @Column(name = "sensitive_features", nullable = false, length = 255)
     private String sensitiveFeatures;
 
@@ -63,16 +68,16 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "retention_until")
     private LocalDate retentionUntil;
 
-    public static AuditEntity create(AiModelEntity model, UserEntity user, String auditName, String datasetPath,
-                                      String validationDatasetPath, String sensitiveFeatures) {
+    public static AuditEntity create(AiModelEntity model, DatasetEntity dataset, UserEntity user, String auditName,
+                                      String sensitiveFeatures, Long assessmentId) {
         AuditEntity audit = new AuditEntity();
         audit.model = model;
+        audit.dataset = dataset;
         audit.user = user;
         audit.auditName = auditName;
-        audit.datasetPath = datasetPath;
-        audit.validationDatasetPath = validationDatasetPath;
         audit.sensitiveFeatures = sensitiveFeatures;
-        audit.status = AuditStatus.IN_PROGRESS;
+        audit.assessmentId = assessmentId;
+        audit.status = AuditStatus.PENDING;
         return audit;
     }
 }
