@@ -21,6 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 class AuditExplainabilityControllerTest {
@@ -65,6 +71,22 @@ class AuditExplainabilityControllerTest {
         assertThatThrownBy(() ->
                 controller.getExplainability(null, AUDIT_ID)
         ).isInstanceOf(UnauthorizedException.class);
+
+        verifyNoInteractions(explainabilityService);
+    }
+
+    @Test
+    void doesNotExposeExplainabilityResultSaveEndpoint() throws Exception {
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .build();
+
+        mockMvc.perform(
+                        post("/api/v1/audits/{auditId}/explainability", AUDIT_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}")
+                )
+                .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(explainabilityService);
     }
