@@ -29,6 +29,8 @@ public enum ErrorCode {
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "EU006", "만료된 토큰입니다. 재로그인이 필요합니다."),
     INVALID_RESET_TOKEN(HttpStatus.UNAUTHORIZED, "EU007", "재설정 토큰이 만료되었거나 유효하지 않습니다."),
     PASSWORD_RESET_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "EU008", "일치하는 회원 정보가 없습니다."),
+    INVALID_PASSWORD_POLICY(HttpStatus.BAD_REQUEST, "EU009", "영문, 숫자, 특수문자( ( ) < > \\\" ' ; 제외 ) 중 2종류를 조합하여 10~16자리, 3종류는 8~16자리로 입력해주세요."),
+    PASSWORD_CONFIRM_NOT_MATCH(HttpStatus.BAD_REQUEST, "EU010","비밀번호가 일치하지 않습니다."),
 
     // ===== Model / Audit (EM) =====
     MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "EM001", "모델을 찾을 수 없습니다."),
