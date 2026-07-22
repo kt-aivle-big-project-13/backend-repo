@@ -52,9 +52,9 @@ public class FairnessResultEntity {
     @Column(nullable = false, length = 20)
     private FairnessStatus status;
 
-    public static FairnessResultEntity create(AuditEntity audit, String attribute,
-                                              FairnessMetricCode metricCode, BigDecimal value,
-                                              BigDecimal threshold, FairnessStatus status) {
+    public static FairnessResultEntity of(AuditEntity audit, String attribute,
+                                           FairnessMetricCode metricCode, BigDecimal value,
+                                           BigDecimal threshold, FairnessStatus status) {
         FairnessResultEntity result = new FairnessResultEntity();
         result.audit = audit;
         result.attribute = attribute;
