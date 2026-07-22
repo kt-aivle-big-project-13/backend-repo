@@ -1,7 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.model.entity;
 
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
-import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -52,12 +51,6 @@ public class DatasetEntity extends BaseEntity {
     // 조회 화면에서 혼란을 줄 수 있어 감사에 쓰인 데이터셋은 민감정보 수정 자체를 막는다
     @Column(name = "audited", nullable = false)
     private boolean audited = false;
-
-    // 이 데이터셋이 감사 측정용인지, 임계값 보정용(valid_processed.csv)인지 구분.
-    // 업로드 API는 아직 AUDIT만 만들 수 있고, VALIDATION 업로드 경로는 후속 작업.
-    @Enumerated(EnumType.STRING)
-    @Column(name = "purpose", nullable = false, length = 20)
-    private DatasetPurpose purpose = DatasetPurpose.AUDIT;
 
     public static DatasetEntity create(AiModelEntity model, DataSource dataSource, String datasetFileKey,
                                         int rowCount, String columns) {
