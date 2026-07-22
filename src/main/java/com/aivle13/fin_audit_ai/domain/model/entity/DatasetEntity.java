@@ -76,4 +76,8 @@ public class DatasetEntity extends BaseEntity {
     public void markAudited() {
         this.audited = true;
     }
+
+    public void markAsValidation() {
+        this.purpose = DatasetPurpose.VALIDATION;
+    }
 }

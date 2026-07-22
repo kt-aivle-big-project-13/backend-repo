@@ -7,6 +7,7 @@ import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
+import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.exception.file.InvalidFileFormatException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
@@ -48,6 +49,7 @@ public class DatasetUploadService {
                 .orElseThrow(ModelNotFoundException::new);
 
         DataSource dataSource = request.dataSource() != null ? request.dataSource() : DataSource.CUSTOMER;
+        DatasetPurpose purpose = request.purpose() != null ? request.purpose() : DatasetPurpose.AUDIT;
 
         fileValidator.validateCsvFile(request.datasetFile(), "감사 데이터셋");
 
@@ -62,11 +64,14 @@ public class DatasetUploadService {
         DatasetEntity dataset = DatasetEntity.create(
                 model, dataSource, stored.s3Key(), summary.rowCount(), String.join(",", summary.columns())
         );
+        if (purpose == DatasetPurpose.VALIDATION) {
+            dataset.markAsValidation();
+        }
         datasetRepository.save(dataset);
 
         return new DatasetUploadResponse(
                 dataset.getId(), model.getId(), dataset.getDataSource().name(),
-                dataset.getRowCount(), summary.columns()
+                dataset.getPurpose().name(), dataset.getRowCount(), summary.columns()
         );
     }
 
