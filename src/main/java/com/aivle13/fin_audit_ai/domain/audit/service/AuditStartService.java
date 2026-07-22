@@ -9,6 +9,7 @@ import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
+import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
@@ -40,6 +41,9 @@ public class AuditStartService {
         DatasetEntity dataset = datasetRepository.findById(request.datasetId())
                 .orElseThrow(DatasetNotFoundException::new);
         if (!dataset.getModel().getId().equals(model.getId())) {
+            throw new DatasetNotFoundException();
+        }
+        if (dataset.getPurpose() != DatasetPurpose.AUDIT) {
             throw new DatasetNotFoundException();
         }
 
