@@ -48,7 +48,7 @@ POST /api/v1/audits
 
 백엔드는 감사 생성 직후 `202 Accepted`와 `PENDING` 상태를 반환한다.
 
-감사 생성 트랜잭션이 성공적으로 커밋되면 `AuditStartedEvent`가 발행된다. `ShapAnalysisEventListener`는 별도 비동기 스레드에서 이벤트를 처리하고 FastAPI AI 서버에 SHAP 분석을 요청한다.
+감사 생성 트랜잭션이 성공적으로 커밋되면 `AuditStartedEvent`가 발행된다. `AuditAnalysisEventListener`는 별도 비동기 스레드에서 이벤트를 처리하고 FastAPI AI 서버에 SHAP 분석을 요청한다. SHAP 분석이 성공하면 이어서 같은 리스너 안에서 공정성(Fairlearn) 분석까지 순차적으로 실행한다(자세한 내용은 `docs/fairness-ai-integration.md` 참고).
 
 트랜잭션이 롤백된 경우 이벤트 리스너는 실행되지 않는다.
 
