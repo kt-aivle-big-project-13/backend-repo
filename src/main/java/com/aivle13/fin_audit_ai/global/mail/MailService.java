@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.global.mail;
 
+import com.aivle13.fin_audit_ai.global.exception.mail.EmailSendFailedException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -115,10 +116,7 @@ public class MailService {
             mailSender.send(message);
 
         } catch (MessagingException | MailException e) {
-            throw new IllegalStateException(
-                    "비밀번호 재설정 메일 발송에 실패했습니다.",
-                    e
-            );
+            throw new EmailSendFailedException(e);
         }
     }
 }
