@@ -54,7 +54,8 @@ public class AuditStartService {
         }
 
         AuditEntity audit = auditService.create(
-                userId, model, dataset, request.auditName(), dataset.getSensitiveAttributes(), request.assessmentId()
+                userId, model, dataset, request.auditName(), dataset.getSensitiveAttributes(), request.assessmentId(),
+                request.thresholdMethod(), request.targetApprovalRate(), request.manualThreshold()
         );
         dataset.markAudited();
 

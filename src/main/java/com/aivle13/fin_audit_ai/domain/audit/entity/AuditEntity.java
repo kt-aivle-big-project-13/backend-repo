@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.entity;
 
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
@@ -10,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -57,6 +59,18 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "current_step", nullable = false)
     private int currentStep = 1;
 
+    // 승인·거절 기준값 산정 방식. AI 서버가 감사 실행 시점에 필요로 하는 정책값이라
+    // 감사 시작과 함께 받아 그대로 보관한다 (Fairlearn 컬럼 매핑은 AI 파이프라인이 자체 처리).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "threshold_method", nullable = false, length = 20)
+    private ThresholdMethod thresholdMethod;
+
+    @Column(name = "target_approval_rate", precision = 5, scale = 4)
+    private BigDecimal targetApprovalRate;
+
+    @Column(name = "manual_threshold", precision = 5, scale = 4)
+    private BigDecimal manualThreshold;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AuditStatus status;
@@ -69,7 +83,8 @@ public class AuditEntity extends BaseEntity {
     private LocalDate retentionUntil;
 
     public static AuditEntity create(AiModelEntity model, DatasetEntity dataset, UserEntity user, String auditName,
-                                      String sensitiveFeatures, Long assessmentId) {
+                                      String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
+                                      BigDecimal targetApprovalRate, BigDecimal manualThreshold) {
         AuditEntity audit = new AuditEntity();
         audit.model = model;
         audit.dataset = dataset;
@@ -77,6 +92,9 @@ public class AuditEntity extends BaseEntity {
         audit.auditName = auditName;
         audit.sensitiveFeatures = sensitiveFeatures;
         audit.assessmentId = assessmentId;
+        audit.thresholdMethod = thresholdMethod;
+        audit.targetApprovalRate = targetApprovalRate;
+        audit.manualThreshold = manualThreshold;
         audit.status = AuditStatus.PENDING;
         return audit;
     }

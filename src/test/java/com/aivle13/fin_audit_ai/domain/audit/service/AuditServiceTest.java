@@ -3,6 +3,7 @@ package com.aivle13.fin_audit_ai.domain.audit.service;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
@@ -16,6 +17,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +56,8 @@ class AuditServiceTest {
         given(auditRepository.save(any(AuditEntity.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", 7L);
+        auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", 7L,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5));
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());
@@ -63,6 +67,8 @@ class AuditServiceTest {
         assertThat(saved.getAuditName()).isEqualTo("audit-name");
         assertThat(saved.getSensitiveFeatures()).isEqualTo("age,gender");
         assertThat(saved.getAssessmentId()).isEqualTo(7L);
+        assertThat(saved.getThresholdMethod()).isEqualTo(ThresholdMethod.MANUAL);
+        assertThat(saved.getManualThreshold()).isEqualByComparingTo(BigDecimal.valueOf(0.5));
         assertThat(saved.getStatus()).isEqualTo(AuditStatus.PENDING);
     }
 
@@ -74,7 +80,8 @@ class AuditServiceTest {
         given(auditRepository.save(any(AuditEntity.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", null);
+        auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5));
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());

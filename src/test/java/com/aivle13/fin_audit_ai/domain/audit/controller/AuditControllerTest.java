@@ -1,5 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.audit.controller;
 
+import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
@@ -22,8 +25,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,6 +50,9 @@ class AuditControllerTest extends IntegrationTestSupport {
 
     @Autowired
     private DatasetRepository datasetRepository;
+
+    @Autowired
+    private AuditRepository auditRepository;
 
     private Long userId;
     private Long modelId;
@@ -73,9 +81,18 @@ class AuditControllerTest extends IntegrationTestSupport {
         dataset.updateSensitiveAttributes("gender");
     }
 
+    // 임계값 관련이 아닌 테스트용 기본값(MANUAL + 0.5)
     private String requestJson(Long modelId, Long datasetId, Long assessmentId, String auditName) {
+        return requestJson(modelId, datasetId, assessmentId, auditName, "MANUAL", null, "0.5");
+    }
+
+    private String requestJson(Long modelId, Long datasetId, Long assessmentId, String auditName,
+                                String thresholdMethod, String targetApprovalRate, String manualThreshold) {
         return "{\"modelId\": " + modelId + ", \"datasetId\": " + datasetId
-                + ", \"assessmentId\": " + assessmentId + ", \"auditName\": \"" + auditName + "\"}";
+                + ", \"assessmentId\": " + assessmentId + ", \"auditName\": \"" + auditName + "\""
+                + ", \"thresholdMethod\": " + (thresholdMethod == null ? "null" : "\"" + thresholdMethod + "\"")
+                + ", \"targetApprovalRate\": " + targetApprovalRate
+                + ", \"manualThreshold\": " + manualThreshold + "}";
     }
 
     @Test
@@ -202,5 +219,89 @@ class AuditControllerTest extends IntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사")))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("임계값 설정 방식이 없으면 400을 반환한다")
+    void start_thresholdMethodMissing() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사", null, null, "0.5"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("VALIDATION_DATASET 방식을 골라도 목표 승인율 없이 감사가 시작된다 (AI 서버 기본값 0.90 사용)")
+    void start_validationDatasetMethod_withoutTargetApprovalRate_succeeds() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사", "VALIDATION_DATASET", null, null))
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted());
+
+        AuditEntity saved = auditRepository.findAll().get(0);
+        assertThat(saved.getThresholdMethod()).isEqualTo(ThresholdMethod.VALIDATION_DATASET);
+        assertThat(saved.getTargetApprovalRate()).isNull();
+    }
+
+    @Test
+    @DisplayName("목표 승인율이 저장된다")
+    void start_savesTargetApprovalRate() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "VALIDATION_DATASET", "0.8", null))
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted());
+
+        AuditEntity saved = auditRepository.findAll().get(0);
+        assertThat(saved.getThresholdMethod()).isEqualTo(ThresholdMethod.VALIDATION_DATASET);
+        assertThat(saved.getTargetApprovalRate()).isEqualByComparingTo(BigDecimal.valueOf(0.8));
+    }
+
+    @Test
+    @DisplayName("목표 승인율이 0 이하이면 400을 반환한다")
+    void start_targetApprovalRate_tooLow() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "VALIDATION_DATASET", "0", null))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("목표 승인율이 1 이상이면 400을 반환한다")
+    void start_targetApprovalRate_tooHigh() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "VALIDATION_DATASET", "1", null))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("수동 임계값이 범위(0~1)를 벗어나면 400을 반환한다")
+    void start_manualThreshold_outOfRange() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "MANUAL", null, "1.5"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
     }
 }
