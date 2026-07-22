@@ -12,7 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/audits")
+@RequestMapping("/api/v1/audits")
 @RequiredArgsConstructor
 public class AuditController {
 
