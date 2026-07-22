@@ -10,6 +10,12 @@ spring:
   flyway:
     enabled: false
 
+  mail:
+    host: localhost
+    port: 3025
+    username: test@example.com
+    password: test-password
+
 logging:
   level:
     org.testcontainers: INFO

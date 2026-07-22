@@ -39,6 +39,19 @@ spring:
       password: ${REDIS_PASSWORD}
       timeout: 2000ms
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
   servlet:
     multipart:
       max-file-size: 100MB
@@ -79,3 +92,6 @@ cloud:
     region: ${AWS_REGION}
     s3:
       bucket: ${AWS_S3_BUCKET}
+
+app:
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
