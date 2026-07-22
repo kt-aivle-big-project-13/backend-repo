@@ -96,33 +96,30 @@ Content-Type: application/json
 ```json
 {
   "pipeline_status": "COMPLETED",
-  "overall_status": "REVIEW",
-  "key_metrics": [
-    {
+  "overall_status": "WARNING",
+  "key_metrics": {
+    "sensitive_contribution_ratio": {
       "metric": "SENSITIVE_CONTRIB",
       "label": "민감변수 기여비율",
       "value": 0.0647,
       "threshold": 0.2000,
       "status": "PASS"
     },
-    {
+    "global_explanation_stability": {
       "metric": "GLOBAL_STABILITY",
       "label": "전역 설명 안정성",
       "value": 0.9996,
       "threshold": 0.7000,
       "status": "PASS"
     },
-    {
+    "explanation_fidelity": {
       "metric": "FIDELITY",
       "label": "설명 충실성",
       "value": 0.4843,
       "threshold": 0.5000,
-      "status": "REVIEW"
+      "status": "WARNING"
     }
-  ],
-  "sensitive_contribution_ratio": 0.0647,
-  "global_explanation_stability": 0.9996,
-  "explanation_fidelity": 0.4843
+  }
 }
 ```
 
@@ -220,5 +217,4 @@ GET /api/v1/audits/{auditId}/explainability
 POST /api/v1/audits/{auditId}/explainability
 ```
 
-SHAP 결과 저장은 백엔드 내부의 `ShapAnalysisService`와 `
-```
+SHAP 결과 저장은 백엔드 내부의 `ShapAnalysisService`와 `ExplainabilityService`를 통해서만 수행된다.
