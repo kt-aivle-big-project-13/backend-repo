@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.diagnosis.controller;
 
-import com.aivle13.fin_audit_ai.domain.diagnosis.dto.PreDiagnosisRequestDto;
-import com.aivle13.fin_audit_ai.domain.diagnosis.dto.PreDiagnosisQuantitativeRequestDto;
-import com.aivle13.fin_audit_ai.domain.diagnosis.dto.PreDiagnosisResponseDto;
+import com.aivle13.fin_audit_ai.domain.diagnosis.dto.request.PreDiagnosisRequest;
+import com.aivle13.fin_audit_ai.domain.diagnosis.dto.request.PreDiagnosisQuantitativeRequest;
+import com.aivle13.fin_audit_ai.domain.diagnosis.dto.response.PreDiagnosisResponse;
 import com.aivle13.fin_audit_ai.domain.diagnosis.service.DiagnosisService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,30 +23,30 @@ public class DiagnosisController {
     private final DiagnosisService diagnosisService;
 
     @PostMapping("/models/{modelId}/impact-assessments")
-    public ResponseEntity<PreDiagnosisResponseDto> start(
+    public ResponseEntity<PreDiagnosisResponse> start(
             @PathVariable Long modelId
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(diagnosisService.start(modelId));
     }
 
     @PostMapping("/impact-assessments/{assessmentId}/stage1")
-    public ResponseEntity<PreDiagnosisResponseDto> diagnoseQualitative(
+    public ResponseEntity<PreDiagnosisResponse> diagnoseQualitative(
             @PathVariable("assessmentId") Long assessmentId,
-            @Valid @RequestBody PreDiagnosisRequestDto request
+            @Valid @RequestBody PreDiagnosisRequest request
     ) {
         return ResponseEntity.ok(diagnosisService.diagnoseQualitative(assessmentId, request));
     }
 
     @PostMapping("/impact-assessments/{assessmentId}/stage2")
-    public ResponseEntity<PreDiagnosisResponseDto> diagnoseQuantitative(
+    public ResponseEntity<PreDiagnosisResponse> diagnoseQuantitative(
             @PathVariable("assessmentId") Long assessmentId,
-            @Valid @RequestBody PreDiagnosisQuantitativeRequestDto request
+            @Valid @RequestBody PreDiagnosisQuantitativeRequest request
     ) {
         return ResponseEntity.ok(diagnosisService.diagnoseQuantitative(assessmentId, request));
     }
 
     @GetMapping("/impact-assessments/{assessmentId}")
-    public ResponseEntity<PreDiagnosisResponseDto> getResult(
+    public ResponseEntity<PreDiagnosisResponse> getResult(
             @PathVariable("assessmentId") Long assessmentId
     ) {
         return ResponseEntity.ok(diagnosisService.getResult(assessmentId));

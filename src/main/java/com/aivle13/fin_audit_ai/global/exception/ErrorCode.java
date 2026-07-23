@@ -48,6 +48,9 @@ public enum ErrorCode {
     DATASET_ALREADY_AUDITED(HttpStatus.CONFLICT, "EM013", "이미 감사에 사용된 데이터셋은 민감정보를 수정할 수 없습니다."),
     FAIRNESS_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM014", "공정성 감사 결과를 찾을 수 없습니다."),
 
+    // ===== Diagnosis (EP) =====
+    PRE_DIAGNOSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "EP001", "사전진단을 찾을 수 없습니다."),
+
     // ===== External API 연동 (EA) =====
     AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA001", "AI 서버 요청에 실패했습니다."),
     AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "EA002", "AI 서버 응답 시간이 초과되었습니다."),

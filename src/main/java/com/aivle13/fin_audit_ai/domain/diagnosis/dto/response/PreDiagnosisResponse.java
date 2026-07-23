@@ -1,8 +1,8 @@
-package com.aivle13.fin_audit_ai.domain.diagnosis.dto;
+package com.aivle13.fin_audit_ai.domain.diagnosis.dto.response;
 
 import com.aivle13.fin_audit_ai.domain.diagnosis.type.DiagnosisResult;
 
-public record PreDiagnosisResponseDto(
+public record PreDiagnosisResponse(
         Long assessmentId,
         Long modelId,
         boolean conditionMet,

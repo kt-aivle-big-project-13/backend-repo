@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.diagnosis.service;
 
-import com.aivle13.fin_audit_ai.domain.diagnosis.dto.PreDiagnosisQuantitativeRequestDto;
-import com.aivle13.fin_audit_ai.domain.diagnosis.dto.PreDiagnosisRequestDto;
-import com.aivle13.fin_audit_ai.domain.diagnosis.dto.PreDiagnosisResponseDto;
+import com.aivle13.fin_audit_ai.domain.diagnosis.dto.request.PreDiagnosisQuantitativeRequest;
+import com.aivle13.fin_audit_ai.domain.diagnosis.dto.request.PreDiagnosisRequest;
+import com.aivle13.fin_audit_ai.domain.diagnosis.dto.response.PreDiagnosisResponse;
 import com.aivle13.fin_audit_ai.domain.diagnosis.entity.DiagnosisAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.diagnosis.entity.PreDiagnosisEntity;
 import com.aivle13.fin_audit_ai.domain.diagnosis.repository.DiagnosisAnswerRepository;
@@ -12,6 +12,7 @@ import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
+import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,7 +40,7 @@ public class DiagnosisService {
     private final DiagnosisAnswerRepository diagnosisAnswerRepository;
 
     @Transactional
-    public PreDiagnosisResponseDto start(Long modelId) {
+    public PreDiagnosisResponse start(Long modelId) {
         AiModelEntity model = aiModelRepository.findById(modelId)
                 .orElseThrow(ModelNotFoundException::new);
 
@@ -48,11 +49,11 @@ public class DiagnosisService {
     }
 
     @Transactional
-    public PreDiagnosisResponseDto diagnoseQualitative(Long assessmentId, PreDiagnosisRequestDto request) {
+    public PreDiagnosisResponse diagnoseQualitative(Long assessmentId, PreDiagnosisRequest request) {
         validateGateAnswers(request.answers());
 
         PreDiagnosisEntity diagnosis = preDiagnosisRepository.findById(assessmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Pre-diagnosis not found."));
+                .orElseThrow(PreDiagnosisNotFoundException::new);
 
         if (diagnosis.getResult() != DiagnosisResult.IN_PROGRESS) {
             throw new BusinessException(
@@ -62,7 +63,7 @@ public class DiagnosisService {
         }
 
         boolean conditionMet = request.answers().stream()
-                .anyMatch(PreDiagnosisRequestDto.AnswerDto::answer);
+                .anyMatch(PreDiagnosisRequest.AnswerDto::answer);
 
         DiagnosisResult result = conditionMet
                 ? DiagnosisResult.HIGH_IMPACT
@@ -84,11 +85,11 @@ public class DiagnosisService {
     }
 
     @Transactional
-    public PreDiagnosisResponseDto diagnoseQuantitative(Long assessmentId, PreDiagnosisQuantitativeRequestDto request) {
+    public PreDiagnosisResponse diagnoseQuantitative(Long assessmentId, PreDiagnosisQuantitativeRequest request) {
         validateQuantitativeAnswers(request.answers());
 
         PreDiagnosisEntity diagnosis = preDiagnosisRepository.findById(assessmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Pre-diagnosis not found."));
+                .orElseThrow(PreDiagnosisNotFoundException::new);
 
         if (diagnosis.getResult() != DiagnosisResult.NEEDS_QUANTITATIVE) {
             throw new BusinessException(
@@ -120,17 +121,17 @@ public class DiagnosisService {
         return toResponse(diagnosis);
     }
 
-    public PreDiagnosisResponseDto getResult(Long assessmentId) {
+    public PreDiagnosisResponse getResult(Long assessmentId) {
         PreDiagnosisEntity diagnosis = preDiagnosisRepository.findById(assessmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Pre-diagnosis not found."));
+                .orElseThrow(PreDiagnosisNotFoundException::new);
 
         return toResponse(diagnosis);
     }
 
-    private void validateGateAnswers(List<PreDiagnosisRequestDto.AnswerDto> answers) {
+    private void validateGateAnswers(List<PreDiagnosisRequest.AnswerDto> answers) {
         Set<String> questionCodes = new HashSet<>();
 
-        for (PreDiagnosisRequestDto.AnswerDto answer : answers) {
+        for (PreDiagnosisRequest.AnswerDto answer : answers) {
             if (!GATE_QUESTION_CODES.contains(answer.questionCode())) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "GATE_01, GATE_02 questions only can be submitted.");
             }
@@ -145,10 +146,10 @@ public class DiagnosisService {
         }
     }
 
-    private void validateQuantitativeAnswers(List<PreDiagnosisQuantitativeRequestDto.AnswerDto> answers) {
+    private void validateQuantitativeAnswers(List<PreDiagnosisQuantitativeRequest.AnswerDto> answers) {
         Set<String> questionCodes = new HashSet<>();
 
-        for (PreDiagnosisQuantitativeRequestDto.AnswerDto answer : answers) {
+        for (PreDiagnosisQuantitativeRequest.AnswerDto answer : answers) {
             if (!QUANTITATIVE_QUESTION_CODES.contains(answer.questionCode())) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "A_01~A_03, B_01~B_03 questions only can be submitted.");
             }
@@ -164,13 +165,13 @@ public class DiagnosisService {
     }
 
     private int calculateGroupScore(
-            List<PreDiagnosisQuantitativeRequestDto.AnswerDto> answers,
+            List<PreDiagnosisQuantitativeRequest.AnswerDto> answers,
             Set<String> groupQuestionCodes,
             int score
     ) {
         return answers.stream()
                 .filter(answer -> groupQuestionCodes.contains(answer.questionCode()))
-                .filter(PreDiagnosisQuantitativeRequestDto.AnswerDto::answer)
+                .filter(PreDiagnosisQuantitativeRequest.AnswerDto::answer)
                 .mapToInt(answer -> score)
                 .sum();
     }
@@ -187,8 +188,8 @@ public class DiagnosisService {
         return GROUP_B_SCORE;
     }
 
-    private PreDiagnosisResponseDto toResponse(PreDiagnosisEntity diagnosis) {
-        return new PreDiagnosisResponseDto(
+    private PreDiagnosisResponse toResponse(PreDiagnosisEntity diagnosis) {
+        return new PreDiagnosisResponse(
                 diagnosis.getId(),
                 diagnosis.getModel().getId(),
                 diagnosis.isConditionMet(),
