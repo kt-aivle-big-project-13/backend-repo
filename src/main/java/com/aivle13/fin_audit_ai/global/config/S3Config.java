@@ -29,7 +29,7 @@ public class S3Config {
             @Value("${minio.secret-key}") String secretKey
     ) {
         return S3Client.builder()
-                .region(Region.of(region))
+                .region(Region.US_EAST_1) // MinIO는 실제 AWS 리전과 무관하므로 cloud.aws.region과 분리해 고정한다
                 .endpointOverride(URI.create(endpoint))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)
