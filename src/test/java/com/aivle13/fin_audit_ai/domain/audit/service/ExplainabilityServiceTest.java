@@ -187,6 +187,43 @@ class ExplainabilityServiceTest {
     }
 
     @Test
+    void throwsWhenInProgressAuditHasPartialMetricSet() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        given(audit.getStatus())
+                .willReturn(AuditStatus.IN_PROGRESS);
+
+        given(xaiResultRepository.findAllByAudit_IdAndMetricCodeIn(
+                eq(AUDIT_ID),
+                anyCollection()
+        )).willReturn(List.of(
+                createResult(
+                        XaiMetricCode.SENSITIVE_CONTRIB,
+                        "0.0647",
+                        "0.2000",
+                        XaiStatus.PASS
+                ),
+                createResult(
+                        XaiMetricCode.GLOBAL_STABILITY,
+                        "0.9996",
+                        "0.7000",
+                        XaiStatus.PASS
+                ),
+                createResult(
+                        XaiMetricCode.GLOBAL_STABILITY,
+                        "0.9900",
+                        "0.7000",
+                        XaiStatus.PASS
+                )
+        ));
+
+        assertThatThrownBy(() ->
+                explainabilityService.getExplainability(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditNotCompletedException.class);
+    }
+
+    @Test
     void throwsWhenAuditIsPending() {
         given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
