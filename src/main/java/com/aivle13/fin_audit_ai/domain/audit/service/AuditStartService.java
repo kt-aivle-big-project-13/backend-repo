@@ -53,16 +53,16 @@ public class AuditStartService {
             throw new DatasetNotFoundException();
         }
 
+        if (dataset.getPurpose() != DatasetPurpose.AUDIT) {
+            throw new DatasetNotFoundException();
+        }
+
         // 모델 스펙 자체를 저장하는 곳이 없어서, 계열 내 가장 최근 감사 데이터셋의 컬럼 구성을
         // 기준으로 삼아 재사용하려는 데이터셋과 비교한다.
         Optional<DatasetEntity> latestInGroup = datasetRepository
                 .findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(model.getModelGroupId(), DatasetPurpose.AUDIT);
         if (latestInGroup.isPresent() && !latestInGroup.get().getColumns().equals(dataset.getColumns())) {
             throw new IncompatibleDatasetSchemaException();
-        }
-
-        if (dataset.getPurpose() != DatasetPurpose.AUDIT) {
-            throw new DatasetNotFoundException();
         }
 
         // 민감정보는 데이터셋 버전 단위로 저장되므로, 이 데이터셋에 저장된 값이
