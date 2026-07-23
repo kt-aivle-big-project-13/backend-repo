@@ -31,6 +31,7 @@ public enum ErrorCode {
     PASSWORD_RESET_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "EU008", "일치하는 회원 정보가 없습니다."),
     INVALID_PASSWORD_POLICY(HttpStatus.BAD_REQUEST, "EU009", "영문, 숫자, 특수문자( ( ) < > \\\" ' ; 제외 ) 중 2종류를 조합하여 10~16자리, 3종류는 8~16자리로 입력해주세요."),
     PASSWORD_CONFIRM_NOT_MATCH(HttpStatus.BAD_REQUEST, "EU010","비밀번호가 일치하지 않습니다."),
+    REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "EU011", "유효하지 않은 리프레시 토큰입니다. 다시 로그인해주세요."),
 
     // ===== Model / Audit (EM) =====
     MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "EM001", "모델을 찾을 수 없습니다."),
@@ -46,6 +47,10 @@ public enum ErrorCode {
     DATASET_NOT_FOUND(HttpStatus.NOT_FOUND, "EM011", "데이터셋을 찾을 수 없습니다."),
     SENSITIVE_ATTRIBUTES_NOT_SELECTED(HttpStatus.BAD_REQUEST, "EM012", "민감정보가 선택되지 않았습니다."),
     DATASET_ALREADY_AUDITED(HttpStatus.CONFLICT, "EM013", "이미 감사에 사용된 데이터셋은 민감정보를 수정할 수 없습니다."),
+    FAIRNESS_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM014", "공정성 감사 결과를 찾을 수 없습니다."),
+
+    // ===== Diagnosis (EP) =====
+    PRE_DIAGNOSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "EP001", "사전진단을 찾을 수 없습니다."),
 
     // ===== External API 연동 (EA) =====
     AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA001", "AI 서버 요청에 실패했습니다."),

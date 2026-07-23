@@ -100,7 +100,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_success() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, 5L, "1차 정기감사"))
                         .with(authentication(asUser())))
@@ -113,7 +113,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("존재하지 않는 모델이면 404를 반환한다")
     void start_modelNotFound() throws Exception {
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(999999L, datasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
@@ -125,7 +125,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_datasetNotFound() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, 999999L, null, "1차 정기감사"))
                         .with(authentication(asUser())))
@@ -143,7 +143,7 @@ class AuditControllerTest extends IntegrationTestSupport {
         );
         Long otherModelId = aiModelRepository.save(otherModel).getId();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(otherModelId, datasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
@@ -153,7 +153,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("민감정보를 선택하지 않았으면 400을 반환한다")
     void start_sensitiveAttributesNotSelected() throws Exception {
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
@@ -169,7 +169,7 @@ class AuditControllerTest extends IntegrationTestSupport {
         DatasetEntity otherDataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/other-key.csv", 50, "age,gender,income");
         Long otherDatasetId = datasetRepository.save(otherDataset).getId();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, otherDatasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
@@ -181,7 +181,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_locksDatasetSensitiveAttributes() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
@@ -199,13 +199,13 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_alreadyInProgress() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
                 .andExpect(status().isAccepted());
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "2차 감사"))
                         .with(authentication(asUser())))
@@ -215,7 +215,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("인증 정보가 없으면 401을 반환한다")
     void start_unauthorized() throws Exception {
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사")))
                 .andExpect(status().isUnauthorized());
@@ -226,7 +226,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_thresholdMethodMissing() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사", null, null, "0.5"))
                         .with(authentication(asUser())))
@@ -238,7 +238,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_validationDatasetMethod_withoutTargetApprovalRate_succeeds() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사", "VALIDATION_DATASET", null, null))
                         .with(authentication(asUser())))
@@ -254,7 +254,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_savesTargetApprovalRate() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "VALIDATION_DATASET", "0.8", null))
@@ -271,7 +271,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_targetApprovalRate_tooLow() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "VALIDATION_DATASET", "0", null))
@@ -284,7 +284,7 @@ class AuditControllerTest extends IntegrationTestSupport {
     void start_targetApprovalRate_tooHigh() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "VALIDATION_DATASET", "1", null))
@@ -293,11 +293,26 @@ class AuditControllerTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("검증용(VALIDATION) 데이터셋을 감사 데이터셋으로 지정하면 404를 반환한다")
+    void start_datasetIsValidationPurpose() throws Exception {
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity validationDataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/valid-key.csv", 50, "age,gender,income");
+        validationDataset.markAsValidation();
+        Long validationDatasetId = datasetRepository.save(validationDataset).getId();
+
+        mockMvc.perform(post("/api/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, validationDatasetId, null, "1차 정기감사"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("수동 임계값이 범위(0~1)를 벗어나면 400을 반환한다")
     void start_manualThreshold_outOfRange() throws Exception {
         selectSensitiveAttributes();
 
-        mockMvc.perform(post("/api/audits")
+        mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson(modelId, datasetId, null, "1차 정기감사",
                                 "MANUAL", null, "1.5"))

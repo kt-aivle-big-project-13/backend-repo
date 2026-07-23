@@ -8,9 +8,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * AI 모델의 고영향(high-impact) 해당 여부를 판별하는 사전진단 결과.
- */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -50,5 +47,40 @@ public class PreDiagnosisEntity extends BaseEntity {
         entity.model = model;
         entity.result = result;
         return entity;
+    }
+
+    public static PreDiagnosisEntity create(
+            AiModelEntity model,
+            boolean conditionMet,
+            int groupAScore,
+            int groupBScore,
+            int totalScore,
+            DiagnosisResult result
+    ) {
+        PreDiagnosisEntity entity = new PreDiagnosisEntity();
+        entity.model = model;
+        entity.conditionMet = conditionMet;
+        entity.groupAScore = groupAScore;
+        entity.groupBScore = groupBScore;
+        entity.totalScore = totalScore;
+        entity.result = result;
+        return entity;
+    }
+
+    public void updateQualitativeResult(boolean conditionMet, DiagnosisResult result) {
+        this.conditionMet = conditionMet;
+        this.result = result;
+    }
+
+    public void updateQuantitativeResult(
+            int groupAScore,
+            int groupBScore,
+            int totalScore,
+            DiagnosisResult result
+    ) {
+        this.groupAScore = groupAScore;
+        this.groupBScore = groupBScore;
+        this.totalScore = totalScore;
+        this.result = result;
     }
 }

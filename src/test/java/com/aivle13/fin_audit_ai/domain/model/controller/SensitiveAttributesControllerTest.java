@@ -153,6 +153,21 @@ class SensitiveAttributesControllerTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("검증용(VALIDATION) 데이터셋이면 404를 반환한다")
+    void update_validationPurposeDataset() throws Exception {
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity dataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/valid-key.csv", 100, "age,income,gender");
+        dataset.markAsValidation();
+        Long datasetId = datasetRepository.save(dataset).getId();
+
+        mockMvc.perform(patch("/api/models/" + modelId + "/datasets/" + datasetId + "/sensitive-attributes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sensitiveAttributes\": [\"gender\"]}")
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("모델 소유자가 아닌 사용자가 요청하면 404를 반환한다")
     void update_notOwner() throws Exception {
         Long datasetId = uploadDataset("age,income,gender");

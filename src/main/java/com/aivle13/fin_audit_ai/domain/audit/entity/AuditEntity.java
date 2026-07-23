@@ -98,4 +98,16 @@ public class AuditEntity extends BaseEntity {
         audit.status = AuditStatus.PENDING;
         return audit;
     }
+    // SHAP 실행 시작
+    public void markInProgress() {
+        this.status = AuditStatus.IN_PROGRESS;
+    }
+    // SHAP 완료 후 Fairlearn 단계 이동
+    public void moveToStep(int step) {
+        this.currentStep = step;
+    }
+    // AI 서버 오류·타임아웃
+    public void markFailed() {
+        this.status = AuditStatus.FAILED;
+    }
 }

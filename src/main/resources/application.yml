@@ -95,3 +95,14 @@ cloud:
 
 app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+
+  ai-server:
+    enabled: ${AI_SERVER_ENABLED:false}
+    base-url: ${AI_SERVER_BASE_URL:http://localhost:8000}
+    connect-timeout: ${AI_SERVER_CONNECT_TIMEOUT:3s}
+    read-timeout: ${AI_SERVER_READ_TIMEOUT:120s}
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity: 1800000      # 30분 (ms)
+  refresh-token-validity: 1209600000  # 14일 (ms)

@@ -85,11 +85,37 @@ class DatasetControllerTest extends IntegrationTestSupport {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.modelId").value(modelId))
                 .andExpect(jsonPath("$.dataSource").value("CUSTOMER"))
+                .andExpect(jsonPath("$.purpose").value("AUDIT"))
                 .andExpect(jsonPath("$.rowCount").value(2))
                 .andExpect(jsonPath("$.columns[0]").value("age"))
                 .andExpect(jsonPath("$.columns[1]").value("income"))
                 .andExpect(jsonPath("$.columns[2]").value("gender"))
                 .andExpect(jsonPath("$.columns[3]").value("default"));
+    }
+
+    @Test
+    @DisplayName("purpose를 지정하지 않으면 AUDIT로 저장된다")
+    void upload_defaultsPurposeToAudit() throws Exception {
+        MockMultipartFile file = datasetFile("age,income\n30,5000\n");
+
+        mockMvc.perform(multipart("/api/models/" + modelId + "/datasets")
+                        .file(file)
+                        .with(authentication(asUser())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.purpose").value("AUDIT"));
+    }
+
+    @Test
+    @DisplayName("purpose=VALIDATION으로 업로드하면 검증용 데이터셋으로 저장된다")
+    void upload_validationPurpose() throws Exception {
+        MockMultipartFile file = datasetFile("age,income\n30,5000\n");
+
+        mockMvc.perform(multipart("/api/models/" + modelId + "/datasets")
+                        .file(file)
+                        .param("purpose", "VALIDATION")
+                        .with(authentication(asUser())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.purpose").value("VALIDATION"));
     }
 
     @Test
