@@ -5,7 +5,7 @@ import com.aivle13.fin_audit_ai.global.jwt.JwtAuthenticationEntryPoint;
 import com.aivle13.fin_audit_ai.global.jwt.JwtAuthenticationFilter;
 import com.aivle13.fin_audit_ai.global.jwt.JwtProperties;
 import com.aivle13.fin_audit_ai.global.jwt.JwtProvider;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
