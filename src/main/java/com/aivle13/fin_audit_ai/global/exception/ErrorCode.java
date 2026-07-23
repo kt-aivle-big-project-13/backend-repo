@@ -31,6 +31,7 @@ public enum ErrorCode {
     PASSWORD_RESET_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "EU008", "일치하는 회원 정보가 없습니다."),
     INVALID_PASSWORD_POLICY(HttpStatus.BAD_REQUEST, "EU009", "영문, 숫자, 특수문자( ( ) < > \\\" ' ; 제외 ) 중 2종류를 조합하여 10~16자리, 3종류는 8~16자리로 입력해주세요."),
     PASSWORD_CONFIRM_NOT_MATCH(HttpStatus.BAD_REQUEST, "EU010","비밀번호가 일치하지 않습니다."),
+    REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "EU011", "유효하지 않은 리프레시 토큰입니다. 다시 로그인해주세요."),
 
     // ===== Model / Audit (EM) =====
     MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "EM001", "모델을 찾을 수 없습니다."),
