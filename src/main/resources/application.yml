@@ -104,5 +104,5 @@ app:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity: 1800000      # 30분 (ms)
+  access-token-validity: 7200000      # 2시간 (ms)
   refresh-token-validity: 1209600000  # 14일 (ms)
