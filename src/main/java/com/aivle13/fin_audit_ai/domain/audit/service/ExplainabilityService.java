@@ -44,8 +44,12 @@ public class ExplainabilityService {
                 .findByIdAndUser_Id(auditId, userId)
                 .orElseThrow(AuditNotFoundException::new);
 
-        if (audit.getStatus() == AuditStatus.IN_PROGRESS) {
+        if (audit.getStatus() == AuditStatus.PENDING) {
             throw new AuditNotCompletedException();
+        }
+
+        if (audit.getStatus() == AuditStatus.FAILED) {
+            throw new AuditFailedException();
         }
 
         List<XaiResultEntity> results =
@@ -60,6 +64,9 @@ public class ExplainabilityService {
 
         if (results.size() != REQUIRED_METRICS.size()
                 || !resultMetricCodes.equals(REQUIRED_METRICS)) {
+            if (audit.getStatus() == AuditStatus.IN_PROGRESS) {
+                throw new AuditNotCompletedException();
+            }
             throw new ExplainabilityResultNotFoundException();
         }
 
@@ -101,6 +108,8 @@ public class ExplainabilityService {
                 auditId,
                 REQUIRED_METRICS
         );
+
+        xaiResultRepository.flush();
 
         xaiResultRepository.saveAll(results);
     }

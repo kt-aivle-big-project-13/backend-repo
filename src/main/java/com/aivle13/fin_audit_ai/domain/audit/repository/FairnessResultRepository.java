@@ -10,5 +10,7 @@ public interface FairnessResultRepository
 
     List<FairnessResultEntity> findAllByAudit_Id(Long auditId);
 
+    List<FairnessResultEntity> findAllByAudit_IdAndAttribute(Long auditId, String attribute);
+
     void deleteAllByAudit_Id(Long auditId);
 }
