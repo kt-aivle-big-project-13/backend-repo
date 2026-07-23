@@ -41,7 +41,7 @@ public class FairnessResultService {
                 .findByIdAndUser_Id(auditId, userId)
                 .orElseThrow(AuditNotFoundException::new);
 
-        if (audit.getStatus() == AuditStatus.IN_PROGRESS) {
+        if (audit.getStatus() == AuditStatus.PENDING || audit.getStatus() == AuditStatus.IN_PROGRESS) {
             throw new AuditNotCompletedException();
         }
 
