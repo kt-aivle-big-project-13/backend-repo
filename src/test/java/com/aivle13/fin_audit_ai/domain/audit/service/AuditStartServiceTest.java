@@ -11,11 +11,13 @@ import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
+import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.IncompatibleDatasetSchemaException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +46,7 @@ class AuditStartServiceTest {
     private static final Long OTHER_USER_ID = 2L;
     private static final Long MODEL_ID = 100L;
     private static final Long DATASET_ID = 200L;
+    private static final Long VALIDATION_DATASET_ID = 300L;
 
     @Mock
     private AiModelRepository aiModelRepository;
@@ -74,13 +79,23 @@ class AuditStartServiceTest {
     }
 
     private DatasetEntity auditDataset(AiModelEntity model) {
-        DatasetEntity dataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/audit.csv", 100, "age,gender,income");
+        return auditDataset(model, "age,gender,income");
+    }
+
+    private DatasetEntity auditDataset(AiModelEntity model, String columns) {
+        DatasetEntity dataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/audit.csv", 100, columns);
         dataset.updateSensitiveAttributes("age,gender");
         return dataset;
     }
 
     private AuditStartRequest request() {
-        return new AuditStartRequest(MODEL_ID, DATASET_ID, null, "audit-name", ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5));
+        return new AuditStartRequest(MODEL_ID, DATASET_ID, null, "audit-name", ThresholdMethod.MANUAL,
+                null, BigDecimal.valueOf(0.5), null);
+    }
+
+    private AuditStartRequest validationDatasetRequest(Long validationDatasetId) {
+        return new AuditStartRequest(MODEL_ID, DATASET_ID, null, "audit-name", ThresholdMethod.VALIDATION_DATASET,
+                BigDecimal.valueOf(0.9), null, validationDatasetId);
     }
 
     @Test
@@ -91,7 +106,7 @@ class AuditStartServiceTest {
         given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
         given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
         given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
-        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
+        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
         given(audit.getId()).willReturn(1L);
         given(audit.getStatus()).willReturn(AuditStatus.PENDING);
 
@@ -111,7 +126,7 @@ class AuditStartServiceTest {
         given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(currentModel));
         given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
         given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
-        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
+        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
         given(audit.getId()).willReturn(1L);
         given(audit.getStatus()).willReturn(AuditStatus.PENDING);
 
@@ -119,8 +134,45 @@ class AuditStartServiceTest {
 
         assertThat(response.auditId()).isEqualTo(1L);
         ArgumentCaptor<DatasetEntity> datasetCaptor = ArgumentCaptor.forClass(DatasetEntity.class);
-        verify(auditService).create(any(), any(), datasetCaptor.capture(), any(), any(), any(), any(), any(), any());
+        verify(auditService).create(any(), any(), datasetCaptor.capture(), any(), any(), any(), any(), any(), any(), any());
         assertThat(datasetCaptor.getValue()).isEqualTo(dataset);
+    }
+
+    @Test
+    void 계열_내_최근_데이터셋과_컬럼이_같으면_재사용을_허용한다() {
+        AiModelEntity currentModel = newModel(ownerUser);
+        AiModelEntity previousVersionModel = sameGroupModel(currentModel, ownerUser);
+        DatasetEntity dataset = auditDataset(previousVersionModel, "age,gender,income");
+        DatasetEntity latestInGroup = auditDataset(currentModel, "age,gender,income");
+        given(ownerUser.getId()).willReturn(USER_ID);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(currentModel));
+        given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
+        given(datasetRepository.findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(
+                currentModel.getModelGroupId(), DatasetPurpose.AUDIT)).willReturn(Optional.of(latestInGroup));
+        given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
+        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
+        given(audit.getId()).willReturn(1L);
+        given(audit.getStatus()).willReturn(AuditStatus.PENDING);
+
+        AuditStartResponse response = auditStartService.start(USER_ID, request());
+
+        assertThat(response.auditId()).isEqualTo(1L);
+    }
+
+    @Test
+    void 계열_내_최근_데이터셋과_컬럼이_다르면_거부한다() {
+        AiModelEntity currentModel = newModel(ownerUser);
+        AiModelEntity previousVersionModel = sameGroupModel(currentModel, ownerUser);
+        DatasetEntity dataset = auditDataset(previousVersionModel, "age,gender,income");
+        DatasetEntity latestInGroup = auditDataset(currentModel, "age,gender,income,region");
+        given(ownerUser.getId()).willReturn(USER_ID);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(currentModel));
+        given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
+        given(datasetRepository.findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(
+                currentModel.getModelGroupId(), DatasetPurpose.AUDIT)).willReturn(Optional.of(latestInGroup));
+
+        assertThatThrownBy(() -> auditStartService.start(USER_ID, request()))
+                .isInstanceOf(IncompatibleDatasetSchemaException.class);
     }
 
     @Test
@@ -185,6 +237,86 @@ class AuditStartServiceTest {
 
         assertThatThrownBy(() -> auditStartService.start(USER_ID, request()))
                 .isInstanceOf(AuditAlreadyInProgressException.class);
+    }
+
+    @Test
+    void 검증_데이터셋을_지정하지_않으면_계열_내_최신_VALIDATION_데이터셋을_자동_선택한다() {
+        AiModelEntity model = newModel(ownerUser);
+        DatasetEntity dataset = auditDataset(model);
+        DatasetEntity validationDataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/valid.csv", 50, "age,gender,income");
+        validationDataset.markAsValidation();
+        given(ownerUser.getId()).willReturn(USER_ID);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
+        given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
+        given(datasetRepository.findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(
+                model.getModelGroupId(), DatasetPurpose.VALIDATION)).willReturn(Optional.of(validationDataset));
+        given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
+        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
+        given(audit.getId()).willReturn(1L);
+        given(audit.getStatus()).willReturn(AuditStatus.PENDING);
+
+        auditStartService.start(USER_ID, validationDatasetRequest(null));
+
+        ArgumentCaptor<DatasetEntity> validationCaptor = ArgumentCaptor.forClass(DatasetEntity.class);
+        verify(auditService).create(any(), any(), any(), any(), any(), any(), any(), any(), any(), validationCaptor.capture());
+        assertThat(validationCaptor.getValue()).isEqualTo(validationDataset);
+    }
+
+    @Test
+    void 검증_데이터셋을_지정하면_계열_소속을_확인한_뒤_사용한다() {
+        AiModelEntity currentModel = newModel(ownerUser);
+        AiModelEntity previousVersionModel = sameGroupModel(currentModel, ownerUser);
+        DatasetEntity dataset = auditDataset(currentModel);
+        DatasetEntity chosenValidationDataset = DatasetEntity.create(
+                previousVersionModel, DataSource.CUSTOMER, "datasets/valid-v1.csv", 50, "age,gender,income");
+        chosenValidationDataset.markAsValidation();
+        given(ownerUser.getId()).willReturn(USER_ID);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(currentModel));
+        given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
+        given(datasetRepository.findById(VALIDATION_DATASET_ID)).willReturn(Optional.of(chosenValidationDataset));
+        given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
+        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
+        given(audit.getId()).willReturn(1L);
+        given(audit.getStatus()).willReturn(AuditStatus.PENDING);
+
+        auditStartService.start(USER_ID, validationDatasetRequest(VALIDATION_DATASET_ID));
+
+        ArgumentCaptor<DatasetEntity> validationCaptor = ArgumentCaptor.forClass(DatasetEntity.class);
+        verify(auditService).create(any(), any(), any(), any(), any(), any(), any(), any(), any(), validationCaptor.capture());
+        assertThat(validationCaptor.getValue()).isEqualTo(chosenValidationDataset);
+    }
+
+    @Test
+    void 지정한_검증_데이터셋이_VALIDATION_용도가_아니면_거부한다() {
+        AiModelEntity model = newModel(ownerUser);
+        DatasetEntity dataset = auditDataset(model);
+        DatasetEntity wrongPurposeDataset = auditDataset(model);
+        given(ownerUser.getId()).willReturn(USER_ID);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
+        given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
+        given(datasetRepository.findById(VALIDATION_DATASET_ID)).willReturn(Optional.of(wrongPurposeDataset));
+        given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
+
+        assertThatThrownBy(() -> auditStartService.start(USER_ID, validationDatasetRequest(VALIDATION_DATASET_ID)))
+                .isInstanceOf(DatasetNotFoundException.class);
+    }
+
+    @Test
+    void MANUAL이면_검증_데이터셋을_조회하지_않는다() {
+        AiModelEntity model = newModel(ownerUser);
+        DatasetEntity dataset = auditDataset(model);
+        given(ownerUser.getId()).willReturn(USER_ID);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
+        given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
+        given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
+        given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
+        given(audit.getId()).willReturn(1L);
+        given(audit.getStatus()).willReturn(AuditStatus.PENDING);
+
+        auditStartService.start(USER_ID, request());
+
+        verify(datasetRepository, never())
+                .findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(any(), eq(DatasetPurpose.VALIDATION));
     }
 
     @Test

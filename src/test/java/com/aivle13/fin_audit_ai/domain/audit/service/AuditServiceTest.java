@@ -57,7 +57,7 @@ class AuditServiceTest {
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", 7L,
-                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5));
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());
@@ -70,6 +70,7 @@ class AuditServiceTest {
         assertThat(saved.getThresholdMethod()).isEqualTo(ThresholdMethod.MANUAL);
         assertThat(saved.getManualThreshold()).isEqualByComparingTo(BigDecimal.valueOf(0.5));
         assertThat(saved.getStatus()).isEqualTo(AuditStatus.PENDING);
+        assertThat(saved.getValidationDataset()).isNull();
     }
 
     @Test
@@ -81,10 +82,27 @@ class AuditServiceTest {
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", null,
-                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5));
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
 
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());
         assertThat(captor.getValue().getAssessmentId()).isNull();
+    }
+
+    @Test
+    void 검증_데이터셋을_지정하면_그대로_저장한다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        DatasetEntity validationDataset = DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/valid.csv", 50, "age,gender,income");
+        given(userRepository.getReferenceById(USER_ID)).willReturn(user);
+        given(auditRepository.save(any(AuditEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", null,
+                ThresholdMethod.VALIDATION_DATASET, BigDecimal.valueOf(0.9), null, validationDataset);
+
+        ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
+        verify(auditRepository).save(captor.capture());
+        assertThat(captor.getValue().getValidationDataset()).isEqualTo(validationDataset);
     }
 }
