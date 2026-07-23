@@ -36,13 +36,7 @@ public class JwtProvider {
     }
 
     public String createAccessToken(Long userId, UserRole role) {
-        return createToken(
-                userId,
-                role,
-                TYPE_ACCESS,
-                jwtProperties.accessTokenValidity(),
-                false
-        );
+        return createToken(userId, role, TYPE_ACCESS, jwtProperties.accessTokenValidity(), false);
     }
 
     public String createRefreshToken(
@@ -74,18 +68,11 @@ public class JwtProvider {
     }
 
     public Long getUserId(String token) {
-        return Long.valueOf(
-                parseClaims(token).getSubject()
-        );
+        return Long.valueOf(parseClaims(token).getSubject());
     }
 
     public UserRole getRole(String token) {
-        return UserRole.valueOf(
-                parseClaims(token).get(
-                        CLAIM_ROLE,
-                        String.class
-                )
-        );
+        return UserRole.valueOf(parseClaims(token).get(CLAIM_ROLE, String.class));
     }
 
     public boolean getRememberMe(String token) {
@@ -100,9 +87,7 @@ public class JwtProvider {
     // 남은 유효시간(ms). 블랙리스트 TTL을 토큰 잔여 수명과 맞추기 위해 사용.
     public long getRemainingValidity(String token) {
         Date expiration = parseClaims(token).getExpiration();
-
-        return expiration.getTime()
-                - System.currentTimeMillis();
+        return expiration.getTime() - System.currentTimeMillis();
     }
 
     private String createToken(
@@ -113,8 +98,7 @@ public class JwtProvider {
             boolean rememberMe
     ) {
         Date now = new Date();
-        Date expiry =
-                new Date(now.getTime() + validityMillis);
+        Date expiry = new Date(now.getTime() + validityMillis);
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
@@ -127,14 +111,8 @@ public class JwtProvider {
                 .compact();
     }
 
-    private void validateTokenType(
-            String token,
-            String expectedType
-    ) {
-        String actualType = parseClaims(token).get(
-                CLAIM_TYPE,
-                String.class
-        );
+    private void validateTokenType(String token, String expectedType) {
+        String actualType = parseClaims(token).get(CLAIM_TYPE, String.class);
 
         if (!expectedType.equals(actualType)) {
             throw new InvalidTokenException();
@@ -152,9 +130,7 @@ public class JwtProvider {
         } catch (ExpiredJwtException ex) {
             throw new ExpiredTokenException();
 
-        } catch (JwtException
-                 | IllegalArgumentException ex) {
-
+        } catch (JwtException | IllegalArgumentException ex) {
             throw new InvalidTokenException();
         }
     }

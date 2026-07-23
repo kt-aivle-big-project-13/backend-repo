@@ -54,11 +54,10 @@ public class UserService {
                         )
                 );
 
-        String token =
-                tokenService.createToken(
-                        user.getId()
-                );
+        // 사용자에게 새로운 비밀번호 재설정 토큰 발급
+        String token = tokenService.createToken(user.getId());
 
+        // 발급된 토큰이 포함된 비밀번호 재설정 이메일 전송
         mailService.sendPasswordResetMail(
                 user.getEmail(),
                 token
@@ -88,8 +87,7 @@ public class UserService {
                 newPasswordConfirm
         );
 
-        Long id =
-                tokenService.consumeToken(token);
+        Long id = tokenService.consumeToken(token);
 
         if (id == null) {
             throw new BusinessException(

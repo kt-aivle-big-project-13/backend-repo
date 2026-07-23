@@ -34,8 +34,7 @@ public class MailService {
             String verificationCode
     ) {
         try {
-            MimeMessage message =
-                    mailSender.createMimeMessage();
+            MimeMessage message = mailSender.createMimeMessage();
 
             MimeMessageHelper helper =
                     new MimeMessageHelper(
@@ -200,8 +199,8 @@ public class MailService {
 
             mailSender.send(message);
 
-        } catch (MessagingException | MailException exception) {
-            throw new EmailSendFailedException(exception);
+        } catch (MessagingException | MailException e) {
+            throw new EmailSendFailedException(e);
         }
     }
 }
