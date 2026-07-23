@@ -43,7 +43,10 @@ public class AuditStartService {
 
         DatasetEntity dataset = datasetRepository.findById(request.datasetId())
                 .orElseThrow(DatasetNotFoundException::new);
-        if (!dataset.getModel().getId().equals(model.getId())) {
+        // 데이터셋이 반드시 이 모델 row에 속할 필요는 없다. 같은 사용자의 같은 모델 계열
+        // (modelGroupId)이기만 하면 이전 버전에 올린 데이터셋도 재사용할 수 있다.
+        if (!dataset.getModel().getUser().getId().equals(userId)
+                || !dataset.getModel().getModelGroupId().equals(model.getModelGroupId())) {
             throw new DatasetNotFoundException();
         }
         if (dataset.getPurpose() != DatasetPurpose.AUDIT) {
