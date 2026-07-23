@@ -23,6 +23,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -56,20 +57,35 @@ class AuditFairnessControllerTest {
                         )
                 );
 
-        given(fairnessResultService.getFairness(USER_ID, AUDIT_ID))
+        given(fairnessResultService.getFairness(USER_ID, AUDIT_ID, null))
                 .willReturn(expected);
 
         ResponseEntity<FairnessResultResponse> response =
-                controller.getFairness(USER_ID, AUDIT_ID);
+                controller.getFairness(USER_ID, AUDIT_ID, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
     }
 
     @Test
+    void passesAttributeFilterToService() {
+        FairnessResultResponse expected =
+                new FairnessResultResponse(AUDIT_ID, "FAIRLEARN", List.of());
+
+        given(fairnessResultService.getFairness(USER_ID, AUDIT_ID, "CODE_GENDER"))
+                .willReturn(expected);
+
+        ResponseEntity<FairnessResultResponse> response =
+                controller.getFairness(USER_ID, AUDIT_ID, "CODE_GENDER");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(fairnessResultService).getFairness(USER_ID, AUDIT_ID, "CODE_GENDER");
+    }
+
+    @Test
     void throwsWhenUserIsNotAuthenticated() {
         assertThatThrownBy(() ->
-                controller.getFairness(null, AUDIT_ID)
+                controller.getFairness(null, AUDIT_ID, null)
         ).isInstanceOf(UnauthorizedException.class);
 
         verifyNoInteractions(fairnessResultService);
