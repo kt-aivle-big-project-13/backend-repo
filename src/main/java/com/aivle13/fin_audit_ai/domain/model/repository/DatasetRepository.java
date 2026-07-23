@@ -10,4 +10,6 @@ public interface DatasetRepository extends JpaRepository<DatasetEntity, Long> {
     Optional<DatasetEntity> findByIdAndModel_IdAndModel_User_Id(Long id, Long modelId, Long userId);
 
     Optional<DatasetEntity> findFirstByModel_IdAndPurposeOrderByCreatedAtDesc(Long modelId, DatasetPurpose purpose);
+
+    Optional<DatasetEntity> findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(String modelGroupId, DatasetPurpose purpose);
 }

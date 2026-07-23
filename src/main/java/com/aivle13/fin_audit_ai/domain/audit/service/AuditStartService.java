@@ -12,6 +12,7 @@ import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.IncompatibleDatasetSchemaException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +51,15 @@ public class AuditStartService {
                 || !dataset.getModel().getModelGroupId().equals(model.getModelGroupId())) {
             throw new DatasetNotFoundException();
         }
+
+        // 모델 스펙 자체를 저장하는 곳이 없어서, 계열 내 가장 최근 감사 데이터셋의 컬럼 구성을
+        // 기준으로 삼아 재사용하려는 데이터셋과 비교한다.
+        Optional<DatasetEntity> latestInGroup = datasetRepository
+                .findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(model.getModelGroupId(), DatasetPurpose.AUDIT);
+        if (latestInGroup.isPresent() && !latestInGroup.get().getColumns().equals(dataset.getColumns())) {
+            throw new IncompatibleDatasetSchemaException();
+        }
+
         if (dataset.getPurpose() != DatasetPurpose.AUDIT) {
             throw new DatasetNotFoundException();
         }

@@ -48,6 +48,7 @@ public enum ErrorCode {
     SENSITIVE_ATTRIBUTES_NOT_SELECTED(HttpStatus.BAD_REQUEST, "EM012", "민감정보가 선택되지 않았습니다."),
     DATASET_ALREADY_AUDITED(HttpStatus.CONFLICT, "EM013", "이미 감사에 사용된 데이터셋은 민감정보를 수정할 수 없습니다."),
     FAIRNESS_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM014", "공정성 감사 결과를 찾을 수 없습니다."),
+    INCOMPATIBLE_DATASET_SCHEMA(HttpStatus.BAD_REQUEST, "EM015", "재사용하려는 데이터셋의 컬럼 구성이 이 모델 계열의 최근 데이터셋과 다릅니다."),
 
     // ===== Diagnosis (EP) =====
     PRE_DIAGNOSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "EP001", "사전진단을 찾을 수 없습니다."),
