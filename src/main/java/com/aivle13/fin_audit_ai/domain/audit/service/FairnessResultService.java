@@ -37,6 +37,10 @@ public class FairnessResultService {
     private final FairnessResultRepository fairnessResultRepository;
 
     public FairnessResultResponse getFairness(Long userId, Long auditId) {
+        return getFairness(userId, auditId, null);
+    }
+
+    public FairnessResultResponse getFairness(Long userId, Long auditId, String attribute) {
         AuditEntity audit = auditRepository
                 .findByIdAndUser_Id(auditId, userId)
                 .orElseThrow(AuditNotFoundException::new);
@@ -46,7 +50,9 @@ public class FairnessResultService {
         }
 
         List<FairnessResultEntity> results =
-                fairnessResultRepository.findAllByAudit_Id(auditId);
+                (attribute != null && !attribute.isBlank())
+                        ? fairnessResultRepository.findAllByAudit_IdAndAttribute(auditId, attribute)
+                        : fairnessResultRepository.findAllByAudit_Id(auditId);
 
         if (results.isEmpty()) {
             throw new FairnessResultNotFoundException();

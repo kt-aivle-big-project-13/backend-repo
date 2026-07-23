@@ -77,6 +77,26 @@ class FairnessResultServiceTest {
     }
 
     @Test
+    void filtersByAttributeWhenProvided() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getStatus()).willReturn(AuditStatus.COMPLIANT);
+
+        given(fairnessResultRepository.findAllByAudit_IdAndAttribute(AUDIT_ID, "CODE_GENDER"))
+                .willReturn(List.of(
+                        createResult("CODE_GENDER", FairnessMetricCode.DEMOGRAPHIC_PARITY,
+                                "0.0500", "0.1000", FairnessStatus.PASS)
+                ));
+
+        FairnessResultResponse response =
+                fairnessResultService.getFairness(USER_ID, AUDIT_ID, "CODE_GENDER");
+
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).attribute()).isEqualTo("CODE_GENDER");
+        verify(fairnessResultRepository).findAllByAudit_IdAndAttribute(AUDIT_ID, "CODE_GENDER");
+    }
+
+    @Test
     void throwsWhenAuditDoesNotExist() {
         given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
                 .willReturn(Optional.empty());
