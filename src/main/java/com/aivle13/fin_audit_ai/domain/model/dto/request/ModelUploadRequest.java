@@ -16,6 +16,10 @@ public record ModelUploadRequest(
         String version,
 
         // 미전달 시 CREDIT_SCORING으로 대체
-        ModelDomain domain
+        ModelDomain domain,
+
+        // 기존 모델의 새 버전으로 등록할 때만 사용. 지정하면 해당 모델의 계열(modelGroupId)을 이어받고,
+        // 미전달 시 완전히 새로운 모델로 취급해 새 계열을 발급한다.
+        Long previousModelId
 ) {
 }

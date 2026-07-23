@@ -29,7 +29,7 @@ public class ModelUploadService {
 
         AiModelEntity aiModel = aiModelService.create(
                 userId, request.modelName(), request.modelType(),
-                request.domain(), stored.s3Key(), request.version()
+                request.domain(), stored.s3Key(), request.version(), request.previousModelId()
         );
 
         return new ModelUploadResponse(
