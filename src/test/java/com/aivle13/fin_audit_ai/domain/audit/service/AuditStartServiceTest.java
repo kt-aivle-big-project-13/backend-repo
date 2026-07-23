@@ -249,6 +249,8 @@ class AuditStartServiceTest {
         given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
         given(datasetRepository.findById(DATASET_ID)).willReturn(Optional.of(dataset));
         given(datasetRepository.findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(
+                model.getModelGroupId(), DatasetPurpose.AUDIT)).willReturn(Optional.empty());
+        given(datasetRepository.findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(
                 model.getModelGroupId(), DatasetPurpose.VALIDATION)).willReturn(Optional.of(validationDataset));
         given(auditRepository.existsByModel_IdAndStatusIn(any(), any())).willReturn(false);
         given(auditService.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).willReturn(audit);
