@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditProgressService;
+import com.aivle13.fin_audit_ai.domain.audit.service.FairnessAnalysisService;
 import com.aivle13.fin_audit_ai.domain.audit.service.ShapAnalysisService;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerTimeoutException;
@@ -23,12 +24,15 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
-class ShapAnalysisEventListenerTest {
+class AuditAnalysisEventListenerTest {
 
     private static final Long AUDIT_ID = 1L;
 
     @Mock
     private ShapAnalysisService shapAnalysisService;
+
+    @Mock
+    private FairnessAnalysisService fairnessAnalysisService;
 
     @Mock
     private AuditProgressService auditProgressService;
@@ -43,17 +47,18 @@ class ShapAnalysisEventListenerTest {
     }
 
     @InjectMocks
-    private ShapAnalysisEventListener listener;
+    private AuditAnalysisEventListener listener;
 
     @Test
-    void processesShapAnalysisAndMovesToNextStep() {
+    void processesShapAndFairnessAnalysisInOrder() {
         AuditStartedEvent event = new AuditStartedEvent(AUDIT_ID);
 
         listener.handle(event);
 
         InOrder inOrder = inOrder(
                 auditProgressService,
-                shapAnalysisService
+                shapAnalysisService,
+                fairnessAnalysisService
         );
 
         inOrder.verify(auditProgressService)
@@ -62,13 +67,17 @@ class ShapAnalysisEventListenerTest {
                 .analyzeAndSave(AUDIT_ID);
         inOrder.verify(auditProgressService)
                 .markShapCompleted(AUDIT_ID);
+        inOrder.verify(fairnessAnalysisService)
+                .analyzeAndSave(AUDIT_ID);
+        inOrder.verify(auditProgressService)
+                .markFairnessCompleted(AUDIT_ID);
 
         verify(auditProgressService, never())
                 .markFailed(AUDIT_ID);
     }
 
     @Test
-    void marksAuditAsFailedWhenAiServerReturnsError() {
+    void marksAuditAsFailedWhenShapAiServerReturnsErrorAndDoesNotRunFairness() {
         willThrow(new AiServerErrorException())
                 .given(shapAnalysisService)
                 .analyzeAndSave(AUDIT_ID);
@@ -81,10 +90,11 @@ class ShapAnalysisEventListenerTest {
                 .markFailed(AUDIT_ID);
         verify(auditProgressService, never())
                 .markShapCompleted(AUDIT_ID);
+        verifyNoInteractions(fairnessAnalysisService);
     }
 
     @Test
-    void marksAuditAsFailedWhenAiServerTimesOut() {
+    void marksAuditAsFailedWhenShapAiServerTimesOutAndDoesNotRunFairness() {
         willThrow(new AiServerTimeoutException())
                 .given(shapAnalysisService)
                 .analyzeAndSave(AUDIT_ID);
@@ -97,10 +107,11 @@ class ShapAnalysisEventListenerTest {
                 .markFailed(AUDIT_ID);
         verify(auditProgressService, never())
                 .markShapCompleted(AUDIT_ID);
+        verifyNoInteractions(fairnessAnalysisService);
     }
 
     @Test
-    void marksAuditAsFailedWhenUnexpectedErrorOccurs() {
+    void marksAuditAsFailedWhenUnexpectedErrorOccursDuringShap() {
         willThrow(new IllegalStateException("unexpected error"))
                 .given(shapAnalysisService)
                 .analyzeAndSave(AUDIT_ID);
@@ -111,6 +122,25 @@ class ShapAnalysisEventListenerTest {
                 .markFailed(AUDIT_ID);
         verify(auditProgressService, never())
                 .markShapCompleted(AUDIT_ID);
+        verifyNoInteractions(fairnessAnalysisService);
+    }
+
+    @Test
+    void marksAuditAsFailedWhenFairnessAnalysisFails() {
+        willThrow(new AiServerErrorException())
+                .given(fairnessAnalysisService)
+                .analyzeAndSave(AUDIT_ID);
+
+        listener.handle(new AuditStartedEvent(AUDIT_ID));
+
+        verify(shapAnalysisService)
+                .analyzeAndSave(AUDIT_ID);
+        verify(auditProgressService)
+                .markShapCompleted(AUDIT_ID);
+        verify(auditProgressService)
+                .markFailed(AUDIT_ID);
+        verify(auditProgressService, never())
+                .markFairnessCompleted(AUDIT_ID);
     }
 
     @Test
@@ -147,6 +177,7 @@ class ShapAnalysisEventListenerTest {
         verify(auditProgressService, never())
                 .markShapCompleted(AUDIT_ID);
         verifyNoInteractions(shapAnalysisService);
+        verifyNoInteractions(fairnessAnalysisService);
     }
 
     @Test

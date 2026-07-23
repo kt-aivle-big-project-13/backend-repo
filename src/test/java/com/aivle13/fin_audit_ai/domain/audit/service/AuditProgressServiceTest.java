@@ -50,6 +50,16 @@ class AuditProgressServiceTest {
     }
 
     @Test
+    void movesAuditToCompletedStepWhenFairnessIsCompleted() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        auditProgressService.markFairnessCompleted(AUDIT_ID);
+
+        verify(audit).moveToStep(4);
+    }
+
+    @Test
     void marksAuditAsFailed() {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
