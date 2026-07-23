@@ -23,8 +23,9 @@ public class SecurityConfig {
             "/api/v1/auth/signup",
             "/api/v1/auth/login",
             "/api/v1/auth/password/find",
-            "/api/v1/auth/password/reset"
-
+            "/api/v1/auth/password/reset",
+            "/api/v1/auth/email/verification-code",
+            "/api/v1/auth/email/verification-code/confirm"
     };
 
     @Bean
@@ -47,6 +48,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(10);
     }
 }
