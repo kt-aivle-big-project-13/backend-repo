@@ -70,6 +70,10 @@ public class FairnessResultService {
             String attribute = entry.getKey();
             FairnessRunResponse.AttributeFairness fairness = entry.getValue();
 
+            if (fairness == null) {
+                throw new AuditFailedException();
+            }
+
             results.add(toEntity(
                     audit,
                     attribute,
