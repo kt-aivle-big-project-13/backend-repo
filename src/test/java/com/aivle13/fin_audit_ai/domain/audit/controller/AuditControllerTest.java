@@ -88,11 +88,18 @@ class AuditControllerTest extends IntegrationTestSupport {
 
     private String requestJson(Long modelId, Long datasetId, Long assessmentId, String auditName,
                                 String thresholdMethod, String targetApprovalRate, String manualThreshold) {
+        return requestJson(modelId, datasetId, assessmentId, auditName, thresholdMethod, targetApprovalRate, manualThreshold, null);
+    }
+
+    private String requestJson(Long modelId, Long datasetId, Long assessmentId, String auditName,
+                                String thresholdMethod, String targetApprovalRate, String manualThreshold,
+                                Long validationDatasetId) {
         return "{\"modelId\": " + modelId + ", \"datasetId\": " + datasetId
                 + ", \"assessmentId\": " + assessmentId + ", \"auditName\": \"" + auditName + "\""
                 + ", \"thresholdMethod\": " + (thresholdMethod == null ? "null" : "\"" + thresholdMethod + "\"")
                 + ", \"targetApprovalRate\": " + targetApprovalRate
-                + ", \"manualThreshold\": " + manualThreshold + "}";
+                + ", \"manualThreshold\": " + manualThreshold
+                + ", \"validationDatasetId\": " + validationDatasetId + "}";
     }
 
     @Test
@@ -318,5 +325,79 @@ class AuditControllerTest extends IntegrationTestSupport {
                                 "MANUAL", null, "1.5"))
                         .with(authentication(asUser())))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("같은 모델 계열의 다른 버전에 올린 데이터셋으로도 감사를 시작할 수 있다")
+    void start_reusesDatasetFromOtherVersionInSameGroup() throws Exception {
+        AiModelEntity currentModel = aiModelRepository.findById(modelId).orElseThrow();
+        AiModelEntity previousVersion = aiModelRepository.save(AiModelEntity.create(
+                currentModel.getUser(), "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
+                "models/model-v1.pkl", "0.9.0", currentModel.getModelGroupId()
+        ));
+        DatasetEntity reusedDataset = DatasetEntity.create(
+                previousVersion, DataSource.CUSTOMER, "datasets/v1-key.csv", 100, "age,gender,income"
+        );
+        reusedDataset.updateSensitiveAttributes("gender");
+        Long reusedDatasetId = datasetRepository.save(reusedDataset).getId();
+
+        mockMvc.perform(post("/api/v1/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, reusedDatasetId, null, "1차 정기감사"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted());
+    }
+
+    @Test
+    @DisplayName("VALIDATION_DATASET 방식이고 validationDatasetId를 지정하지 않으면 계열 내 최신 검증 데이터셋이 자동 선택되어 저장된다")
+    void start_autoSelectsLatestValidationDataset() throws Exception {
+        selectSensitiveAttributes();
+        AiModelEntity currentModel = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity validationDataset = DatasetEntity.create(
+                currentModel, DataSource.CUSTOMER, "datasets/valid-key.csv", 50, "age,gender,income"
+        );
+        validationDataset.markAsValidation();
+        Long validationDatasetId = datasetRepository.save(validationDataset).getId();
+
+        mockMvc.perform(post("/api/v1/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "VALIDATION_DATASET", "0.9", null))
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted());
+
+        List<AuditEntity> audits = auditRepository.findAll();
+        assertThat(audits).hasSize(1);
+        assertThat(audits.get(0).getValidationDataset().getId()).isEqualTo(validationDatasetId);
+    }
+
+    @Test
+    @DisplayName("validationDatasetId를 직접 지정하면 자동 선택 대신 그 데이터셋이 저장된다")
+    void start_usesExplicitlySpecifiedValidationDataset() throws Exception {
+        selectSensitiveAttributes();
+        AiModelEntity currentModel = aiModelRepository.findById(modelId).orElseThrow();
+
+        DatasetEntity olderValidationDataset = DatasetEntity.create(
+                currentModel, DataSource.CUSTOMER, "datasets/valid-old-key.csv", 50, "age,gender,income"
+        );
+        olderValidationDataset.markAsValidation();
+        datasetRepository.save(olderValidationDataset);
+
+        DatasetEntity chosenValidationDataset = DatasetEntity.create(
+                currentModel, DataSource.CUSTOMER, "datasets/valid-chosen-key.csv", 50, "age,gender,income"
+        );
+        chosenValidationDataset.markAsValidation();
+        Long chosenValidationDatasetId = datasetRepository.save(chosenValidationDataset).getId();
+
+        mockMvc.perform(post("/api/v1/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "VALIDATION_DATASET", "0.9", null, chosenValidationDatasetId))
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted());
+
+        List<AuditEntity> audits = auditRepository.findAll();
+        assertThat(audits).hasSize(1);
+        assertThat(audits.get(0).getValidationDataset().getId()).isEqualTo(chosenValidationDatasetId);
     }
 }
