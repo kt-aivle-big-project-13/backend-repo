@@ -4,9 +4,6 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.request.FairnessRunRequest;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.FairnessRunResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
-import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
-import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
-import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.ai.client.FairnessAnalysisClient;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
@@ -21,7 +18,6 @@ import java.util.List;
 public class FairnessAnalysisService {
 
     private final AuditRepository auditRepository;
-    private final DatasetRepository datasetRepository;
     private final FairnessAnalysisClient fairnessAnalysisClient;
     private final FairnessResultService fairnessResultService;
 
@@ -47,9 +43,9 @@ public class FairnessAnalysisService {
 
         validateSensitiveFeatures(audit.getSensitiveFeatures());
 
-        String validationDatasetFileKey = findValidationDatasetFileKey(
-                audit.getModel().getId()
-        );
+        String validationDatasetFileKey = audit.getValidationDataset() != null
+                ? audit.getValidationDataset().getDatasetFileKey()
+                : null;
 
         return new FairnessRunRequest(
                 audit.getId(),
@@ -61,16 +57,6 @@ public class FairnessAnalysisService {
                 audit.getManualThreshold(),
                 audit.getSensitiveFeatures()
         );
-    }
-
-    private String findValidationDatasetFileKey(Long modelId) {
-        return datasetRepository
-                .findFirstByModel_IdAndPurposeOrderByCreatedAtDesc(
-                        modelId,
-                        DatasetPurpose.VALIDATION
-                )
-                .map(DatasetEntity::getDatasetFileKey)
-                .orElse(null);
     }
 
     private void validateSensitiveFeatures(String sensitiveFeatures) {
