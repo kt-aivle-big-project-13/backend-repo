@@ -7,6 +7,11 @@ spring:
   flyway:
     enabled: false
 
+minio:
+  endpoint: ${MINIO_ENDPOINT}
+  access-key: ${MINIO_ROOT_USER}
+  secret-key: ${MINIO_ROOT_PASSWORD}
+
 logging:
   level:
     com.aivle13: DEBUG

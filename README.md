@@ -23,7 +23,7 @@
 <br>
 
 ### SW 아키텍처 (AI/프론트/백엔드)
-<img width="1628" height="784" alt="image" src="https://github.com/user-attachments/assets/2b89500e-3b07-4dd5-980d-f8ffd64f82de" />
+<img width="1731" height="908" alt="SW 아키텍쳐" src="https://github.com/user-attachments/assets/e2c2eaed-12bb-4453-b527-7390defd02ea" />
 
 <br>
 
@@ -272,6 +272,28 @@ class SomeIntegrationTest extends IntegrationTestSupport {
 - 리소스명은 복수 명사를 사용한다.
 - 동사 사용을 금지한다.
 - 단어 구분이 필요하면 하이픈(`-`)을 사용한다.
+
+<br><br>
+
+## 로컬 파일 스토리지 (MinIO)
+
+로컬 환경에는 실제 AWS 자격증명이 없으므로, `dev` 프로필에서는 `S3Config`가 S3 호환 오브젝트 스토리지인 [MinIO](https://min.io/)를 사용하도록 자동 분기된다(`prod`는 기존 AWS S3 그대로 사용). `S3FileStorageService` 등 파일 업로드/삭제 코드는 수정 없이 그대로 동작한다.
+
+**1. 컨테이너 실행**
+
+```bash
+docker compose up -d minio
+```
+
+**2. 콘솔 접속** ([http://localhost:9001](http://localhost:9001))
+
+`.env`의 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`로 로그인한다.
+
+**3. 버킷 생성**
+
+콘솔에서 `.env`의 `AWS_S3_BUCKET`과 동일한 이름으로 버킷을 하나 생성한다.
+
+세팅이 끝나면 애플리케이션에서 파일을 업로드/삭제했을 때 MinIO 콘솔(Buckets → 해당 버킷)에서 객체가 바로 확인된다.
 
 <br><br>
 

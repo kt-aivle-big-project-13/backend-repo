@@ -21,10 +21,11 @@ public class AuditService {
 
     public AuditEntity create(Long userId, AiModelEntity model, DatasetEntity dataset, String auditName,
                                String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
-                               BigDecimal targetApprovalRate, BigDecimal manualThreshold) {
+                               BigDecimal targetApprovalRate, BigDecimal manualThreshold,
+                               DatasetEntity validationDataset) {
         UserEntity user = userRepository.getReferenceById(userId);
         AuditEntity audit = AuditEntity.create(model, dataset, user, auditName, sensitiveFeatures, assessmentId,
-                thresholdMethod, targetApprovalRate, manualThreshold);
+                thresholdMethod, targetApprovalRate, manualThreshold, validationDataset);
 
         return auditRepository.save(audit);
     }
