@@ -1,5 +1,5 @@
 package com.aivle13.fin_audit_ai.domain.diagnosis.type;
 
 public enum DiagnosisResult {
-    HIGH_IMPACT, NOT_APPLICABLE
+    IN_PROGRESS, HIGH_IMPACT, NEEDS_QUANTITATIVE, NOT_APPLICABLE
 }
