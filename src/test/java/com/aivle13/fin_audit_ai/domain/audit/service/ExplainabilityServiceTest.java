@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.InOrder;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,6 +28,7 @@ import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
 import com.aivle13.fin_audit_ai.global.exception.model.ExplainabilityResultNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 
 
 import com.aivle13.fin_audit_ai.domain.audit.dto.request.ExplainabilityResultRequest;
@@ -35,6 +37,7 @@ import org.mockito.ArgumentCaptor;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.inOrder;
 
 @ExtendWith(MockitoExtension.class)
 class ExplainabilityServiceTest {
@@ -106,6 +109,50 @@ class ExplainabilityServiceTest {
     }
 
     @Test
+    void returnsExplainabilityMetricsWhileAuditIsInProgress() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        given(audit.getStatus())
+                .willReturn(AuditStatus.IN_PROGRESS);
+
+        given(xaiResultRepository.findAllByAudit_IdAndMetricCodeIn(
+                eq(AUDIT_ID),
+                anyCollection()
+        )).willReturn(List.of(
+                createResult(
+                        XaiMetricCode.SENSITIVE_CONTRIB,
+                        "0.0647",
+                        "0.2000",
+                        XaiStatus.PASS
+                ),
+                createResult(
+                        XaiMetricCode.GLOBAL_STABILITY,
+                        "0.9996",
+                        "0.7000",
+                        XaiStatus.PASS
+                ),
+                createResult(
+                        XaiMetricCode.FIDELITY,
+                        "0.4843",
+                        "0.5000",
+                        XaiStatus.REVIEW
+                )
+        ));
+
+        ExplainabilityResponse response =
+                explainabilityService.getExplainability(USER_ID, AUDIT_ID);
+
+        assertThat(response.metrics())
+                .extracting(XaiMetricResponse::metricCode)
+                .containsExactly(
+                        XaiMetricCode.SENSITIVE_CONTRIB,
+                        XaiMetricCode.GLOBAL_STABILITY,
+                        XaiMetricCode.FIDELITY
+                );
+    }
+
+    @Test
     void throwsWhenAuditDoesNotExist() {
         given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
                 .willReturn(Optional.empty());
@@ -123,9 +170,48 @@ class ExplainabilityServiceTest {
         given(audit.getStatus())
                 .willReturn(AuditStatus.IN_PROGRESS);
 
+        given(xaiResultRepository.findAllByAudit_IdAndMetricCodeIn(
+                eq(AUDIT_ID),
+                anyCollection()
+        )).willReturn(List.of());
+
         assertThatThrownBy(() ->
                 explainabilityService.getExplainability(USER_ID, AUDIT_ID)
         ).isInstanceOf(AuditNotCompletedException.class);
+
+        verify(xaiResultRepository)
+                .findAllByAudit_IdAndMetricCodeIn(
+                        eq(AUDIT_ID),
+                        anyCollection()
+                );
+    }
+
+    @Test
+    void throwsWhenAuditIsPending() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        given(audit.getStatus())
+                .willReturn(AuditStatus.PENDING);
+
+        assertThatThrownBy(() ->
+                explainabilityService.getExplainability(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditNotCompletedException.class);
+
+        verifyNoInteractions(xaiResultRepository);
+    }
+
+    @Test
+    void throwsWhenAuditHasFailed() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        given(audit.getStatus())
+                .willReturn(AuditStatus.FAILED);
+
+        assertThatThrownBy(() ->
+                explainabilityService.getExplainability(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditFailedException.class);
 
         verifyNoInteractions(xaiResultRepository);
     }
@@ -216,13 +302,17 @@ class ExplainabilityServiceTest {
 
         explainabilityService.saveExplainabilityResult(AUDIT_ID, request);
 
-        verify(xaiResultRepository)
+        InOrder inOrder = inOrder(xaiResultRepository);
+
+        inOrder.verify(xaiResultRepository)
                 .deleteAllByAudit_IdAndMetricCodeIn(
                         eq(AUDIT_ID),
                         anyCollection()
                 );
 
-        verify(xaiResultRepository)
+        inOrder.verify(xaiResultRepository).flush();
+
+        inOrder.verify(xaiResultRepository)
                 .saveAll(resultCaptor.capture());
 
         assertThat(resultCaptor.getValue())
