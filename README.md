@@ -23,7 +23,7 @@
 <br>
 
 ### SW 아키텍처 (AI/프론트/백엔드)
-<img width="1628" height="784" alt="image" src="https://github.com/user-attachments/assets/2b89500e-3b07-4dd5-980d-f8ffd64f82de" />
+<img width="1731" height="908" alt="SW 아키텍쳐" src="https://github.com/user-attachments/assets/e2c2eaed-12bb-4453-b527-7390defd02ea" />
 
 <br>
 
