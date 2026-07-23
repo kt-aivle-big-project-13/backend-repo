@@ -10,6 +10,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * 감사 대상으로 등록된 AI 모델.
  */
@@ -30,6 +32,11 @@ public class AiModelEntity extends BaseEntity {
 
     @Column(name = "model_name", nullable = false, length = 100)
     private String modelName;
+
+    // 같은 모델의 다른 버전들을 묶는 식별자. 버전 간 modelName이 바뀌어도 계열을 유지하기 위해
+    // 문자열 매칭 대신 별도 값으로 관리한다. 새 모델이면 새로 발급, 기존 모델의 새 버전이면 이어받는다.
+    @Column(name = "model_group_id", nullable = false, length = 36)
+    private String modelGroupId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "model_type", nullable = false, length = 20)
@@ -63,6 +70,7 @@ public class AiModelEntity extends BaseEntity {
         model.artifactPath = artifactPath;
         model.version = version;
         model.status = ModelStatus.ACTIVE;
+        model.modelGroupId = UUID.randomUUID().toString();
         return model;
     }
 }
