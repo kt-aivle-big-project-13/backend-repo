@@ -1,21 +1,18 @@
 package com.aivle13.fin_audit_ai.domain.user.controller;
 
+import com.aivle13.fin_audit_ai.domain.user.dto.request.EmailVerificationConfirmRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.EmailVerificationRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordFindRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordResetRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.SignupRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.EmailVerificationConfirmResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.EmailVerificationResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordFindResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordResetResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.SignupResponse;
 import com.aivle13.fin_audit_ai.domain.user.service.EmailVerificationService;
 import com.aivle13.fin_audit_ai.domain.user.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.EmailVerificationConfirmRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.EmailVerificationConfirmResponse;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -67,21 +64,6 @@ public class UserController {
                         );
 
         return ResponseEntity.ok(response);
-    }
-
-    // 회원가입
-    @PostMapping("/signup")
-    public ResponseEntity<SignupResponse> signup(
-            @Valid
-            @RequestBody
-            SignupRequest request
-    ) {
-        SignupResponse response =
-                userService.signup(request);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
     }
 
     // 비밀번호 찾기

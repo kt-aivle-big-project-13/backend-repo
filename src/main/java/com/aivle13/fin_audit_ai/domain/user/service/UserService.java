@@ -2,15 +2,12 @@ package com.aivle13.fin_audit_ai.domain.user.service;
 
 import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordFindRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordResetRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.SignupRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordFindResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordResetResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.SignupResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
-import com.aivle13.fin_audit_ai.global.exception.user.DuplicateEmailException;
 import com.aivle13.fin_audit_ai.global.mail.MailService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,75 +21,19 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordResetTokenService tokenService;
-    private final EmailVerificationService
-            emailVerificationService;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
 
     public UserService(
             UserRepository userRepository,
             PasswordResetTokenService tokenService,
-            EmailVerificationService emailVerificationService,
             MailService mailService,
             PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.tokenService = tokenService;
-        this.emailVerificationService =
-                emailVerificationService;
         this.mailService = mailService;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    // 회원가입
-    @Transactional
-    public SignupResponse signup(
-            SignupRequest request
-    ) {
-        String email =
-                normalizeEmail(request.getEmail());
-
-        String password =
-                request.getPassword();
-
-        String passwordConfirm =
-                request.getPasswordConfirm();
-
-        // 이미 사용 중인 이메일인지 확인
-        if (userRepository.existsByEmail(email)) {
-            throw new DuplicateEmailException();
-        }
-
-        emailVerificationService.validateVerifiedEmail(email);
-
-        // 비밀번호 정책 검증
-        validatePasswordPolicy(password);
-
-        // 비밀번호와 확인값 일치 여부 검증
-        validatePasswordConfirm(
-                password,
-                passwordConfirm
-        );
-
-        // 비밀번호 BCrypt 암호화
-        String passwordHash =
-                passwordEncoder.encode(password);
-
-        // 회원 엔티티 생성
-        // role은 create()에서 USER로 설정
-        UserEntity user = UserEntity.create(
-                request.getName().trim(),
-                request.getInstitution().trim(),
-                email,
-                passwordHash
-        );
-
-        userRepository.save(user);
-
-        // 회원가입 후 인증 완료 상태 삭제
-        emailVerificationService.consumeVerification(email);
-
-        return SignupResponse.success();
     }
 
     // 비밀번호 찾기

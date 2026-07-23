@@ -44,14 +44,17 @@ public class UserEntity extends BaseEntity {
             String name,
             String institution,
             String email,
-            String passwordHash
+            String passwordHash,
+            UserRole role
     ) {
         UserEntity user = new UserEntity();
         user.name = name;
         user.institution = institution;
         user.email = email;
         user.passwordHash = passwordHash;
-        user.role = UserRole.USER;
+        user.role = role;
+        user.lawSmsEnabled = true;
+        user.reauditAlertEnabled = true;
 
         return user;
     }
