@@ -1,7 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.auth.service;
 
 import com.aivle13.fin_audit_ai.global.exception.user.RefreshTokenMismatchException;
-import com.aivle13.fin_audit_ai.global.jwt.JwtProperties;
 import com.aivle13.fin_audit_ai.global.jwt.JwtProvider;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -20,24 +19,20 @@ public class RefreshTokenService {
 
     private final StringRedisTemplate redisTemplate;
     private final JwtProvider jwtProvider;
-    private final JwtProperties jwtProperties;
 
-    public RefreshTokenService(
-            StringRedisTemplate redisTemplate,
-            JwtProvider jwtProvider,
-            JwtProperties jwtProperties
-    ) {
+    public RefreshTokenService(StringRedisTemplate redisTemplate, JwtProvider jwtProvider) {
         this.redisTemplate = redisTemplate;
         this.jwtProvider = jwtProvider;
-        this.jwtProperties = jwtProperties;
     }
 
     // 로그인/재발급 시 새 리프레시 토큰 저장. 기존 값은 덮어써지며 자동 폐기(롤링).
     public void saveRefreshToken(Long userId, String refreshToken) {
+        long remainingValidity = jwtProvider.getRemainingValidity(refreshToken);
+
         redisTemplate.opsForValue().set(
                 REFRESH_KEY_PREFIX + userId,
                 refreshToken,
-                Duration.ofMillis(jwtProperties.refreshTokenValidity())
+                Duration.ofMillis(remainingValidity)
         );
     }
 

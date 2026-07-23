@@ -28,6 +28,89 @@ public class MailService {
         this.senderEmail = senderEmail;
     }
 
+    // 회원가입 이메일 인증번호 발송
+    public void sendVerificationCodeMail(
+            String receiverEmail,
+            String verificationCode
+    ) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(
+                            message,
+                            false,
+                            "UTF-8"
+                    );
+
+            helper.setFrom(senderEmail);
+            helper.setTo(receiverEmail);
+            helper.setSubject(
+                    "[FinAuditAI] 회원가입 이메일 인증번호"
+            );
+
+            String html = """
+                    <div style="
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 32px;
+                        font-family: Arial, sans-serif;
+                        color: #202939;
+                    ">
+                        <h1 style="
+                            margin-bottom: 24px;
+                            font-size: 28px;
+                        ">
+                            이메일 인증
+                        </h1>
+
+                        <p style="
+                            line-height: 1.7;
+                            font-size: 15px;
+                        ">
+                            FinAuditAI 회원가입을 위한
+                            이메일 인증번호입니다.
+                        </p>
+
+                        <div style="
+                            margin-top: 24px;
+                            margin-bottom: 24px;
+                            padding: 20px;
+                            border-radius: 8px;
+                            background-color: #f2f4f7;
+                            text-align: center;
+                        ">
+                            <strong style="
+                                font-size: 32px;
+                                letter-spacing: 8px;
+                                color: #3268e8;
+                            ">
+                                %s
+                            </strong>
+                        </div>
+
+                        <p style="
+                            color: #667085;
+                            font-size: 13px;
+                            line-height: 1.6;
+                        ">
+                            인증번호는 5분 동안 유효합니다.<br>
+                            본인이 요청하지 않았다면
+                            이 메일을 무시해주세요.
+                        </p>
+                    </div>
+                    """.formatted(verificationCode);
+
+            helper.setText(html, true);
+
+            mailSender.send(message);
+
+        } catch (MessagingException | MailException exception) {
+            throw new EmailSendFailedException(exception);
+        }
+    }
+
+    // 비밀번호 재설정 이메일 발송
     public void sendPasswordResetMail(
             String receiverEmail,
             String token
@@ -38,7 +121,8 @@ public class MailService {
                         + token;
 
         try {
-            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessage message =
+                    mailSender.createMimeMessage();
 
             MimeMessageHelper helper =
                     new MimeMessageHelper(
@@ -105,8 +189,8 @@ public class MailService {
                             line-height: 1.6;
                         ">
                             해당 링크는 30분 동안 유효합니다.<br>
-                            본인이 요청하지 않았다면 이 메일을
-                            무시해주세요.
+                            본인이 요청하지 않았다면
+                            이 메일을 무시해주세요.
                         </p>
                     </div>
                     """.formatted(resetUrl);
