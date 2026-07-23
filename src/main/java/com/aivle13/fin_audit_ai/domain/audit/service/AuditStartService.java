@@ -5,6 +5,7 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditStartResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
@@ -74,9 +75,11 @@ public class AuditStartService {
             throw new AuditAlreadyInProgressException();
         }
 
+        DatasetEntity validationDataset = resolveValidationDataset(userId, model, request);
+
         AuditEntity audit = auditService.create(
                 userId, model, dataset, request.auditName(), dataset.getSensitiveAttributes(), request.assessmentId(),
-                request.thresholdMethod(), request.targetApprovalRate(), request.manualThreshold()
+                request.thresholdMethod(), request.targetApprovalRate(), request.manualThreshold(), validationDataset
         );
         dataset.markAudited();
 
@@ -85,5 +88,29 @@ public class AuditStartService {
         );
 
         return new AuditStartResponse(audit.getId(), audit.getStatus().name(), audit.getCreatedAt());
+    }
+
+    // MANUAL이면 검증 데이터셋이 필요 없다. VALIDATION_DATASET이면 사용자가 지정한 데이터셋을
+    // 검증해서 쓰거나, 지정하지 않았으면 같은 모델 계열의 최신 VALIDATION 데이터셋을 자동 선택한다.
+    // 계열에 검증 데이터셋이 하나도 없으면 null을 반환하고, AI 서버가 감사 데이터셋으로 폴백한다.
+    private DatasetEntity resolveValidationDataset(Long userId, AiModelEntity model, AuditStartRequest request) {
+        if (request.thresholdMethod() != ThresholdMethod.VALIDATION_DATASET) {
+            return null;
+        }
+
+        if (request.validationDatasetId() != null) {
+            DatasetEntity validationDataset = datasetRepository.findById(request.validationDatasetId())
+                    .orElseThrow(DatasetNotFoundException::new);
+            if (!validationDataset.getModel().getUser().getId().equals(userId)
+                    || !validationDataset.getModel().getModelGroupId().equals(model.getModelGroupId())
+                    || validationDataset.getPurpose() != DatasetPurpose.VALIDATION) {
+                throw new DatasetNotFoundException();
+            }
+            return validationDataset;
+        }
+
+        return datasetRepository
+                .findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(model.getModelGroupId(), DatasetPurpose.VALIDATION)
+                .orElse(null);
     }
 }
