@@ -62,6 +62,12 @@ public class AiModelEntity extends BaseEntity {
     private ModelStatus status;
 
     public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, ModelDomain domain, String artifactPath, String version) {
+        return create(user, modelName, modelType, domain, artifactPath, version, UUID.randomUUID().toString());
+    }
+
+    // 기존 모델의 새 버전으로 등록할 때, 그 모델의 modelGroupId를 그대로 이어받기 위한 생성자
+    public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, ModelDomain domain,
+                                        String artifactPath, String version, String modelGroupId) {
         AiModelEntity model = new AiModelEntity();
         model.user = user;
         model.modelName = modelName;
@@ -70,7 +76,7 @@ public class AiModelEntity extends BaseEntity {
         model.artifactPath = artifactPath;
         model.version = version;
         model.status = ModelStatus.ACTIVE;
-        model.modelGroupId = UUID.randomUUID().toString();
+        model.modelGroupId = modelGroupId;
         return model;
     }
 }
