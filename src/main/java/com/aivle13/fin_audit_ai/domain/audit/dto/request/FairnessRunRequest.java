@@ -3,8 +3,8 @@ package com.aivle13.fin_audit_ai.domain.audit.dto.request;
 import java.math.BigDecimal;
 
 /**
- * AI 서버 {@code POST /api/fairness/audits} 호출에 필요한 정보.
- * 실제 멀티파트 요청 조립(S3 파일 스트림 읽기 등)은 클라이언트 구현체가 담당한다.
+ * AI 서버 {@code POST /internal/v1/fairness/analyze} 호출에 필요한 정보.
+ * 파일을 직접 전달하지 않고, 모델·데이터셋의 S3 객체 키를 JSON으로 전송한다.
  */
 public record FairnessRunRequest(
         Long auditId,
