@@ -14,8 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -47,7 +49,7 @@ class AiModelServiceTest {
                 "models/model.json", "1.0.0", null
         );
 
-        assertThat(saved.getModelGroupId()).isNotBlank();
+        assertThatCode(() -> UUID.fromString(saved.getModelGroupId())).doesNotThrowAnyException();
     }
 
     @Test
