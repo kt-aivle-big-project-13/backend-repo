@@ -10,9 +10,18 @@ export function login() {
         { headers: { 'Content-Type': 'application/json' } }
     );
 
-    check(res, { '로그인 성공': (r) => r.status === 200 });
+    const token = res.json('accessToken');
 
-    return res.json('accessToken');
+    const ok = check(res, {
+        '로그인 성공': (r) => r.status === 200,
+        'accessToken 발급': () => !!token,
+    });
+
+    if (!ok) {
+        throw new Error(`로그인 실패: status=${res.status}, body=${res.body}`);
+    }
+
+    return token;
 }
 
 export function authHeaders(token) {
