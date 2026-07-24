@@ -7,6 +7,7 @@ import com.aivle13.fin_audit_ai.domain.audit.service.AuditService;
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditStartService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -92,7 +93,7 @@ public class AuditController {
                     description = "감사 목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = AuditSummaryResponse.class)
+                            array = @ArraySchema(schema = @Schema(implementation = AuditSummaryResponse.class))
                     )
             ),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
