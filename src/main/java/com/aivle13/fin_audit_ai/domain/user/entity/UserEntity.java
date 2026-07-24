@@ -1,6 +1,5 @@
 package com.aivle13.fin_audit_ai.domain.user.entity;
 
-
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -8,9 +7,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 감사 플랫폼을 사용하는 금융기관 담당자 계정.
- */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -22,11 +18,11 @@ public class UserEntity extends BaseEntity {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false, length = 100)
-    private String institution;
-
     @Column(nullable = false, length = 50)
     private String name;
+
+    @Column(nullable = false, length = 100)
+    private String institution;
 
     @Column(nullable = false, length = 100, unique = true)
     private String email;
@@ -44,13 +40,22 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
-    public static UserEntity create(String institution, String name, String email, String passwordHash, UserRole role) {
+    public static UserEntity create(
+            String name,
+            String institution,
+            String email,
+            String passwordHash,
+            UserRole role
+    ) {
         UserEntity user = new UserEntity();
-        user.institution = institution;
         user.name = name;
+        user.institution = institution;
         user.email = email;
         user.passwordHash = passwordHash;
         user.role = role;
+        user.lawSmsEnabled = true;
+        user.reauditAlertEnabled = true;
+
         return user;
     }
 
@@ -58,9 +63,11 @@ public class UserEntity extends BaseEntity {
         this.passwordHash = newPasswordHash;
     }
 
-    public void updateNotificationPreferences(boolean lawSmsEnabled, boolean reauditAlertEnabled) {
+    public void updateNotificationPreferences(
+            boolean lawSmsEnabled,
+            boolean reauditAlertEnabled
+    ) {
         this.lawSmsEnabled = lawSmsEnabled;
         this.reauditAlertEnabled = reauditAlertEnabled;
     }
 }
-

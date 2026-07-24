@@ -21,6 +21,7 @@ public class JwtProvider {
 
     private static final String CLAIM_ROLE = "role";
     private static final String CLAIM_TYPE = "typ";
+    private static final String CLAIM_REMEMBER_ME = "rememberMe";
     private static final String TYPE_ACCESS = "access";
     private static final String TYPE_REFRESH = "refresh";
 
@@ -35,11 +36,25 @@ public class JwtProvider {
     }
 
     public String createAccessToken(Long userId, UserRole role) {
-        return createToken(userId, role, TYPE_ACCESS, jwtProperties.accessTokenValidity());
+        return createToken(userId, role, TYPE_ACCESS, jwtProperties.accessTokenValidity(), false);
     }
 
-    public String createRefreshToken(Long userId, UserRole role) {
-        return createToken(userId, role, TYPE_REFRESH, jwtProperties.refreshTokenValidity());
+    public String createRefreshToken(
+            Long userId,
+            UserRole role,
+            boolean rememberMe
+    ) {
+        long validityMillis = rememberMe
+                ? jwtProperties.rememberMeRefreshTokenValidity()
+                : jwtProperties.refreshTokenValidity();
+
+        return createToken(
+                userId,
+                role,
+                TYPE_REFRESH,
+                validityMillis,
+                rememberMe
+        );
     }
 
     // 액세스 토큰인지 검증 (리프레시 토큰을 인가 헤더에 넣어 쓰는 것을 차단)
@@ -60,13 +75,28 @@ public class JwtProvider {
         return UserRole.valueOf(parseClaims(token).get(CLAIM_ROLE, String.class));
     }
 
+    public boolean getRememberMe(String token) {
+        Boolean rememberMe = parseClaims(token).get(
+                CLAIM_REMEMBER_ME,
+                Boolean.class
+        );
+
+        return Boolean.TRUE.equals(rememberMe);
+    }
+
     // 남은 유효시간(ms). 블랙리스트 TTL을 토큰 잔여 수명과 맞추기 위해 사용.
     public long getRemainingValidity(String token) {
         Date expiration = parseClaims(token).getExpiration();
         return expiration.getTime() - System.currentTimeMillis();
     }
 
-    private String createToken(Long userId, UserRole role, String type, long validityMillis) {
+    private String createToken(
+            Long userId,
+            UserRole role,
+            String type,
+            long validityMillis,
+            boolean rememberMe
+    ) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + validityMillis);
 
@@ -74,6 +104,7 @@ public class JwtProvider {
                 .subject(String.valueOf(userId))
                 .claim(CLAIM_ROLE, role.name())
                 .claim(CLAIM_TYPE, type)
+                .claim(CLAIM_REMEMBER_ME, rememberMe)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(key)
@@ -95,8 +126,10 @@ public class JwtProvider {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
+
         } catch (ExpiredJwtException ex) {
             throw new ExpiredTokenException();
+
         } catch (JwtException | IllegalArgumentException ex) {
             throw new InvalidTokenException();
         }

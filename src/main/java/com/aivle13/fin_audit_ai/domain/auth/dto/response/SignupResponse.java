@@ -1,14 +1,12 @@
 package com.aivle13.fin_audit_ai.domain.auth.dto.response;
 
-import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
-
 public record SignupResponse(
-        Long id,
-        String email,
-        String name
+        String message
 ) {
 
-    public static SignupResponse from(UserEntity user) {
-        return new SignupResponse(user.getId(), user.getEmail(), user.getName());
+    public static SignupResponse success() {
+        return new SignupResponse(
+                "회원가입이 완료되었습니다."
+        );
     }
 }

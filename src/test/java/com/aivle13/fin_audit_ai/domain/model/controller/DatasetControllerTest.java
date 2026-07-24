@@ -1,7 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
+import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
+import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
@@ -28,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,21 +49,26 @@ class DatasetControllerTest extends IntegrationTestSupport {
     @Autowired
     private AiModelRepository aiModelRepository;
 
+    @Autowired
+    private DatasetRepository datasetRepository;
+
     @MockitoBean
     private FileStorageService fileStorageService;
 
     private Long userId;
     private Long modelId;
+    private AiModelEntity model;
 
     @BeforeEach
     void setUp() {
         UserEntity user = UserEntity.create("테스트기관", "홍길동", "dataset-test@example.com", "hash", UserRole.AUDITOR);
         userId = userRepository.save(user).getId();
 
-        AiModelEntity model = AiModelEntity.create(
+        model = AiModelEntity.create(
                 user, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model-key.pkl", "1.0.0"
         );
-        modelId = aiModelRepository.save(model).getId();
+        model = aiModelRepository.save(model);
+        modelId = model.getId();
 
         when(fileStorageService.store(any(), anyString()))
                 .thenReturn(new StoredFile("datasets/test-key.csv", "data.csv", "text/csv", 100L));
@@ -136,6 +145,61 @@ class DatasetControllerTest extends IntegrationTestSupport {
 
         mockMvc.perform(multipart("/api/models/" + modelId + "/datasets")
                         .file(file))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("같은 모델 계열이면 다른 버전 모델에 올린 데이터셋도 함께 조회된다")
+    void list_includesDatasetsFromOtherVersionsInSameGroup() throws Exception {
+        AiModelEntity previousVersion = AiModelEntity.create(
+                model.getUser(), "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
+                "models/model-key-v1.pkl", "0.9.0", model.getModelGroupId()
+        );
+        aiModelRepository.save(previousVersion);
+        datasetRepository.save(DatasetEntity.create(
+                previousVersion, DataSource.CUSTOMER, "datasets/v1-key.csv", 10, "age,income"
+        ));
+
+        mockMvc.perform(get("/api/models/" + modelId + "/datasets")
+                        .with(authentication(asUser())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].modelId").value(previousVersion.getId()));
+    }
+
+    @Test
+    @DisplayName("purpose를 지정하면 해당 용도의 데이터셋만 조회된다")
+    void list_filtersByPurpose() throws Exception {
+        datasetRepository.save(
+                DatasetEntity.create(model, DataSource.CUSTOMER, "datasets/audit-key.csv", 10, "age,income")
+        );
+        DatasetEntity validationDataset = DatasetEntity.create(
+                model, DataSource.CUSTOMER, "datasets/valid-key.csv", 10, "age,income"
+        );
+        validationDataset.markAsValidation();
+        datasetRepository.save(validationDataset);
+
+        mockMvc.perform(get("/api/models/" + modelId + "/datasets")
+                        .param("purpose", "VALIDATION")
+                        .with(authentication(asUser())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].datasetId").value(validationDataset.getId()))
+                .andExpect(jsonPath("$[0].purpose").value("VALIDATION"));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 모델이면 404를 반환한다")
+    void list_modelNotFound() throws Exception {
+        mockMvc.perform(get("/api/models/999999/datasets")
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 401을 반환한다")
+    void list_unauthorized() throws Exception {
+        mockMvc.perform(get("/api/models/" + modelId + "/datasets"))
                 .andExpect(status().isUnauthorized());
     }
 }

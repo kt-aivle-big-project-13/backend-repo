@@ -6,8 +6,6 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
-import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
-import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.ai.client.FairnessAnalysisClient;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
@@ -32,13 +30,9 @@ import static org.mockito.Mockito.verify;
 class FairnessAnalysisServiceTest {
 
     private static final Long AUDIT_ID = 21L;
-    private static final Long MODEL_ID = 5L;
 
     @Mock
     private AuditRepository auditRepository;
-
-    @Mock
-    private DatasetRepository datasetRepository;
 
     @Mock
     private FairnessAnalysisClient fairnessAnalysisClient;
@@ -79,13 +73,10 @@ class FairnessAnalysisServiceTest {
                 .willReturn(new BigDecimal("0.9"));
         given(audit.getManualThreshold()).willReturn(null);
 
-        given(model.getId()).willReturn(MODEL_ID);
         given(model.getArtifactPath()).willReturn("models/model.json");
         given(dataset.getDatasetFileKey()).willReturn("datasets/audit.csv");
 
-        given(datasetRepository.findFirstByModel_IdAndPurposeOrderByCreatedAtDesc(
-                MODEL_ID, DatasetPurpose.VALIDATION
-        )).willReturn(Optional.of(validationDataset));
+        given(audit.getValidationDataset()).willReturn(validationDataset);
         given(validationDataset.getDatasetFileKey())
                 .willReturn("datasets/valid.csv");
 
@@ -124,13 +115,10 @@ class FairnessAnalysisServiceTest {
         given(audit.getSensitiveFeatures()).willReturn("CODE_GENDER");
         given(audit.getAuditName()).willReturn("테스트 감사");
 
-        given(model.getId()).willReturn(MODEL_ID);
         given(model.getArtifactPath()).willReturn("models/model.json");
         given(dataset.getDatasetFileKey()).willReturn("datasets/audit.csv");
 
-        given(datasetRepository.findFirstByModel_IdAndPurposeOrderByCreatedAtDesc(
-                MODEL_ID, DatasetPurpose.VALIDATION
-        )).willReturn(Optional.empty());
+        given(audit.getValidationDataset()).willReturn(null);
 
         given(fairnessAnalysisClient.analyze(any(FairnessRunRequest.class)))
                 .willReturn(response);

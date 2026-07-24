@@ -38,6 +38,13 @@ public class AuditEntity extends BaseEntity {
     @JoinColumn(name = "dataset_id")
     private DatasetEntity dataset;
 
+    // thresholdMethod=VALIDATION_DATASET일 때 임계값 보정에 쓰는 데이터셋. 감사 생성 시점에
+    // 계열 내 최신 것으로 자동 선택되거나 사용자가 직접 고른 값으로 확정되어, 이후 Fairlearn
+    // 단계에서 다시 조회하지 않고 이 값을 그대로 쓴다. 검증 데이터셋이 없거나 MANUAL이면 null
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "validation_dataset_id")
+    private DatasetEntity validationDataset;
+
     // 고영향 AI 사전진단 건 ID (스킵 시 미전달, nullable). 사전진단 도메인은
     // 별도로 개발 중이라 FK로 엮지 않고 참조값만 보관한다.
     @Column(name = "assessment_id")
@@ -84,7 +91,8 @@ public class AuditEntity extends BaseEntity {
 
     public static AuditEntity create(AiModelEntity model, DatasetEntity dataset, UserEntity user, String auditName,
                                       String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
-                                      BigDecimal targetApprovalRate, BigDecimal manualThreshold) {
+                                      BigDecimal targetApprovalRate, BigDecimal manualThreshold,
+                                      DatasetEntity validationDataset) {
         AuditEntity audit = new AuditEntity();
         audit.model = model;
         audit.dataset = dataset;
@@ -95,6 +103,7 @@ public class AuditEntity extends BaseEntity {
         audit.thresholdMethod = thresholdMethod;
         audit.targetApprovalRate = targetApprovalRate;
         audit.manualThreshold = manualThreshold;
+        audit.validationDataset = validationDataset;
         audit.status = AuditStatus.PENDING;
         return audit;
     }

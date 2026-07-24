@@ -24,6 +24,10 @@ public record AuditStartRequest(
         // thresholdMethod=MANUAL일 때만 사용. AuditEntity.manualThreshold 컬럼(precision=5, scale=4)과 정밀도를 맞춘다.
         @DecimalMin("0") @DecimalMax("1")
         @Digits(integer = 1, fraction = 4)
-        BigDecimal manualThreshold
+        BigDecimal manualThreshold,
+
+        // thresholdMethod=VALIDATION_DATASET일 때만 사용. 미전달 시 같은 모델 계열의 최신 VALIDATION
+        // 데이터셋을 자동 선택하고, 지정하면 그 데이터셋을 검증한 뒤 사용한다.
+        Long validationDatasetId
 ) {
 }
