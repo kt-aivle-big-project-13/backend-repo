@@ -23,14 +23,14 @@ Redis 캐싱 적용 전/후 성능 개선을 수치로 비교하기 위해 k6로
 k6도 앱과 같은 호스트에서 도는 게 자연스러우므로 **로컬 설치**를 기본으로 한다.
 
 ### macOS
-​```
+```
 brew install k6
-​```
+```
 
 ### Windows
-​```
+```
 winget install k6
-​```
+```
 
 ### Linux (Debian/Ubuntu)
 ```bash
@@ -43,9 +43,9 @@ sudo apt-get update && sudo apt-get install k6
 ```
 
 ### 설치 확인
-​```bash
+```bash
 k6 version
-​```
+```
 
 > **Git Bash(MINGW64) 사용 시 주의**: `winget install k6`로 설치해도 이미 열려 있던
 > Git Bash 세션은 변경된 PATH를 못 읽어 `k6: command not found`가 뜰 수 있다.
@@ -162,17 +162,21 @@ VALUES
 시드가 끝나면 로그인부터 확인한다.
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+ACCESS_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"loadtest@example.com","password":"password1234","rememberMe":false}'
+  -d '{"email":"loadtest@example.com","password":"password1234","rememberMe":false}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['accessToken'])")
+
+echo "$ACCESS_TOKEN"
 ```
 
-`accessToken`이 정상 발급되면, 그 토큰으로 대상 API를 한 번씩 호출해 200 응답과
-데이터가 나오는지 확인한 뒤 k6 스크립트를 실행한다.
+`ACCESS_TOKEN`이 비어 있지 않으면, 그 토큰으로 대상 API를 한 번씩 호출해 200 응답과
+데이터가 나오는지 확인한 뒤 k6 스크립트를 실행한다. `1`은 `3-4`에서 `RETURNING`으로 얻은
+실제 `audit_id`로 바꿔서 사용한다.
 
 ```bash
 curl http://localhost:8080/api/v1/audits/1/explainability \
-  -H "Authorization: Bearer {accessToken}"
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 ---
@@ -181,3 +185,18 @@ curl http://localhost:8080/api/v1/audits/1/explainability \
 
 k6 스크립트 구성과 실행 방법은 `k6/` 폴더의 스크립트를 참고한다
 (`scenarios/explainability.js`, `scenarios/fairness.js`, `scenarios/dataset-list.js`).
+
+`config/env.js`의 기본값은 `--env`로 덮어쓸 수 있다. 시드한 데이터의 실제 `user_id`/`audit_id`에 맞춰
+아래처럼 값을 넘겨 실행한다.
+
+```bash
+k6 run \
+  --env BASE_URL=http://localhost:8080 \
+  --env TEST_EMAIL=loadtest@example.com \
+  --env TEST_PASSWORD=password1234 \
+  --env AUDIT_ID=1 \
+  k6/scenarios/explainability.js
+```
+
+`fairness.js`, `dataset-list.js`도 동일한 방식으로 실행한다 (`dataset-list.js`는 `AUDIT_ID` 대신
+`MODEL_ID`를 사용).
