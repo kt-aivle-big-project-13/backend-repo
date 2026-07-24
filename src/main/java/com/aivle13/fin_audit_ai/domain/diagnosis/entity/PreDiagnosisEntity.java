@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.diagnosis.entity;
 
 import com.aivle13.fin_audit_ai.domain.diagnosis.type.DiagnosisResult;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import jakarta.persistence.*;
 import com.aivle13.fin_audit_ai.global.entity.BaseEntity;
 import lombok.AccessLevel;
@@ -19,9 +20,13 @@ public class PreDiagnosisEntity extends BaseEntity {
     @Column(name = "diagnosis_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "model_id")
     private AiModelEntity model;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 
     @Column(name = "condition_met", nullable = false)
     private boolean conditionMet = false;
@@ -42,29 +47,15 @@ public class PreDiagnosisEntity extends BaseEntity {
     @Column(name = "report_path", length = 255)
     private String reportPath;
 
-    public static PreDiagnosisEntity create(AiModelEntity model, DiagnosisResult result) {
+    public static PreDiagnosisEntity create(UserEntity user, DiagnosisResult result) {
         PreDiagnosisEntity entity = new PreDiagnosisEntity();
-        entity.model = model;
+        entity.user = user;
         entity.result = result;
         return entity;
     }
 
-    public static PreDiagnosisEntity create(
-            AiModelEntity model,
-            boolean conditionMet,
-            int groupAScore,
-            int groupBScore,
-            int totalScore,
-            DiagnosisResult result
-    ) {
-        PreDiagnosisEntity entity = new PreDiagnosisEntity();
-        entity.model = model;
-        entity.conditionMet = conditionMet;
-        entity.groupAScore = groupAScore;
-        entity.groupBScore = groupBScore;
-        entity.totalScore = totalScore;
-        entity.result = result;
-        return entity;
+    public void linkModel(AiModelEntity model) {
+        this.model = model;
     }
 
     public void updateQualitativeResult(boolean conditionMet, DiagnosisResult result) {
