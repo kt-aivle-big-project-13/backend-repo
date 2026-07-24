@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -104,5 +106,32 @@ class AuditServiceTest {
         ArgumentCaptor<AuditEntity> captor = ArgumentCaptor.forClass(AuditEntity.class);
         verify(auditRepository).save(captor.capture());
         assertThat(captor.getValue().getValidationDataset()).isEqualTo(validationDataset);
+    }
+
+    @Test
+    void 사용자의_감사_목록을_요약해서_반환한다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        given(userRepository.getReferenceById(USER_ID)).willReturn(user);
+        given(auditRepository.save(any(AuditEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        AuditEntity audit = auditService.create(USER_ID, model, dataset, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        audit.markInProgress();
+        audit.moveToStep(3);
+        audit.complete(4, AuditStatus.COMPLIANT);
+
+        given(auditRepository.findByUser_IdOrderByCreatedAtDescIdDesc(USER_ID))
+                .willReturn(List.of(audit));
+
+        List<AuditSummaryResponse> result = auditService.list(USER_ID);
+
+        assertThat(result).hasSize(1);
+        AuditSummaryResponse summary = result.get(0);
+        assertThat(summary.modelName()).isEqualTo("my-model");
+        assertThat(summary.status()).isEqualTo(AuditStatus.COMPLIANT);
+        assertThat(summary.currentStep()).isEqualTo(4);
+        assertThat(summary.completedAt()).isNotNull();
     }
 }

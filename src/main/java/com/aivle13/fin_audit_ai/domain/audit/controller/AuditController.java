@@ -2,9 +2,12 @@ package com.aivle13.fin_audit_ai.domain.audit.controller;
 
 import com.aivle13.fin_audit_ai.domain.audit.dto.request.AuditStartRequest;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditStartResponse;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditSummaryResponse;
+import com.aivle13.fin_audit_ai.domain.audit.service.AuditService;
 import com.aivle13.fin_audit_ai.domain.audit.service.AuditStartService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(
         name = "Audit",
         description = "AI 모델 감사 실행 API"
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuditController {
 
     private final AuditStartService auditStartService;
+    private final AuditService auditService;
 
     @Operation(
             summary = "AI 모델 감사 시작",
@@ -75,5 +81,29 @@ public class AuditController {
 
         AuditStartResponse response = auditStartService.start(userId, request);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    @Operation(
+            summary = "감사 이력 목록 조회",
+            description = "사용자가 실행한 감사 목록을 최신순으로 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "감사 목록 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = AuditSummaryResponse.class))
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping
+    public ResponseEntity<List<AuditSummaryResponse>> list(@AuthenticationPrincipal Long userId) {
+        if (userId == null) {
+            throw new UnauthorizedException();
+        }
+
+        return ResponseEntity.ok(auditService.list(userId));
     }
 }
