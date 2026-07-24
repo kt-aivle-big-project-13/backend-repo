@@ -115,6 +115,12 @@ public class AuditEntity extends BaseEntity {
     public void moveToStep(int step) {
         this.currentStep = step;
     }
+    // 모든 분석 완료: 지표 판정으로 산출된 준수 상태로 전이하고 완료 시각을 기록
+    public void complete(int step, AuditStatus verdict) {
+        this.currentStep = step;
+        this.status = verdict;
+        this.completedAt = LocalDateTime.now();
+    }
     // AI 서버 오류·타임아웃
     public void markFailed() {
         this.status = AuditStatus.FAILED;

@@ -10,6 +10,8 @@ import java.util.List;
 public interface XaiResultRepository
         extends JpaRepository<XaiResultEntity, Long> {
 
+    List<XaiResultEntity> findAllByAudit_Id(Long auditId);
+
     List<XaiResultEntity> findAllByAudit_IdAndMetricCodeIn(
             Long auditId,
             Collection<XaiMetricCode> metricCodes
