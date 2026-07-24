@@ -20,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneId;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -72,6 +74,7 @@ public class AuthService {
         return SignupResponse.success();
     }
 
+    @Transactional
     public TokenResponse login(LoginRequest request) {
         recaptchaService.verify(request.recaptchaToken());
 
@@ -83,6 +86,8 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+
+        user.updateLastLoginAt(java.time.LocalDateTime.now(ZoneId.of("Asia/Seoul")));
 
         return issueTokens(user, request.isRememberMe());
     }

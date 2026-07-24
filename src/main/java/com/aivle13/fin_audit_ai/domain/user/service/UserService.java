@@ -1,13 +1,18 @@
 package com.aivle13.fin_audit_ai.domain.user.service;
 
+import com.aivle13.fin_audit_ai.domain.user.dto.request.ChangePasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordFindRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordResetRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.UpdateNameRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.ChangePasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordFindResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordResetResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.UserResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
+import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;
 import com.aivle13.fin_audit_ai.global.mail.MailService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,6 +44,48 @@ public class UserService {
         this.passwordValidator = passwordValidator;
     }
 
+    // 나의 프로필 조회
+    public UserResponse getMyProfile(Long userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        return UserResponse.from(user);
+    }
+
+    // 회원정보(이름) 수정
+    @Transactional
+    public UserResponse updateMyProfile(Long userId, UpdateNameRequest request) {
+        String name = request.name();
+
+        if (name == null || name.isBlank()) {
+            throw new BusinessException(ErrorCode.NO_UPDATABLE_FIELD);
+        }
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        user.updateName(name.trim());
+
+        return UserResponse.from(user);
+    }
+
+    // 마이페이지 비밀번호 변경
+    @Transactional
+    public ChangePasswordResponse changeMyPassword(Long userId, ChangePasswordRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.CURRENT_PASSWORD_MISMATCH);
+        }
+
+        passwordValidator.validate(request.newPassword(), request.newPasswordConfirm());
+
+        user.changePassword(passwordEncoder.encode(request.newPassword()));
+
+        return ChangePasswordResponse.success();
+    }
+
     // 비밀번호 찾기
     public PasswordFindResponse findPassword(
             PasswordFindRequest request
@@ -56,10 +103,8 @@ public class UserService {
                         )
                 );
 
-        // 사용자에게 새로운 비밀번호 재설정 토큰 발급
         String token = tokenService.createToken(user.getId());
 
-        // 발급된 토큰이 포함된 비밀번호 재설정 이메일 전송
         mailService.sendPasswordResetMail(
                 user.getEmail(),
                 token
@@ -87,8 +132,6 @@ public class UserService {
                 newPasswordConfirm
         );
 
-        // 토큰 조회와 삭제를 동시에 처리(consumeToken)
-        // 토큰이 유효하면 사용자 ID가 반환. 만료됐거나 이미 사용된 토큰이면 null 반환.
         Long userId = tokenService.consumeToken(token);
 
         if (userId == null) {
@@ -97,16 +140,13 @@ public class UserService {
             );
         }
 
-        // 토큰과 연결된 사용자 조회
         UserEntity user = userRepository
                 .findById(userId)
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 새 비밀번호를 BCrypt로 암호화
         String newPasswordHash = passwordEncoder.encode(newPassword);
 
-        // 암호화된 비밀번호를 사용자 엔터티에 반영
         user.changePassword(newPasswordHash);
 
         return PasswordResetResponse.success();
