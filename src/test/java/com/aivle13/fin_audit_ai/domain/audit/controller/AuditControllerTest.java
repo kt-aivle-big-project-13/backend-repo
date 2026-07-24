@@ -30,6 +30,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -399,5 +400,35 @@ class AuditControllerTest extends IntegrationTestSupport {
         List<AuditEntity> audits = auditRepository.findAll();
         assertThat(audits).hasSize(1);
         assertThat(audits.get(0).getValidationDataset().getId()).isEqualTo(chosenValidationDatasetId);
+    }
+
+    @Test
+    @DisplayName("감사 목록을 최신순으로 조회한다")
+    void list_returnsAuditsOrderedByLatest() throws Exception {
+        UserEntity user = userRepository.findById(userId).orElseThrow();
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity dataset = datasetRepository.findById(datasetId).orElseThrow();
+
+        AuditEntity firstAudit = AuditEntity.create(model, dataset, user, "1차 정기감사", "age,gender",
+                null, ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        auditRepository.save(firstAudit);
+
+        AuditEntity secondAudit = AuditEntity.create(model, dataset, user, "2차 정기감사", "age,gender",
+                null, ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        auditRepository.save(secondAudit);
+
+        mockMvc.perform(get("/api/v1/audits").with(authentication(asUser())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].auditId").value(secondAudit.getId()))
+                .andExpect(jsonPath("$[0].modelName").value("credit-model"))
+                .andExpect(jsonPath("$[1].auditId").value(firstAudit.getId()));
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 401을 반환한다")
+    void list_unauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/audits"))
+                .andExpect(status().isUnauthorized());
     }
 }

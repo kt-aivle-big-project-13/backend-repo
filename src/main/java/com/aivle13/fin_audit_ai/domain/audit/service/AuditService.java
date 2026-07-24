@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.audit.service;
 
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.AuditSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
@@ -9,8 +10,10 @@ import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,5 +31,12 @@ public class AuditService {
                 thresholdMethod, targetApprovalRate, manualThreshold, validationDataset);
 
         return auditRepository.save(audit);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditSummaryResponse> list(Long userId) {
+        return auditRepository.findByUser_IdOrderByCreatedAtDescIdDesc(userId).stream()
+                .map(AuditSummaryResponse::from)
+                .toList();
     }
 }
