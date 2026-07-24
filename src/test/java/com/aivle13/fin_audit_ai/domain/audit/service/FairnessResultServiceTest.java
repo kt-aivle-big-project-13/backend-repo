@@ -9,6 +9,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
+import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
@@ -20,6 +21,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -48,6 +50,15 @@ class FairnessResultServiceTest {
     @Mock
     private AuditEntity audit;
 
+    @Mock
+    private UserEntity user;
+
+    @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private FairnessResultService self;
+
     @InjectMocks
     private FairnessResultService fairnessResultService;
 
@@ -69,11 +80,27 @@ class FairnessResultServiceTest {
                 .willReturn(results);
 
         FairnessResultResponse response =
-                fairnessResultService.getFairness(USER_ID, AUDIT_ID);
+                fairnessResultService.getFairness(USER_ID, AUDIT_ID, null);
 
         assertThat(response.auditId()).isEqualTo(AUDIT_ID);
         assertThat(response.method()).isEqualTo("FAIRLEARN");
         assertThat(response.results()).hasSize(1);
+    }
+
+    @Test
+    void twoArgOverloadDelegatesToSelfProxyForCaching() {
+        FairnessResultResponse expected = FairnessResultResponse.of(AUDIT_ID, List.of(
+                createResult("CODE_GENDER", FairnessMetricCode.DEMOGRAPHIC_PARITY,
+                        "0.0500", "0.1000", FairnessStatus.PASS)
+        ));
+
+        given(self.getFairness(USER_ID, AUDIT_ID, null)).willReturn(expected);
+
+        FairnessResultResponse response = fairnessResultService.getFairness(USER_ID, AUDIT_ID);
+
+        assertThat(response).isSameAs(expected);
+        verify(self).getFairness(USER_ID, AUDIT_ID, null);
+        verifyNoInteractions(auditRepository, fairnessResultRepository);
     }
 
     @Test
@@ -102,7 +129,7 @@ class FairnessResultServiceTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                fairnessResultService.getFairness(USER_ID, AUDIT_ID)
+                fairnessResultService.getFairness(USER_ID, AUDIT_ID, null)
         ).isInstanceOf(AuditNotFoundException.class);
     }
 
@@ -113,7 +140,7 @@ class FairnessResultServiceTest {
         given(audit.getStatus()).willReturn(AuditStatus.IN_PROGRESS);
 
         assertThatThrownBy(() ->
-                fairnessResultService.getFairness(USER_ID, AUDIT_ID)
+                fairnessResultService.getFairness(USER_ID, AUDIT_ID, null)
         ).isInstanceOf(AuditNotCompletedException.class);
 
         verifyNoInteractions(fairnessResultRepository);
@@ -129,7 +156,7 @@ class FairnessResultServiceTest {
                 .willReturn(List.of());
 
         assertThatThrownBy(() ->
-                fairnessResultService.getFairness(USER_ID, AUDIT_ID)
+                fairnessResultService.getFairness(USER_ID, AUDIT_ID, null)
         ).isInstanceOf(FairnessResultNotFoundException.class);
     }
 
@@ -137,6 +164,10 @@ class FairnessResultServiceTest {
     void savesThreeMetricsPerAttributeWithJudgedStatus() {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
+        given(audit.getUser())
+                .willReturn(user);
+        given(user.getId())
+                .willReturn(USER_ID);
 
         FairnessRunResponse response = new FairnessRunResponse(
                 "21",

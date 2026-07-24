@@ -8,6 +8,7 @@ import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
+import com.aivle13.fin_audit_ai.global.config.CacheConfig;
 import com.aivle13.fin_audit_ai.global.exception.file.InvalidFileFormatException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
@@ -18,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -40,6 +43,7 @@ public class DatasetUploadService {
     private final FileStorageService fileStorageService;
     private final AiModelRepository aiModelRepository;
     private final DatasetRepository datasetRepository;
+    private final CacheManager cacheManager;
 
     private record CsvSummary(List<String> columns, int rowCount) {}
 
@@ -69,10 +73,25 @@ public class DatasetUploadService {
         }
         datasetRepository.save(dataset);
 
+        evictCache(userId, modelId, dataset.getPurpose());
+
         return new DatasetUploadResponse(
                 dataset.getId(), model.getId(), dataset.getDataSource().name(),
                 dataset.getPurpose().name(), dataset.getRowCount(), summary.columns()
         );
+    }
+
+    // list() 캐시 키가 (userId, modelId, purpose)이므로, 방금 저장한 purpose로 조회한 목록과
+    // purpose 없이 전체 조회한 목록 두 캐시 엔트리만 무효화한다.
+    private void evictCache(Long userId, Long modelId, DatasetPurpose purpose) {
+        Cache cache = cacheManager.getCache(CacheConfig.DATASETS_CACHE);
+
+        if (cache == null) {
+            return;
+        }
+
+        cache.evict(userId + ":" + modelId + ":" + purpose);
+        cache.evict(userId + ":" + modelId + ":" + null);
     }
 
     private CsvSummary readCsv(MultipartFile file) {

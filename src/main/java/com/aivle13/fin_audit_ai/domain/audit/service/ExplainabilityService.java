@@ -9,11 +9,15 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.global.config.CacheConfig;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.ExplainabilityResultNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.stream.Collectors;
@@ -35,7 +39,9 @@ public class ExplainabilityService {
 
     private final AuditRepository auditRepository;
     private final XaiResultRepository xaiResultRepository;
+    private final CacheManager cacheManager;
 
+    @Cacheable(cacheNames = CacheConfig.EXPLAINABILITY_CACHE, key = "#userId + ':' + #auditId")
     public ExplainabilityResponse getExplainability(
             Long userId,
             Long auditId
@@ -112,6 +118,16 @@ public class ExplainabilityService {
         xaiResultRepository.flush();
 
         xaiResultRepository.saveAll(results);
+
+        evictCache(audit.getUser().getId(), auditId);
+    }
+
+    private void evictCache(Long userId, Long auditId) {
+        Cache cache = cacheManager.getCache(CacheConfig.EXPLAINABILITY_CACHE);
+
+        if (cache != null) {
+            cache.evict(userId + ":" + auditId);
+        }
     }
 
     private void validateCompletedResult(

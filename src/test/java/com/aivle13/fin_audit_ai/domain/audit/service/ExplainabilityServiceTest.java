@@ -9,12 +9,14 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.InOrder;
+import org.springframework.cache.CacheManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -53,6 +55,12 @@ class ExplainabilityServiceTest {
 
     @Mock
     private AuditEntity audit;
+
+    @Mock
+    private UserEntity user;
+
+    @Mock
+    private CacheManager cacheManager;
 
     @InjectMocks
     private ExplainabilityService explainabilityService;
@@ -325,6 +333,10 @@ class ExplainabilityServiceTest {
     void savesExplainabilityResult() {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
+        given(audit.getUser())
+                .willReturn(user);
+        given(user.getId())
+                .willReturn(USER_ID);
 
         ExplainabilityResultRequest request =
                 new ExplainabilityResultRequest(
