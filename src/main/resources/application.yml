@@ -111,3 +111,5 @@ jwt:
 recaptcha:
   secret-key: ${RECAPTCHA_SECRET_KEY}
   verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
+  connect-timeout: ${RECAPTCHA_CONNECT_TIMEOUT:3s}
+  read-timeout: ${RECAPTCHA_READ_TIMEOUT:5s}
