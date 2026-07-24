@@ -78,7 +78,7 @@ k6 version
 BCrypt 해시 생성 (Python이 설치되어 있다면 가장 간단):
 ```bash
 pip install bcrypt
-python3 -c "import bcrypt; print(bcrypt.hashpw(b'password1234', bcrypt.gensalt()).decode())"
+python -c "import bcrypt; print(bcrypt.hashpw(b'password1234', bcrypt.gensalt()).decode())"
 ```
 
 출력된 해시 값을 아래 SQL의 `password_hash`에 넣는다.
