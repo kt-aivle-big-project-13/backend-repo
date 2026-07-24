@@ -12,8 +12,10 @@ public record LoginRequest(
         @NotBlank(message = "비밀번호를 입력해주세요.")
         String password,
 
-        Boolean rememberMe
+        Boolean rememberMe,
 
+        @NotBlank(message = "로봇 인증값이 필요합니다.")
+        String recaptchaToken
 ) {
         public boolean isRememberMe() {
                 return Boolean.TRUE.equals(rememberMe);

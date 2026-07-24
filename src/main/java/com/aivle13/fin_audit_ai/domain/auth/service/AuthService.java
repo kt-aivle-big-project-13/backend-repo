@@ -15,11 +15,13 @@ import com.aivle13.fin_audit_ai.global.jwt.JwtProperties;
 import com.aivle13.fin_audit_ai.global.jwt.JwtProvider;
 import com.aivle13.fin_audit_ai.global.validation.PasswordValidator;
 import com.aivle13.fin_audit_ai.global.util.EmailNormalizer;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AuthService {
 
@@ -30,24 +32,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final EmailVerificationService emailVerificationService;
     private final PasswordValidator passwordValidator;
-
-    public AuthService(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtProvider jwtProvider,
-            JwtProperties jwtProperties,
-            RefreshTokenService refreshTokenService,
-            EmailVerificationService emailVerificationService,
-            PasswordValidator passwordValidator
-    ) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtProvider = jwtProvider;
-        this.jwtProperties = jwtProperties;
-        this.refreshTokenService = refreshTokenService;
-        this.emailVerificationService = emailVerificationService;
-        this.passwordValidator = passwordValidator;
-    }
+    private final RecaptchaService recaptchaService;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -88,6 +73,8 @@ public class AuthService {
     }
 
     public TokenResponse login(LoginRequest request) {
+        recaptchaService.verify(request.recaptchaToken());
+
         String email = EmailNormalizer.normalize(request.email());
 
         UserEntity user = userRepository.findByEmail(email)
@@ -130,5 +117,4 @@ public class AuthService {
 
         return TokenResponse.of(accessToken, refreshToken, expiresIn, user);
     }
-
 }
