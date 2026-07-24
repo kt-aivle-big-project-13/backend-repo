@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -40,6 +42,9 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
     public static UserEntity create(
             String name,
             String institution,
@@ -61,6 +66,14 @@ public class UserEntity extends BaseEntity {
 
     public void changePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 
     public void updateNotificationPreferences(
