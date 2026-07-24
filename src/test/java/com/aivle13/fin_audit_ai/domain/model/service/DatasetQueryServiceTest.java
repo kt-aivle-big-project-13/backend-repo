@@ -23,6 +23,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class DatasetQueryServiceTest {
@@ -36,6 +38,8 @@ class DatasetQueryServiceTest {
     private DatasetRepository datasetRepository;
     @Mock
     private UserEntity user;
+    @Mock
+    private DatasetQueryService self;
 
     @InjectMocks
     private DatasetQueryService datasetQueryService;
@@ -50,14 +54,38 @@ class DatasetQueryServiceTest {
     }
 
     @Test
+    void list는_소유권을_확인한_뒤_캐시_프록시를_통해_modelGroupId로_위임한다() {
+        AiModelEntity model = model();
+        List<DatasetSummaryResponse> expected = List.of();
+        given(aiModelRepository.findByIdAndUser_Id(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
+        given(self.listByModelGroup(USER_ID, model.getModelGroupId(), null)).willReturn(expected);
+
+        List<DatasetSummaryResponse> result = datasetQueryService.list(USER_ID, MODEL_ID, null);
+
+        assertThat(result).isSameAs(expected);
+        verify(self).listByModelGroup(USER_ID, model.getModelGroupId(), null);
+        verifyNoInteractions(datasetRepository);
+    }
+
+    @Test
+    void 모델이_없거나_소유자가_아니면_예외가_발생한다() {
+        given(aiModelRepository.findByIdAndUser_Id(MODEL_ID, USER_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> datasetQueryService.list(USER_ID, MODEL_ID, null))
+                .isInstanceOf(ModelNotFoundException.class);
+
+        verifyNoInteractions(self);
+    }
+
+    @Test
     void purpose를_지정하지_않으면_계열_내_전체_데이터셋을_반환한다() {
         AiModelEntity model = model();
         DatasetEntity dataset = dataset(model);
-        given(aiModelRepository.findByIdAndUser_Id(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
         given(datasetRepository.findByModel_User_IdAndModel_ModelGroupIdOrderByCreatedAtDesc(
                 USER_ID, model.getModelGroupId())).willReturn(List.of(dataset));
 
-        List<DatasetSummaryResponse> result = datasetQueryService.list(USER_ID, MODEL_ID, null);
+        List<DatasetSummaryResponse> result =
+                datasetQueryService.listByModelGroup(USER_ID, model.getModelGroupId(), null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).datasetId()).isEqualTo(dataset.getId());
@@ -68,21 +96,13 @@ class DatasetQueryServiceTest {
         AiModelEntity model = model();
         DatasetEntity validationDataset = dataset(model);
         validationDataset.markAsValidation();
-        given(aiModelRepository.findByIdAndUser_Id(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
         given(datasetRepository.findByModel_User_IdAndModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(
                 USER_ID, model.getModelGroupId(), DatasetPurpose.VALIDATION)).willReturn(List.of(validationDataset));
 
-        List<DatasetSummaryResponse> result = datasetQueryService.list(USER_ID, MODEL_ID, DatasetPurpose.VALIDATION);
+        List<DatasetSummaryResponse> result =
+                datasetQueryService.listByModelGroup(USER_ID, model.getModelGroupId(), DatasetPurpose.VALIDATION);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).purpose()).isEqualTo("VALIDATION");
-    }
-
-    @Test
-    void 모델이_없거나_소유자가_아니면_예외가_발생한다() {
-        given(aiModelRepository.findByIdAndUser_Id(MODEL_ID, USER_ID)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> datasetQueryService.list(USER_ID, MODEL_ID, null))
-                .isInstanceOf(ModelNotFoundException.class);
     }
 }

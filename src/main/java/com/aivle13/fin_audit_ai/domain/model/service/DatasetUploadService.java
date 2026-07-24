@@ -73,7 +73,7 @@ public class DatasetUploadService {
         }
         datasetRepository.save(dataset);
 
-        evictCache(userId, modelId, dataset.getPurpose());
+        evictCache(userId, model.getModelGroupId(), dataset.getPurpose());
 
         return new DatasetUploadResponse(
                 dataset.getId(), model.getId(), dataset.getDataSource().name(),
@@ -81,17 +81,17 @@ public class DatasetUploadService {
         );
     }
 
-    // list() 캐시 키가 (userId, modelId, purpose)이므로, 방금 저장한 purpose로 조회한 목록과
-    // purpose 없이 전체 조회한 목록 두 캐시 엔트리만 무효화한다.
-    private void evictCache(Long userId, Long modelId, DatasetPurpose purpose) {
+    // DatasetQueryService.listByModelGroup() 캐시 키가 (userId, modelGroupId, purpose)이므로,
+    // 방금 저장한 purpose로 조회한 목록과 purpose 없이 전체 조회한 목록 두 캐시 엔트리만 무효화한다.
+    private void evictCache(Long userId, String modelGroupId, DatasetPurpose purpose) {
         Cache cache = cacheManager.getCache(CacheConfig.DATASETS_CACHE);
 
         if (cache == null) {
             return;
         }
 
-        cache.evict(userId + ":" + modelId + ":" + purpose);
-        cache.evict(userId + ":" + modelId + ":" + null);
+        cache.evict(userId + ":" + modelGroupId + ":" + purpose);
+        cache.evict(userId + ":" + modelGroupId + ":" + null);
     }
 
     private CsvSummary readCsv(MultipartFile file) {

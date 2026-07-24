@@ -9,6 +9,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import tools.jackson.databind.jsontype.PolymorphicTypeValidator;
 
 import java.time.Duration;
 import java.util.Map;
@@ -23,6 +25,11 @@ public class CacheConfig {
 
     private static final Duration DEFAULT_TTL = Duration.ofMinutes(10);
 
+    private static final PolymorphicTypeValidator CACHE_TYPE_VALIDATOR = BasicPolymorphicTypeValidator.builder()
+            .allowIfSubType("com.aivle13.fin_audit_ai")
+            .allowIfSubType("java.util")
+            .build();
+
     @Bean
     public RedisCacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
@@ -33,7 +40,7 @@ public class CacheConfig {
                 ))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
                         GenericJacksonJsonRedisSerializer.builder()
-                                .enableUnsafeDefaultTyping()
+                                .enableDefaultTyping(CACHE_TYPE_VALIDATOR)
                                 .build()
                 ));
 
