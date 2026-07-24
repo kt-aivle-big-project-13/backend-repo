@@ -9,11 +9,15 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
+import com.aivle13.fin_audit_ai.global.config.CacheConfig;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.FairnessResultNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +25,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class FairnessResultService {
 
@@ -35,11 +39,29 @@ public class FairnessResultService {
 
     private final AuditRepository auditRepository;
     private final FairnessResultRepository fairnessResultRepository;
+    private final CacheManager cacheManager;
 
-    public FairnessResultResponse getFairness(Long userId, Long auditId) {
-        return getFairness(userId, auditId, null);
+    // getFairness(2-arg)에서 @Cacheable이 붙은 3-arg 메서드를 this로 직접 호출하면
+    // 프록시를 우회해 캐싱이 적용되지 않는다. 자기 자신의 프록시를 주입받아 그걸 통해 호출한다.
+    private final FairnessResultService self;
+
+    public FairnessResultService(
+            AuditRepository auditRepository,
+            FairnessResultRepository fairnessResultRepository,
+            CacheManager cacheManager,
+            @Lazy FairnessResultService self
+    ) {
+        this.auditRepository = auditRepository;
+        this.fairnessResultRepository = fairnessResultRepository;
+        this.cacheManager = cacheManager;
+        this.self = self;
     }
 
+    public FairnessResultResponse getFairness(Long userId, Long auditId) {
+        return self.getFairness(userId, auditId, null);
+    }
+
+    @Cacheable(cacheNames = CacheConfig.FAIRNESS_CACHE, key = "#userId + ':' + #auditId + ':' + #attribute")
     public FairnessResultResponse getFairness(Long userId, Long auditId, String attribute) {
         AuditEntity audit = auditRepository
                 .findByIdAndUser_Id(auditId, userId)
@@ -107,6 +129,26 @@ public class FairnessResultService {
 
         fairnessResultRepository.deleteAllByAudit_Id(auditId);
         fairnessResultRepository.saveAll(results);
+
+        evictCache(audit.getUser().getId(), auditId, response.fairnessByAttribute().keySet());
+    }
+
+    private void evictCache(Long userId, Long auditId, Set<String> attributes) {
+        Cache cache = cacheManager.getCache(CacheConfig.FAIRNESS_CACHE);
+
+        if (cache == null) {
+            return;
+        }
+
+        cache.evict(cacheKey(userId, auditId, null));
+
+        for (String attribute : attributes) {
+            cache.evict(cacheKey(userId, auditId, attribute));
+        }
+    }
+
+    private String cacheKey(Long userId, Long auditId, String attribute) {
+        return userId + ":" + auditId + ":" + attribute;
     }
 
     private void validateResponse(FairnessRunResponse response) {
