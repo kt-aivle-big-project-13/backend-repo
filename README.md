@@ -11,12 +11,13 @@
 | Framework | Spring Boot 4.0.7, Spring Web MVC, Spring Data JPA, Spring Security, Spring Validation | 검증된 생태계, 팀 전체가 익숙한 스택 |
 | Database | PostgreSQL (+ pgvector) | pgvector로 법령 조항 임베딩·RAG 검색을 별도 벡터 DB 없이 처리 |
 | Migration | Flyway | 스키마 변경 이력을 코드로 관리, 배포 환경 간 스키마 동기화 |
-| Cache | Redis | 세션/토큰 등 휘발성 데이터의 빠른 조회 |
+| Cache | Redis | 세션/토큰 등 휘발성 데이터의 빠른 조회 + 반복 조회되는 API 응답(설명가능성/공정성/데이터셋 조회 등) 캐싱 |
 | Auth | JWT (jjwt) | Stateless 인증으로 서버 확장(scale-out) 용이 |
-| Storage | AWS S3 | 모델 아티팩트·보고서 파일의 저비용 대용량 저장 |
+| Storage | AWS S3 (로컬은 MinIO) | 모델 아티팩트·보고서 파일의 저비용 대용량 저장, 로컬은 S3 호환 오브젝트 스토리지인 MinIO로 대체해 자격증명 없이 동일 코드로 개발 |
 | API 문서화 | springdoc-openapi (Swagger UI) | 코드 기반 자동 문서화로 프론트와의 스펙 싱크 유지 |
 | 모니터링 | Micrometer, Prometheus, Grafana | 감사 처리 지연·오류율 등 운영 지표 실시간 관찰 |
 | 테스트 | JUnit 5, Mockito, Testcontainers | 실제 DB/Redis와 동일한 환경으로 통합 테스트 신뢰도 확보 |
+| 부하 테스트 | k6 | Redis 캐싱 적용 전/후 API 응답 속도 개선을 수치로 비교 |
 | Build | Gradle | Groovy/Kotlin DSL 기반의 유연한 빌드 스크립트 |
 | CI/CD & Infra | GitHub Actions, Docker, Docker Hub, AWS EC2 | push 시 빌드~배포 자동화, 컨테이너로 배포 환경 일관성 확보 |
 
@@ -79,6 +80,7 @@ com.aivle13.fin_audit_ai
 │   │   ├── repository/
 │   │   ├── service/
 │   │   └── type/               # UserRole
+│   ├── auth/                    # 로그인/회원가입/토큰 재발급 (AuthService, RefreshTokenService)
 │   ├── model/                  # 감사 대상 AI 모델 (AiModelEntity, ModelType, ModelStatus)
 │   ├── diagnosis/               # 고영향 여부 사전진단 (PreDiagnosisEntity, DiagnosisAnswerEntity, DiagnosisResult)
 │   ├── audit/                   # 감사 진행/결과 (AuditEntity, XaiResultEntity, FairnessResultEntity, SelfCheckAnswerEntity, AuditLawMappingEntity)
@@ -87,10 +89,16 @@ com.aivle13.fin_audit_ai
 │   ├── notification/            # 알림 발송 이력 (NotificationEntity)
 │   └── objection/               # 이의신청 (ObjectionEntity)
 ├── global/
-│   ├── config/                  # SwaggerConfig, CorsConfig, SecurityConfig
+│   ├── config/                  # SwaggerConfig, CorsConfig, SecurityConfig, S3Config
 │   ├── entity/                  # BaseEntity (created_at/updated_at 공통 필드)
-│   └── exception/                # BusinessException, ErrorCode, ErrorResponse, GlobalExceptionHandler
-│       └── {domain}/              # 도메인별 커스텀 예외
+│   ├── exception/                # BusinessException, ErrorCode, ErrorResponse, GlobalExceptionHandler
+│   │   └── {domain}/              # 도메인별 커스텀 예외
+│   ├── jwt/                      # JWT 발급/검증, 인증 필터·예외 핸들러 (JwtProvider, JwtAuthenticationFilter)
+│   ├── mail/                     # 이메일 인증 메일 발송 (MailService)
+│   ├── s3/                       # 파일 업로드/삭제 (S3FileStorageService, dev 프로필은 MinIO로 자동 분기)
+│   ├── ai/                       # AI 서버(FastAPI) 연동 클라이언트 (ShapAnalysisClient, FairnessAnalysisClient)
+│   ├── util/                     # 공통 유틸 (EmailNormalizer 등)
+│   └── validation/               # 커스텀 Bean Validation (PasswordValidator 등)
 └── health/                       # 인프라(DB/Redis) 연결 확인용 헬스체크
 ```
 
@@ -201,6 +209,22 @@ class SomeIntegrationTest extends IntegrationTestSupport {
 - **도구**: `IntegrationTestSupport`를 상속해 실 DB/Redis를 사용하면서, `MockMvc`(또는 `TestRestTemplate`)로 컨트롤러 계층까지 포함해 API를 순서대로 호출한다.
 - **네이밍**: `{흐름}ScenarioTest` (예: `AuditFlowScenarioTest`).
 - **작성 원칙**: 각 단계의 응답으로 다음 단계 요청을 구성하고, 최종 상태(DB, 응답 바디)까지 검증한다. Mock으로 대체하는 대상은 AI 서버 등 외부 시스템 연동 정도로 최소화한다.
+
+<br>
+
+### 부하 테스트 (Load Test)
+
+- **대상**: 반복 조회가 잦고 Redis 캐싱이 적용/예정인 API. 캐싱 적용 전/후 성능(응답 속도, 에러율) 개선을 수치로 비교한다.
+  - `GET /api/v1/audits/{auditId}/explainability`
+  - `GET /api/v1/audits/{auditId}/fairness`
+  - `GET /api/models/{modelId}/datasets`
+- **도구**: [k6](https://k6.io/). 앱은 `./gradlew bootRun`으로 로컬에서 직접 띄우고, k6도 같은 호스트에서 실행한다.
+- **위치**: `k6/` 폴더. `config/env.js`(대상 URL·계정·리소스 ID), `lib/auth.js`(로그인 후 토큰 재사용), `scenarios/`(API별 시나리오: `explainability.js`, `fairness.js`, `dataset-list.js`).
+- **사전 준비 및 실행 방법**: `docs/k6-load-test-setup.md` 참고 (k6 설치, 테스트용 계정/모델/데이터셋/감사 데이터 시드 순서 포함).
+
+```bash
+k6 run k6/scenarios/explainability.js
+```
 
 <br>
 
