@@ -20,3 +20,7 @@ logging:
   level:
     org.testcontainers: INFO
     com.github.dockerjava: WARN
+
+recaptcha:
+  secret-key: test-secret-key
+  verify-url: http://localhost:9999/recaptcha
