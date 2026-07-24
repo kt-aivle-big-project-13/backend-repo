@@ -9,10 +9,10 @@ import com.aivle13.fin_audit_ai.domain.diagnosis.repository.DiagnosisAnswerRepos
 import com.aivle13.fin_audit_ai.domain.diagnosis.repository.PreDiagnosisRepository;
 import com.aivle13.fin_audit_ai.domain.diagnosis.type.DiagnosisResult;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
-import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
+import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
+import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,17 +34,29 @@ public class DiagnosisService {
     private static final int GROUP_B_SCORE = 1;
     private static final int HIGH_IMPACT_THRESHOLD = 4;
 
-    private final AiModelRepository aiModelRepository;
+    private final UserRepository userRepository;
     private final PreDiagnosisRepository preDiagnosisRepository;
     private final DiagnosisAnswerRepository diagnosisAnswerRepository;
 
     @Transactional
-    public PreDiagnosisResponseDto start(Long modelId) {
-        AiModelEntity model = aiModelRepository.findById(modelId)
-                .orElseThrow(ModelNotFoundException::new);
+    public PreDiagnosisResponseDto start(Long userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found."));
 
-        PreDiagnosisEntity diagnosis = PreDiagnosisEntity.create(model, DiagnosisResult.IN_PROGRESS);
+        PreDiagnosisEntity diagnosis = PreDiagnosisEntity.create(user, DiagnosisResult.IN_PROGRESS);
         return toResponse(preDiagnosisRepository.save(diagnosis));
+    }
+
+    @Transactional
+    public void linkModel(Long assessmentId, Long userId, AiModelEntity model) {
+        PreDiagnosisEntity diagnosis = preDiagnosisRepository.findById(assessmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Pre-diagnosis not found."));
+
+        if (!diagnosis.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED, "Cannot link model to another user's pre-diagnosis.");
+        }
+
+        diagnosis.linkModel(model);
     }
 
     @Transactional
@@ -190,7 +202,8 @@ public class DiagnosisService {
     private PreDiagnosisResponseDto toResponse(PreDiagnosisEntity diagnosis) {
         return new PreDiagnosisResponseDto(
                 diagnosis.getId(),
-                diagnosis.getModel().getId(),
+                diagnosis.getUser().getId(),
+                diagnosis.getModel() == null ? null : diagnosis.getModel().getId(),
                 diagnosis.isConditionMet(),
                 diagnosis.getGroupAScore(),
                 diagnosis.getGroupBScore(),

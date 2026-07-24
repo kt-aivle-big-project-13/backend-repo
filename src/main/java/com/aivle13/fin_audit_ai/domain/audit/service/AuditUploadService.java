@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadRequestDto;
 import com.aivle13.fin_audit_ai.domain.audit.dto.AuditUploadResponseDto;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.validator.ThresholdPolicyValidator;
+import com.aivle13.fin_audit_ai.domain.diagnosis.service.DiagnosisService;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.service.AiModelService;
 import com.aivle13.fin_audit_ai.domain.file.dto.StoredFile;
@@ -28,6 +29,7 @@ public class AuditUploadService {
     private final FileStorageService fileStorageService;
     private final AiModelService aiModelService;
     private final AuditService auditService;
+    private final DiagnosisService diagnosisService;
 
     @Transactional
     public AuditUploadResponseDto upload(Long userId, AuditUploadRequestDto request) {
@@ -65,6 +67,10 @@ public class AuditUploadService {
             );
 
             // 6. Audit 생성
+            if (request.getAssessmentId() != null) {
+                diagnosisService.linkModel(request.getAssessmentId(), userId, aiModel);
+            }
+
             AuditEntity audit = auditService.create(
                     userId, aiModel, datasetStored.s3Key(), request.getSensitiveFeatures()
             );

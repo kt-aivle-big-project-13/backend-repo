@@ -8,6 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Getter
 @Setter
 public class AuditUploadRequestDto {
+    private Long assessmentId;
+
     private MultipartFile modelFile;
     private MultipartFile auditDatasetFile;
     private MultipartFile validationDatasetFile;
