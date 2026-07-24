@@ -24,3 +24,5 @@ logging:
 recaptcha:
   secret-key: test-secret-key
   verify-url: http://localhost:9999/recaptcha
+  connect-timeout: 3s
+  read-timeout: 5s
