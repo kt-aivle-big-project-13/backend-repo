@@ -107,3 +107,7 @@ jwt:
   access-token-validity: 7200000      # 2시간 (ms)
   refresh-token-validity: 1209600000  # 14일 (ms)
   remember-me-refresh-token-validity: 2592000000 # 자동 로그인 30일 (ms)
+
+recaptcha:
+  secret-key: ${RECAPTCHA_SECRET_KEY}
+  verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}

@@ -32,6 +32,7 @@ public enum ErrorCode {
     INVALID_PASSWORD_POLICY(HttpStatus.BAD_REQUEST, "EU009", "영문, 숫자, 특수문자( ( ) < > \\\" ' ; 제외 ) 중 2종류를 조합하여 10~16자리, 3종류는 8~16자리로 입력해주세요."),
     PASSWORD_CONFIRM_NOT_MATCH(HttpStatus.BAD_REQUEST, "EU010","비밀번호가 일치하지 않습니다."),
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "EU011", "유효하지 않은 리프레시 토큰입니다. 다시 로그인해주세요."),
+    RECAPTCHA_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "EU012", "로봇 인증에 실패했습니다."),
 
     // ===== Model / Audit (EM) =====
     MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "EM001", "모델을 찾을 수 없습니다."),
@@ -58,6 +59,7 @@ public enum ErrorCode {
     AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "EA002", "AI 서버 응답 시간이 초과되었습니다."),
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "EA003", "외부 서비스 요청에 실패했습니다."),
     EMAIL_SEND_FAILED(HttpStatus.BAD_GATEWAY, "EA004", "이메일 발송에 실패했습니다."),
+    RECAPTCHA_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA005", "로봇 인증 서버 요청에 실패했습니다."),
 
     // ===== File Storage (EF) =====
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EF001", "파일 업로드에 실패했습니다."),
