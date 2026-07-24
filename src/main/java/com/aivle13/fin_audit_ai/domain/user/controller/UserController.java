@@ -1,14 +1,14 @@
 package com.aivle13.fin_audit_ai.domain.user.controller;
 
-import com.aivle13.fin_audit_ai.domain.user.dto.request.EmailVerificationConfirmRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.EmailVerificationRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordFindRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordResetRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.EmailVerificationConfirmResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.EmailVerificationResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordFindResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordResetResponse;
-import com.aivle13.fin_audit_ai.domain.user.service.EmailVerificationService;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.email.EmailVerificationConfirmRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.email.EmailVerificationRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordFindRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordResetRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.email.EmailVerificationConfirmResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.email.EmailVerificationResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordFindResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordResetResponse;
+import com.aivle13.fin_audit_ai.domain.user.service.email.EmailVerificationService;
 import com.aivle13.fin_audit_ai.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

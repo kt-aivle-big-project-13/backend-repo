@@ -1,15 +1,16 @@
 package com.aivle13.fin_audit_ai.domain.user.service;
 
-import com.aivle13.fin_audit_ai.domain.user.dto.request.ChangePasswordRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordFindRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.PasswordResetRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.UpdateNameRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.ChangePasswordResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordFindResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.PasswordResetResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.UserResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.ChangePasswordRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordFindRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordResetRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.profile.UpdateNameRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.ChangePasswordResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordFindResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordResetResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.profile.UserResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.domain.user.service.password.PasswordResetTokenService;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
 import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;

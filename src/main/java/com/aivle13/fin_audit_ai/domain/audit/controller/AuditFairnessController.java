@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.dto.response.FairnessResultResponse;
-import com.aivle13.fin_audit_ai.domain.audit.service.FairnessResultService;
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.fairness.FairnessResultResponse;
+import com.aivle13.fin_audit_ai.domain.audit.service.fairness.FairnessResultService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

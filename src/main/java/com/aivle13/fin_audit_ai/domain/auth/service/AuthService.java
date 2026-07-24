@@ -6,7 +6,7 @@ import com.aivle13.fin_audit_ai.domain.auth.dto.response.SignupResponse;
 import com.aivle13.fin_audit_ai.domain.auth.dto.response.TokenResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
-import com.aivle13.fin_audit_ai.domain.user.service.EmailVerificationService;
+import com.aivle13.fin_audit_ai.domain.user.service.email.EmailVerificationService;
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.user.DuplicateEmailException;
 import com.aivle13.fin_audit_ai.global.exception.user.InvalidCredentialsException;

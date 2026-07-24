@@ -1,9 +1,9 @@
 package com.aivle13.fin_audit_ai.domain.user.controller;
 
-import com.aivle13.fin_audit_ai.domain.user.dto.request.ChangePasswordRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.request.UpdateNameRequest;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.ChangePasswordResponse;
-import com.aivle13.fin_audit_ai.domain.user.dto.response.UserResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.ChangePasswordRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.profile.UpdateNameRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.ChangePasswordResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.profile.UserResponse;
 import com.aivle13.fin_audit_ai.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
