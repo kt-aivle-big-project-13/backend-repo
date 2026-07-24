@@ -1,10 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.request.DatasetUploadRequest;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.DatasetSummaryResponse;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.DatasetUploadResponse;
-import com.aivle13.fin_audit_ai.domain.model.service.DatasetQueryService;
-import com.aivle13.fin_audit_ai.domain.model.service.DatasetUploadService;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.dataset.DatasetUploadRequest;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.dataset.DatasetSummaryResponse;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.dataset.DatasetUploadResponse;
+import com.aivle13.fin_audit_ai.domain.model.service.dataset.DatasetQueryService;
+import com.aivle13.fin_audit_ai.domain.model.service.dataset.DatasetUploadService;
 import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
-import com.aivle13.fin_audit_ai.domain.audit.service.AuditProgressService;
-import com.aivle13.fin_audit_ai.domain.audit.service.FairnessAnalysisService;
-import com.aivle13.fin_audit_ai.domain.audit.service.ShapAnalysisService;
+import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditProgressService;
+import com.aivle13.fin_audit_ai.domain.audit.service.fairness.FairnessAnalysisService;
+import com.aivle13.fin_audit_ai.domain.audit.service.explainability.ShapAnalysisService;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import com.aivle13.fin_audit_ai.global.ai.config.AiServerProperties;

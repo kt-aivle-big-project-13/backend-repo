@@ -1,10 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.model.controller;
 
-import com.aivle13.fin_audit_ai.domain.model.dto.request.ModelUploadRequest;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.ModelSummaryResponse;
-import com.aivle13.fin_audit_ai.domain.model.dto.response.ModelUploadResponse;
-import com.aivle13.fin_audit_ai.domain.model.service.ModelQueryService;
-import com.aivle13.fin_audit_ai.domain.model.service.ModelUploadService;
+import com.aivle13.fin_audit_ai.domain.model.dto.request.model.ModelUploadRequest;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.model.ModelSummaryResponse;
+import com.aivle13.fin_audit_ai.domain.model.dto.response.model.ModelUploadResponse;
+import com.aivle13.fin_audit_ai.domain.model.service.model.ModelQueryService;
+import com.aivle13.fin_audit_ai.domain.model.service.model.ModelUploadService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

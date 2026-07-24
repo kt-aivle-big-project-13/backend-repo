@@ -33,6 +33,8 @@ public enum ErrorCode {
     PASSWORD_CONFIRM_NOT_MATCH(HttpStatus.BAD_REQUEST, "EU010","비밀번호가 일치하지 않습니다."),
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "EU011", "유효하지 않은 리프레시 토큰입니다. 다시 로그인해주세요."),
     RECAPTCHA_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "EU012", "로봇 인증에 실패했습니다."),
+    CURRENT_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "EU013", "현재 비밀번호가 일치하지 않습니다."),
+    NO_UPDATABLE_FIELD(HttpStatus.BAD_REQUEST, "EU014", "수정 가능한 필드가 없거나 값이 올바르지 않습니다."),
 
     // ===== Model / Audit (EM) =====
     MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, "EM001", "모델을 찾을 수 없습니다."),

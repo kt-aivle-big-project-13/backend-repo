@@ -6,7 +6,7 @@ import com.aivle13.fin_audit_ai.domain.auth.dto.response.SignupResponse;
 import com.aivle13.fin_audit_ai.domain.auth.dto.response.TokenResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
-import com.aivle13.fin_audit_ai.domain.user.service.EmailVerificationService;
+import com.aivle13.fin_audit_ai.domain.user.service.email.EmailVerificationService;
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.user.DuplicateEmailException;
 import com.aivle13.fin_audit_ai.global.exception.user.InvalidCredentialsException;
@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -72,6 +74,7 @@ public class AuthService {
         return SignupResponse.success();
     }
 
+    @Transactional
     public TokenResponse login(LoginRequest request) {
         recaptchaService.verify(request.recaptchaToken());
 
@@ -83,6 +86,8 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+
+        user.updateLastLoginAt(java.time.LocalDateTime.now(ZoneId.of("Asia/Seoul")));
 
         return issueTokens(user, request.isRememberMe());
     }
