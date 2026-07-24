@@ -23,12 +23,12 @@ Redis 캐싱 적용 전/후 성능 개선을 수치로 비교하기 위해 k6로
 k6도 앱과 같은 호스트에서 도는 게 자연스러우므로 **로컬 설치**를 기본으로 한다.
 
 ### macOS
-```
+```bash
 brew install k6
 ```
 
 ### Windows
-```
+```bash
 winget install k6
 ```
 
@@ -190,13 +190,30 @@ k6 스크립트 구성과 실행 방법은 `k6/` 폴더의 스크립트를 참�
 아래처럼 값을 넘겨 실행한다.
 
 ```bash
+# GET /api/v1/audits/{auditId}/explainability
 k6 run \
   --env BASE_URL=http://localhost:8080 \
   --env TEST_EMAIL=loadtest@example.com \
   --env TEST_PASSWORD=password1234 \
   --env AUDIT_ID=1 \
   k6/scenarios/explainability.js
+
+# GET /api/v1/audits/{auditId}/fairness
+k6 run \
+  --env BASE_URL=http://localhost:8080 \
+  --env TEST_EMAIL=loadtest@example.com \
+  --env TEST_PASSWORD=password1234 \
+  --env AUDIT_ID=1 \
+  k6/scenarios/fairness.js
+
+# GET /api/models/{modelId}/datasets
+k6 run \
+  --env BASE_URL=http://localhost:8080 \
+  --env TEST_EMAIL=loadtest@example.com \
+  --env TEST_PASSWORD=password1234 \
+  --env MODEL_ID=1 \
+  k6/scenarios/dataset-list.js
 ```
 
-`fairness.js`, `dataset-list.js`도 동일한 방식으로 실행한다 (`dataset-list.js`는 `AUDIT_ID` 대신
-`MODEL_ID`를 사용).
+세 스크립트는 각각 별도로 실행해 시나리오별로 결과를 비교한다. `AUDIT_ID`/`MODEL_ID`는
+`3-4`/`3-2`에서 `RETURNING`으로 얻은 실제 ID로 바꿔서 사용한다.
