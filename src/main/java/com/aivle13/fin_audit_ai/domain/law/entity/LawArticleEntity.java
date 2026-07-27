@@ -1,9 +1,11 @@
 package com.aivle13.fin_audit_ai.domain.law.entity;
 
+import com.aivle13.fin_audit_ai.global.entity.VectorType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 import java.time.LocalDate;
 
@@ -30,15 +32,12 @@ public class LawArticleEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    /*
-     * embedding VECTOR(1536) — pgvector 타입.
-     * JPA 기본 타입이 아니므로 아래 중 하나로 처리:
-     *  1) pgvector-java (com.pgvector:pgvector) 의존성 + Hibernate 커스텀 타입
-     *  2) 임베딩 저장/검색을 네이티브 쿼리로 별도 처리하고, 엔티티에는 매핑 제외
-     * 여기서는 매핑 보류(주석) — RAG 파이프라인 붙일 때 확정.
-     * 예) @Column(columnDefinition = "vector(1536)")
-     *     private float[] embedding;   // 커스텀 타입 등록 후
-     */
+    @Column(columnDefinition = "TEXT")
+    private String summary;
+
+    @Type(VectorType.class)
+    @Column(columnDefinition = "vector(1536)")
+    private float[] embedding;
 
     @Column(name = "effective_date", nullable = false)
     private LocalDate effectiveDate;
@@ -53,5 +52,13 @@ public class LawArticleEntity {
         entity.content = content;
         entity.effectiveDate = effectiveDate;
         return entity;
+    }
+
+    public void updateSummary(String summary) {
+        this.summary = summary;
+    }
+
+    public void updateEmbedding(float[] embedding) {
+        this.embedding = embedding;
     }
 }
