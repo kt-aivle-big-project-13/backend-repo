@@ -1,8 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.user.controller;
 
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.ChangePasswordRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.VerifyPasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.profile.UpdateNameRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.ChangePasswordResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.VerifyPasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.profile.UserResponse;
 import com.aivle13.fin_audit_ai.domain.user.service.UserService;
 import jakarta.validation.Valid;
@@ -39,6 +41,19 @@ public class MyPageController {
         Long userId = (Long) authentication.getPrincipal();
 
         UserResponse response = userService.updateMyProfile(userId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 비밀번호 변경 전 현재 비밀번호 확인
+    @PostMapping("/me/password/verify")
+    public ResponseEntity<VerifyPasswordResponse> verifyCurrentPassword(
+            Authentication authentication,
+            @Valid @RequestBody VerifyPasswordRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        VerifyPasswordResponse response = userService.verifyCurrentPassword(userId, request);
 
         return ResponseEntity.ok(response);
     }
