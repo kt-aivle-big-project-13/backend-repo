@@ -3,10 +3,12 @@ package com.aivle13.fin_audit_ai.domain.user.service;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.ChangePasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordFindRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordResetRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.password.VerifyPasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.profile.UpdateNameRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.ChangePasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordFindResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordResetResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.password.VerifyPasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.profile.UserResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
@@ -68,6 +70,18 @@ public class UserService {
         user.updateName(name.trim());
 
         return UserResponse.from(user);
+    }
+
+    // 마이페이지 비밀번호 변경 전 현재 비밀번호 확인
+    public VerifyPasswordResponse verifyCurrentPassword(Long userId, VerifyPasswordRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.CURRENT_PASSWORD_MISMATCH);
+        }
+
+        return VerifyPasswordResponse.success();
     }
 
     // 마이페이지 비밀번호 변경
