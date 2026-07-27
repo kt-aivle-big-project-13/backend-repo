@@ -1,5 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.report.type;
 
 public enum ReportType {
-    XAI_REPORT, BIAS_REPORT, COMPLIANCE_VERDICT, IMPACT_ASSESSMENT, IMPROVEMENT_GUIDE
+    XAI_REPORT,             // 설명가능성 보고서
+    BIAS_REPORT,            // 편향 진단 보고서
+    COMPLIANCE_VERDICT,     // 규제 준수 판정서
+    IMPACT_ASSESSMENT,      // 영향 평가서
+    IMPROVEMENT_GUIDE,      // 개선 권고 가이드
+    FINAL_AUDIT_REPORT      // 통합 보고서: 설명 가능성 + 편향진단 + 규제준수 + 개선 권고 가이드
 }
