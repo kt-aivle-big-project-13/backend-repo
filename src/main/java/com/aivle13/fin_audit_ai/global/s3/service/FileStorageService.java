@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.global.s3.service;
 
+import com.aivle13.fin_audit_ai.global.s3.dto.DownloadedFile;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,8 @@ public interface FileStorageService {
             String contentType,
             String prefix
     );
+
+    DownloadedFile download(String s3Key);
 
     void delete(String s3Key);
 

@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.global.s3.service;
 
+import com.aivle13.fin_audit_ai.global.s3.dto.DownloadedFile;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,11 @@ class FileStorageServiceTest {
                 String contentType,
                 String prefix
         ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public DownloadedFile download(String s3Key) {
             throw new UnsupportedOperationException();
         }
 
