@@ -45,7 +45,9 @@ public class FastApiEmbeddingClient implements EmbeddingClient {
                     .retrieve()
                     .body(EmbeddingResponse.class);
 
-            if (response == null) {
+            if (response == null
+                    || response.embedding() == null
+                    || response.embedding().length == 0) {
                 throw new AiServerErrorException();
             }
 

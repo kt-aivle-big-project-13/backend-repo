@@ -77,6 +77,31 @@ class FastApiEmbeddingClientTest {
     }
 
     @Test
+    void throwsEa001WhenAiServerReturnsEmptyEmbedding() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server =
+                MockRestServiceServer.bindTo(builder).build();
+
+        FastApiEmbeddingClient client =
+                new FastApiEmbeddingClient(
+                        builder.baseUrl(BASE_URL).build()
+                );
+
+        server.expect(requestTo(EMBEDDING_URL))
+                .andRespond(withSuccess("""
+                        {
+                          "embedding": [],
+                          "model": "text-embedding-3-small"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.embed("텍스트"))
+                .isInstanceOf(AiServerErrorException.class);
+
+        server.verify();
+    }
+
+    @Test
     void throwsEa002WhenAiServerTimesOut() {
         RestClient timeoutRestClient = RestClient.builder()
                 .baseUrl(BASE_URL)
