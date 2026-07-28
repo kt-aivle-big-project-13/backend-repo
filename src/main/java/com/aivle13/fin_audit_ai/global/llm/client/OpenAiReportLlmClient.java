@@ -21,6 +21,7 @@ public class OpenAiReportLlmClient implements ReportLlmClient {
 
     private static final String RESPONSES_PATH = "/responses";
     private static final String OUTPUT_TEXT_TYPE = "output_text";
+    private static final String COMPLETED_STATUS = "completed";
 
     private final RestClient openAiRestClient;
     private final LlmProperties properties;
@@ -71,18 +72,16 @@ public class OpenAiReportLlmClient implements ReportLlmClient {
             throw new LlmServerErrorException("OpenAI 응답 본문이 비어 있습니다.");
         }
 
+        if (!COMPLETED_STATUS.equals(response.status())) {
+            throw new LlmServerErrorException("OpenAI 응답이 완료되지 않았습니다: " + response.status());
+        }
+
         return response.output().stream()
                 .filter(Objects::nonNull)
-                .filter(outputItem ->
-                        outputItem.content() != null
-                )
-                .flatMap(outputItem ->
-                        outputItem.content().stream()
-                )
+                .filter(outputItem -> outputItem.content() != null)
+                .flatMap(outputItem -> outputItem.content().stream())
                 .filter(Objects::nonNull)
-                .filter(contentItem ->
-                        OUTPUT_TEXT_TYPE.equals(contentItem.type())
-                )
+                .filter(contentItem -> OUTPUT_TEXT_TYPE.equals(contentItem.type()))
                 .map(OpenAiResponse.ContentItem::text)
                 .filter(Objects::nonNull)
                 .map(String::trim)

@@ -12,17 +12,14 @@ import org.springframework.web.client.RestClient;
 public class LlmClientConfig {
 
     @Bean
-    public RestClient openAiRestClient(
-            RestClient.Builder builder,
-            LlmProperties properties
-    ) {
+    public RestClient openAiRestClient(LlmProperties properties) {
         SimpleClientHttpRequestFactory requestFactory =
                 new SimpleClientHttpRequestFactory();
 
         requestFactory.setConnectTimeout(properties.connectTimeout());
         requestFactory.setReadTimeout(properties.readTimeout());
 
-        return builder
+        return RestClient.builder()
                 .baseUrl(properties.baseUrl().toString())
                 .defaultHeader(
                         HttpHeaders.AUTHORIZATION,
