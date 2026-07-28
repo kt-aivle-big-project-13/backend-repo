@@ -52,9 +52,22 @@ public class FairnessResultEntity {
     @Column(nullable = false, length = 20)
     private FairnessStatus status;
 
+    // AI가 이 보호속성에 대해 남긴 설명(예: 일부 지표가 계산 불가였던 사유). 속성 단위라
+    // 같은 attribute 의 모든 행에 동일한 값이 들어간다 — 지표별로 테이블을 새로 두기엔
+    // 과한 구조라 이렇게 중복 저장한다. 사유가 없으면 null.
+    @Column(length = 255)
+    private String note;
+
     public static FairnessResultEntity of(AuditEntity audit, String attribute,
                                           FairnessMetricCode metricCode, BigDecimal value,
                                           BigDecimal threshold, FairnessStatus status) {
+        return of(audit, attribute, metricCode, value, threshold, status, null);
+    }
+
+    public static FairnessResultEntity of(AuditEntity audit, String attribute,
+                                          FairnessMetricCode metricCode, BigDecimal value,
+                                          BigDecimal threshold, FairnessStatus status,
+                                          String note) {
         FairnessResultEntity result = new FairnessResultEntity();
         result.audit = audit;
         result.attribute = attribute;
@@ -62,6 +75,7 @@ public class FairnessResultEntity {
         result.value = value;
         result.threshold = threshold;
         result.status = status;
+        result.note = note;
         return result;
     }
 }
