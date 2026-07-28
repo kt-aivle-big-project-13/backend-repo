@@ -102,6 +102,13 @@ app:
     connect-timeout: ${AI_SERVER_CONNECT_TIMEOUT:3s}
     read-timeout: ${AI_SERVER_READ_TIMEOUT:120s}
 
+  llm:
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    connect-timeout: ${OPENAI_CONNECT_TIMEOUT:3s}
+    read-timeout: ${OPENAI_READ_TIMEOUT:120s}
+
 jwt:
   secret: ${JWT_SECRET}
   access-token-validity: 7200000      # 2시간 (ms)
