@@ -33,4 +33,12 @@ public class SelfCheckAnswerEntity {
 
     @Column(nullable = false)
     private boolean answer;
+
+    public static SelfCheckAnswerEntity of(AuditEntity audit, SelfCheckItemCode itemCode, boolean answer) {
+        SelfCheckAnswerEntity entity = new SelfCheckAnswerEntity();
+        entity.audit = audit;
+        entity.itemCode = itemCode;
+        entity.answer = answer;
+        return entity;
+    }
 }
