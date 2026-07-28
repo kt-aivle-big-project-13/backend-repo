@@ -6,7 +6,9 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
+import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.InvalidSelfCheckAnswersException;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,12 @@ public class SelfCheckAnswerService {
     @Transactional
     public SelfCheckAnswerResponse save(Long userId, Long auditId, SelfCheckAnswerSaveRequest request) {
         AuditEntity audit = findAudit(userId, auditId);
+
+        // 자율점검(STEP4)은 SHAP·Fairlearn 분석이 끝난 뒤 화면에 결과와 함께 노출되는 단계라,
+        // 분석이 아직 안 끝난 감사(PENDING/IN_PROGRESS)에는 제출을 막는다.
+        if (audit.getStatus() == AuditStatus.PENDING || audit.getStatus() == AuditStatus.IN_PROGRESS) {
+            throw new AuditNotCompletedException();
+        }
 
         validateAnswers(request);
 
@@ -55,7 +63,7 @@ public class SelfCheckAnswerService {
                 .orElseThrow(AuditNotFoundException::new);
     }
 
-    // 4개 항목을 중복 없이 모두 제출했는지 검증한다. 일부만 제출하거나 같은 항목을
+    // 5개 항목을 중복 없이 모두 제출했는지 검증한다. 일부만 제출하거나 같은 항목을
     // 중복 제출하면 upsert(전체 삭제 후 재삽입) 특성상 나머지 항목이 조용히 사라지므로
     // 여기서 막는다.
     private void validateAnswers(SelfCheckAnswerSaveRequest request) {

@@ -32,7 +32,7 @@ public class AuditSelfCheckController {
     @Operation(
             summary = "자율점검 응답 저장",
             description = "감사의 자율점검 5개 항목 응답을 저장합니다. 5개 항목을 모두, 중복 없이 제출해야 하며, "
-                    + "이미 저장된 응답이 있으면 덮어씁니다."
+                    + "이미 저장된 응답이 있으면 덮어씁니다. SHAP·Fairlearn 분석이 끝난 감사에만 제출할 수 있습니다."
     )
     @ApiResponses({
             @ApiResponse(
@@ -45,7 +45,8 @@ public class AuditSelfCheckController {
             ),
             @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않음"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "404", description = "감사를 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "감사를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "감사 분석이 아직 완료되지 않음")
     })
     @PostMapping("/{auditId}/self-check-answers")
     public ResponseEntity<SelfCheckAnswerResponse> save(

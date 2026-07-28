@@ -6,7 +6,9 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
+import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.InvalidSelfCheckAnswersException;
 import org.junit.jupiter.api.Test;
@@ -48,6 +50,7 @@ class SelfCheckAnswerServiceTest {
     void savesAllFiveAnswersAndReturnsResponse() {
         given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(audit.getStatus()).willReturn(AuditStatus.COMPLIANT);
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
                 new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.PRIOR_NOTICE, true),
@@ -108,6 +111,27 @@ class SelfCheckAnswerServiceTest {
                 .isInstanceOf(InvalidSelfCheckAnswersException.class);
 
         verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+    }
+
+    @Test
+    void throwsWhenAuditAnalysisNotCompleted() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getStatus()).willReturn(AuditStatus.IN_PROGRESS);
+
+        SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.PRIOR_NOTICE, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.EXPLANATION_PROCEDURE, false),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOC_RETENTION, false)
+        ));
+
+        assertThatThrownBy(() -> selfCheckAnswerService.save(USER_ID, AUDIT_ID, request))
+                .isInstanceOf(AuditNotCompletedException.class);
+
+        verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(selfCheckAnswerRepository, never()).saveAll(anyList());
     }
 
     @Test
