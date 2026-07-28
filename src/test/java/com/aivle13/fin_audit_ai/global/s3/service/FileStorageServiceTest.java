@@ -19,8 +19,19 @@ class FileStorageServiceTest {
     private final List<String> failingKeys = new ArrayList<>();
 
     private final FileStorageService fileStorageService = new FileStorageService() {
+
         @Override
         public StoredFile store(MultipartFile file, String prefix) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public StoredFile store(
+                byte[] content,
+                String originalFilename,
+                String contentType,
+                String prefix
+        ) {
             throw new UnsupportedOperationException();
         }
 
@@ -29,6 +40,7 @@ class FileStorageServiceTest {
             if (failingKeys.contains(s3Key)) {
                 throw new RuntimeException("삭제 실패: " + s3Key);
             }
+
             deletedKeys.add(s3Key);
         }
     };
@@ -46,23 +58,31 @@ class FileStorageServiceTest {
     }
 
     private void triggerCompletion(int status) {
-        for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
+        for (
+                TransactionSynchronization synchronization
+                : TransactionSynchronizationManager.getSynchronizations()
+        ) {
             synchronization.afterCompletion(status);
         }
     }
 
     @Test
     void 롤백되면_등록된_키를_모두_삭제한다() {
-        fileStorageService.deleteOnRollback(List.of("models/a.json", "datasets/b.csv"));
+        fileStorageService.deleteOnRollback(
+                List.of("models/a.json", "datasets/b.csv")
+        );
 
         triggerCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
 
-        assertThat(deletedKeys).containsExactly("models/a.json", "datasets/b.csv");
+        assertThat(deletedKeys)
+                .containsExactly("models/a.json", "datasets/b.csv");
     }
 
     @Test
     void 커밋되면_삭제하지_않는다() {
-        fileStorageService.deleteOnRollback(List.of("models/a.json"));
+        fileStorageService.deleteOnRollback(
+                List.of("models/a.json")
+        );
 
         triggerCompletion(TransactionSynchronization.STATUS_COMMITTED);
 
@@ -73,10 +93,13 @@ class FileStorageServiceTest {
     void 일부_키_삭제가_실패해도_나머지_키_삭제를_계속한다() {
         failingKeys.add("models/a.json");
 
-        fileStorageService.deleteOnRollback(List.of("models/a.json", "datasets/b.csv"));
+        fileStorageService.deleteOnRollback(
+                List.of("models/a.json", "datasets/b.csv")
+        );
 
         triggerCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
 
-        assertThat(deletedKeys).containsExactly("datasets/b.csv");
+        assertThat(deletedKeys)
+                .containsExactly("datasets/b.csv");
     }
 }

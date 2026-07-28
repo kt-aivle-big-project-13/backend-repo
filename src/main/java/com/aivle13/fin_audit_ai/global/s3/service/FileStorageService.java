@@ -14,6 +14,15 @@ public interface FileStorageService {
     Logger LOG = LoggerFactory.getLogger(FileStorageService.class);
 
     StoredFile store(MultipartFile file, String prefix);
+
+    // PDF/WORD 파일 저장
+    StoredFile store(
+            byte[] content,
+            String originalFilename,
+            String contentType,
+            String prefix
+    );
+
     void delete(String s3Key);
 
     // 커밋 실패 등 메서드 반환 이후에 트랜잭션이 롤백되는 경우까지 포함해 S3 객체를 정리한다.
