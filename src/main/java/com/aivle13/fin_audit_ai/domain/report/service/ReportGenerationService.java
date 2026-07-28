@@ -17,6 +17,7 @@ import com.aivle13.fin_audit_ai.global.llm.ReportLlmClient;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+// ReportLlmClient와 AuditLawMappingQueryService의 실제 구현체가 모두 병합되어 항상 Bean으로 등록되면 이 조건을 제거한다.
+// 현재는 미구현 의존성 때문에 애플리케이션 컨텍스트가 실패하는 것을 방지하기 위한 임시 처리다.
+@ConditionalOnBean({
+        ReportLlmClient.class,
+        AuditLawMappingQueryService.class
+})
 public class ReportGenerationService {
 
     private static final String REPORT_PREFIX = "reports";

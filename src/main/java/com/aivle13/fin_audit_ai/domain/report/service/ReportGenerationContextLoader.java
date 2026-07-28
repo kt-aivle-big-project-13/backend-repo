@@ -11,6 +11,7 @@ import com.aivle13.fin_audit_ai.domain.law.service.AuditLawMappingQueryService;
 import com.aivle13.fin_audit_ai.domain.report.dto.AuditMetricView;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,9 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+// AuditLawMappingQueryService 실제 구현체가 병합되어 항상 Bean으로 등록되면 이 조건을 제거한다.
+// 현재는 구현체가 없는 상태에서 컨텍스트 로딩 실패를 방지하기 위한 임시 처리다.
+@ConditionalOnBean(AuditLawMappingQueryService.class)
 public class ReportGenerationContextLoader {
 
     private final XaiResultRepository xaiResultRepository;
