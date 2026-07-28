@@ -83,6 +83,11 @@ public class AuthService {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
 
+        // 탈퇴한 계정인지 여부는 노출하지 않고, 다른 로그인 실패와 동일하게 처리한다.
+        if (!user.isActive()) {
+            throw new InvalidCredentialsException();
+        }
+
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
