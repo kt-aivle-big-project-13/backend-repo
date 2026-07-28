@@ -185,6 +185,10 @@ class FairnessResultServiceTest {
                                 new BigDecimal("0.05"),
                                 new BigDecimal("0.15"),
                                 new BigDecimal("-0.30"),
+                                new BigDecimal("0.85"),
+                                new BigDecimal("0.05"),
+                                new BigDecimal("0.15"),
+                                new BigDecimal("-0.35"),
                                 List.of(),
                                 List.of(),
                                 null
@@ -208,7 +212,11 @@ class FairnessResultServiceTest {
                 .containsExactlyInAnyOrder(
                         tuple("CODE_GENDER", FairnessMetricCode.DEMOGRAPHIC_PARITY, FairnessStatus.PASS),
                         tuple("CODE_GENDER", FairnessMetricCode.EQUAL_OPPORTUNITY, FairnessStatus.REVIEW),
-                        tuple("CODE_GENDER", FairnessMetricCode.EQUALIZED_ODDS, FairnessStatus.FAIL)
+                        tuple("CODE_GENDER", FairnessMetricCode.EQUALIZED_ODDS, FairnessStatus.FAIL),
+                        tuple("CODE_GENDER", FairnessMetricCode.FPR_PARITY, FairnessStatus.PASS),
+                        tuple("CODE_GENDER", FairnessMetricCode.FDR_PARITY, FairnessStatus.REVIEW),
+                        tuple("CODE_GENDER", FairnessMetricCode.FOR_PARITY, FairnessStatus.FAIL),
+                        tuple("CODE_GENDER", FairnessMetricCode.PROPORTIONAL_PARITY, FairnessStatus.PASS)
                 );
     }
 
@@ -236,7 +244,9 @@ class FairnessResultServiceTest {
                 "21", "테스트 감사", null, 0, null, null,
                 Map.of(
                         "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
-                                "CODE_GENDER", "PASS", null, null, null, List.of(), List.of(), null
+                                "CODE_GENDER", "PASS",
+                                null, null, null, null, null, null, null,
+                                List.of(), List.of(), null
                         )
                 ),
                 Map.of(),

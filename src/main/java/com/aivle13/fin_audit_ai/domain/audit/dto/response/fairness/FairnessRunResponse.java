@@ -38,6 +38,10 @@ public record FairnessRunResponse(
             @JsonProperty("demographic_parity_difference") BigDecimal demographicParityDifference,
             @JsonProperty("equal_opportunity_difference") BigDecimal equalOpportunityDifference,
             @JsonProperty("equalized_odds_difference") BigDecimal equalizedOddsDifference,
+            @JsonProperty("proportional_parity_ratio") BigDecimal proportionalParityRatio,
+            @JsonProperty("fpr_parity_difference") BigDecimal fprParityDifference,
+            @JsonProperty("fdr_parity_difference") BigDecimal fdrParityDifference,
+            @JsonProperty("for_parity_difference") BigDecimal forParityDifference,
             List<GroupStat> groups,
             @JsonProperty("excluded_groups") List<String> excludedGroups,
             String note
@@ -52,11 +56,17 @@ public record FairnessRunResponse(
     ) {
     }
 
-    // 백엔드 FairnessMetricCode 키로 정리된 지표 요약 (DEMOGRAPHIC_PARITY/EQUAL_OPPORTUNITY/EQUALIZED_ODDS)
+    // 백엔드 FairnessMetricCode 키로 정리된 지표 요약. saveFairnessResult() 는 이 요약이
+    // 아니라 fairnessByAttribute 의 상세 필드에서 직접 값을 읽으므로, 이 레코드는 AI 서버
+    // 응답을 그대로 역직렬화하기 위한 계약 완결성 목적이 크다.
     public record FairnessMetricValues(
             @JsonProperty("DEMOGRAPHIC_PARITY") BigDecimal demographicParity,
             @JsonProperty("EQUAL_OPPORTUNITY") BigDecimal equalOpportunity,
-            @JsonProperty("EQUALIZED_ODDS") BigDecimal equalizedOdds
+            @JsonProperty("EQUALIZED_ODDS") BigDecimal equalizedOdds,
+            @JsonProperty("PROPORTIONAL_PARITY") BigDecimal proportionalParity,
+            @JsonProperty("FPR_PARITY") BigDecimal fprParity,
+            @JsonProperty("FDR_PARITY") BigDecimal fdrParity,
+            @JsonProperty("FOR_PARITY") BigDecimal forParity
     ) {
     }
 
