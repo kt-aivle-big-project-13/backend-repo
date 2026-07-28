@@ -39,13 +39,14 @@ public class PostQueryService {
     private final FileStorageService fileStorageService;
 
     public PageResponse<PostSummaryResponse> list(int page, int size, String keyword, String sort) {
-        Sort.Direction direction = "oldest".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        boolean oldestFirst = "oldest".equalsIgnoreCase(sort);
 
-        // 공지(pinned) 게시글은 정렬 기준과 무관하게 항상 최상단에 노출한다.
-        Sort sortOrder = Sort.by(Sort.Order.desc("pinned"), new Sort.Order(direction, "createdAt"));
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, sortOrder);
+        // 정렬은 Specification 안에서 orderBy로 직접 구성하므로 Pageable에는 Sort를 넘기지 않는다
+        // (Sort를 함께 넘기면 Spring Data가 이 orderBy를 덮어쓴다).
+        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
 
-        Specification<PostEntity> spec = PostSpecifications.keywordContains(keyword);
+        Specification<PostEntity> spec = PostSpecifications.keywordContains(keyword)
+                .and(PostSpecifications.orderByPinnedFirst(oldestFirst));
         Page<PostEntity> result = postRepository.findAll(spec, pageable);
 
         List<Long> postIds = result.getContent().stream().map(PostEntity::getId).toList();
