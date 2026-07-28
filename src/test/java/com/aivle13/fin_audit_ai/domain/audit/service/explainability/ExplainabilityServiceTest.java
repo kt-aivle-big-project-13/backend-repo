@@ -380,7 +380,7 @@ class ExplainabilityServiceTest {
                         ),
                         tuple(
                                 XaiMetricCode.FIDELITY,
-                                XaiStatus.REVIEW
+                                XaiStatus.WARNING
                         )
                 );
     }
