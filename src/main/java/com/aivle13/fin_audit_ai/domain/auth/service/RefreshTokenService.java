@@ -60,4 +60,9 @@ public class RefreshTokenService {
             );
         }
     }
+
+    // 비활성화(탈퇴)된 계정의 리프레시 세션만 정리한다. 액세스 토큰은 별도로 없으므로 블랙리스트 등록은 하지 않는다.
+    public void revokeSession(Long userId) {
+        redisTemplate.delete(REFRESH_KEY_PREFIX + userId);
+    }
 }

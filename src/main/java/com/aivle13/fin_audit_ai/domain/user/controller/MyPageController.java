@@ -1,25 +1,32 @@
 package com.aivle13.fin_audit_ai.domain.user.controller;
 
+import com.aivle13.fin_audit_ai.domain.auth.service.RefreshTokenService;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.ChangePasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.VerifyPasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.profile.UpdateNameRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.withdraw.WithdrawRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.ChangePasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.VerifyPasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.profile.UserResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.withdraw.WithdrawResponse;
 import com.aivle13.fin_audit_ai.domain.user.service.UserService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 public class MyPageController {
 
     private final UserService userService;
+    private final RefreshTokenService refreshTokenService;
 
-    public MyPageController(UserService userService) {
+    public MyPageController(UserService userService, RefreshTokenService refreshTokenService) {
         this.userService = userService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     // 나의 프로필 조회
@@ -67,6 +74,29 @@ public class MyPageController {
         Long userId = (Long) authentication.getPrincipal();
 
         ChangePasswordResponse response = userService.changeMyPassword(userId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 회원 탈퇴. 성공 시 현재 세션도 즉시 무효화한다(로그아웃과 동일하게
+    // 리프레시 세션 삭제 + 현재 액세스 토큰 블랙리스트 등록).
+    @DeleteMapping("/me")
+    public ResponseEntity<WithdrawResponse> withdraw(
+            Authentication authentication,
+            @Valid @RequestBody WithdrawRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        String accessToken = (String) authentication.getCredentials();
+
+        WithdrawResponse response = userService.withdraw(userId, request);
+
+        // DB 탈퇴 처리는 이미 커밋되었으므로, Redis 세션 폐기가 실패해도 응답을 실패로 되돌리지 않는다.
+        // 대신 로그인/재발급 시 isActive 재검사가 잔여 세션을 막아주는 보완 통제 역할을 한다.
+        try {
+            refreshTokenService.revoke(userId, accessToken);
+        } catch (Exception e) {
+            log.error("탈퇴 처리 후 리프레시 세션/액세스 토큰 폐기 실패. userId={}", userId, e);
+        }
 
         return ResponseEntity.ok(response);
     }
