@@ -112,61 +112,61 @@ public class FairnessResultService {
                 throw new AuditFailedException();
             }
 
-            results.add(toEntity(
-                    audit,
-                    attribute,
+            addIfPresent(
+                    results, audit, attribute,
                     FairnessMetricCode.DEMOGRAPHIC_PARITY,
                     fairness.demographicParityDifference(),
-                    DEMOGRAPHIC_PARITY_THRESHOLD
-            ));
+                    DEMOGRAPHIC_PARITY_THRESHOLD,
+                    fairness.note()
+            );
 
-            results.add(toEntity(
-                    audit,
-                    attribute,
+            addIfPresent(
+                    results, audit, attribute,
                     FairnessMetricCode.EQUAL_OPPORTUNITY,
                     fairness.equalOpportunityDifference(),
-                    EQUAL_OPPORTUNITY_THRESHOLD
-            ));
+                    EQUAL_OPPORTUNITY_THRESHOLD,
+                    fairness.note()
+            );
 
-            results.add(toEntity(
-                    audit,
-                    attribute,
+            addIfPresent(
+                    results, audit, attribute,
                     FairnessMetricCode.EQUALIZED_ODDS,
                     fairness.equalizedOddsDifference(),
-                    EQUALIZED_ODDS_THRESHOLD
-            ));
+                    EQUALIZED_ODDS_THRESHOLD,
+                    fairness.note()
+            );
 
-            results.add(toEntity(
-                    audit,
-                    attribute,
+            addIfPresent(
+                    results, audit, attribute,
                     FairnessMetricCode.FPR_PARITY,
                     fairness.fprParityDifference(),
-                    FPR_PARITY_THRESHOLD
-            ));
+                    FPR_PARITY_THRESHOLD,
+                    fairness.note()
+            );
 
-            results.add(toEntity(
-                    audit,
-                    attribute,
+            addIfPresent(
+                    results, audit, attribute,
                     FairnessMetricCode.FDR_PARITY,
                     fairness.fdrParityDifference(),
-                    FDR_PARITY_THRESHOLD
-            ));
+                    FDR_PARITY_THRESHOLD,
+                    fairness.note()
+            );
 
-            results.add(toEntity(
-                    audit,
-                    attribute,
+            addIfPresent(
+                    results, audit, attribute,
                     FairnessMetricCode.FOR_PARITY,
                     fairness.forParityDifference(),
-                    FOR_PARITY_THRESHOLD
-            ));
+                    FOR_PARITY_THRESHOLD,
+                    fairness.note()
+            );
 
-            results.add(toRatioEntity(
-                    audit,
-                    attribute,
+            addRatioIfPresent(
+                    results, audit, attribute,
                     FairnessMetricCode.PROPORTIONAL_PARITY,
                     fairness.proportionalParityRatio(),
-                    PROPORTIONAL_PARITY_MIN_RATIO
-            ));
+                    PROPORTIONAL_PARITY_MIN_RATIO,
+                    fairness.note()
+            );
         }
 
         fairnessResultRepository.deleteAllByAudit_Id(auditId);
@@ -201,25 +201,28 @@ public class FairnessResultService {
         }
     }
 
-    private FairnessResultEntity toEntity(
+    // AI 응답의 개별 지표값은 null 일 수 있다(해당 집단에 정상/연체 고객이 아예 없어
+    // 계산 자체가 정의되지 않는 경우 — fairness.py 의 note 참고). 그렇다고 감사 전체를
+    // 실패시키면 데이터가 조금만 치우쳐도 결과를 아예 못 보게 되므로, 계산 불가능한
+    // 지표만 조용히 건너뛰고 나머지 지표는 정상 저장한다.
+    private void addIfPresent(
+            List<FairnessResultEntity> results,
             AuditEntity audit,
             String attribute,
             FairnessMetricCode metricCode,
             BigDecimal value,
-            BigDecimal threshold
+            BigDecimal threshold,
+            String note
     ) {
         if (value == null) {
-            throw new AuditFailedException();
+            return;
         }
 
-        return FairnessResultEntity.of(
-                audit,
-                attribute,
-                metricCode,
-                value,
-                threshold,
-                judgeStatus(value.abs(), threshold)
-        );
+        results.add(FairnessResultEntity.of(
+                audit, attribute, metricCode, value, threshold,
+                judgeStatus(value.abs(), threshold),
+                note
+        ));
     }
 
     // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
@@ -235,27 +238,27 @@ public class FairnessResultService {
         return FairnessStatus.FAIL;
     }
 
-    // Proportional Parity(80% Rule) 전용. 다른 지표(toEntity/judgeStatus)와 달리 값이
-    // "클수록" 공정하므로 abs() 없이 그대로 최소 기준(minRatio)과 비교한다.
-    private FairnessResultEntity toRatioEntity(
+    // Proportional Parity(80% Rule) 전용. 다른 지표(addIfPresent/judgeStatus)와 달리
+    // 값이 "클수록" 공정하므로 abs() 없이 그대로 최소 기준(minRatio)과 비교한다.
+    // null 처리 방침은 addIfPresent 와 동일 — 계산 불가면 이 지표만 건너뛴다.
+    private void addRatioIfPresent(
+            List<FairnessResultEntity> results,
             AuditEntity audit,
             String attribute,
             FairnessMetricCode metricCode,
             BigDecimal ratio,
-            BigDecimal minRatio
+            BigDecimal minRatio,
+            String note
     ) {
         if (ratio == null) {
-            throw new AuditFailedException();
+            return;
         }
 
-        return FairnessResultEntity.of(
-                audit,
-                attribute,
-                metricCode,
-                ratio,
-                minRatio,
-                judgeRatioStatus(ratio, minRatio)
-        );
+        results.add(FairnessResultEntity.of(
+                audit, attribute, metricCode, ratio, minRatio,
+                judgeRatioStatus(ratio, minRatio),
+                note
+        ));
     }
 
     // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
