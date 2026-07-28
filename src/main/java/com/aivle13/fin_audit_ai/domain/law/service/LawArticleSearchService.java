@@ -20,6 +20,12 @@ public class LawArticleSearchService {
     private final LawArticleRepository lawArticleRepository;
 
     public List<LawArticleEntity> searchSimilarArticles(String queryText, int topK) {
+        if (topK <= 0) {
+            throw new IllegalArgumentException(
+                    "topK는 1 이상이어야 합니다: " + topK
+            );
+        }
+
         float[] queryEmbedding = embeddingClient.embed(queryText);
 
         return lawArticleRepository.findTopKBySimilarity(

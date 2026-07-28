@@ -13,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class LawArticleSearchServiceTest {
@@ -45,5 +47,18 @@ class LawArticleSearchServiceTest {
 
         assertThat(result).containsExactly(article);
         verify(lawArticleRepository).findTopKBySimilarity(expectedLiteral, 5);
+    }
+
+    @Test
+    void throwsWhenTopKIsZeroOrNegative() {
+        assertThatThrownBy(() ->
+                lawArticleSearchService.searchSimilarArticles("질의 텍스트", 0)
+        ).isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() ->
+                lawArticleSearchService.searchSimilarArticles("질의 텍스트", -1)
+        ).isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(embeddingClient, lawArticleRepository);
     }
 }
