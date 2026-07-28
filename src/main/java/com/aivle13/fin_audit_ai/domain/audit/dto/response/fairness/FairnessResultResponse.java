@@ -26,12 +26,17 @@ public record FairnessResultResponse(
         return new FairnessResultResponse(auditId, "FAIRLEARN", sorted);
     }
 
+    // enum 값을 전부 다뤄 컴파일러가 누락을 잡아주도록 default 없이 둔다 — 새 지표를
+    // 추가하고 여기 안 채우면 컴파일이 깨진다.
     private static int metricOrder(FairnessMetricCode metricCode) {
         return switch (metricCode) {
             case DEMOGRAPHIC_PARITY -> 0;
-            case EQUAL_OPPORTUNITY -> 1;
-            case EQUALIZED_ODDS -> 2;
-            default -> Integer.MAX_VALUE;
+            case PROPORTIONAL_PARITY -> 1;
+            case EQUAL_OPPORTUNITY -> 2;
+            case EQUALIZED_ODDS -> 3;
+            case FPR_PARITY -> 4;
+            case FDR_PARITY -> 5;
+            case FOR_PARITY -> 6;
         };
     }
 }

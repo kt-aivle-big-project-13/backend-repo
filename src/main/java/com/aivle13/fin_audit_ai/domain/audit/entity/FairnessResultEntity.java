@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 /**
  * 감사의 공정성(편향) 지표 측정 결과.
- * 보호속성(성별·연령대 등) × 지표(DP·EO·EOdd) 조합마다 한 행씩 저장한다.
+ * 보호속성(성별·연령대 등) × 지표(FairnessMetricCode 7종) 조합마다 한 행씩 저장한다.
  */
 @Entity
 @Getter
@@ -53,8 +53,8 @@ public class FairnessResultEntity {
     private FairnessStatus status;
 
     public static FairnessResultEntity of(AuditEntity audit, String attribute,
-                                           FairnessMetricCode metricCode, BigDecimal value,
-                                           BigDecimal threshold, FairnessStatus status) {
+                                          FairnessMetricCode metricCode, BigDecimal value,
+                                          BigDecimal threshold, FairnessStatus status) {
         FairnessResultEntity result = new FairnessResultEntity();
         result.audit = audit;
         result.attribute = attribute;
