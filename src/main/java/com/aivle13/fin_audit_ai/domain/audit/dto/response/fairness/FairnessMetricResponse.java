@@ -11,7 +11,8 @@ public record FairnessMetricResponse(
         FairnessMetricCode metricCode,
         BigDecimal value,
         BigDecimal threshold,
-        FairnessStatus status
+        FairnessStatus status,
+        String note
 ) {
 
     public static FairnessMetricResponse from(FairnessResultEntity result) {
@@ -20,7 +21,8 @@ public record FairnessMetricResponse(
                 result.getMetricCode(),
                 result.getValue(),
                 result.getThreshold(),
-                result.getStatus()
+                result.getStatus(),
+                result.getNote()
         );
     }
 }

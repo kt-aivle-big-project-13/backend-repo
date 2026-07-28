@@ -52,7 +52,8 @@ class AuditFairnessControllerTest {
                                         FairnessMetricCode.EQUALIZED_ODDS,
                                         new BigDecimal("0.1230"),
                                         new BigDecimal("0.1000"),
-                                        FairnessStatus.FAIL
+                                        FairnessStatus.FAIL,
+                                        null
                                 )
                         )
                 );
