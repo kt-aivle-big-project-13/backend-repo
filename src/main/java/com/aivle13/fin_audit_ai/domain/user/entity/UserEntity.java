@@ -45,6 +45,14 @@ public class UserEntity extends BaseEntity {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    // 소프트 삭제. 탈퇴해도 감사(Audit) 기록의 소유자 연결은 그대로 보존해야 해서
+    // row는 남기고 비활성화만 한다.
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public static UserEntity create(
             String name,
             String institution,
@@ -82,5 +90,14 @@ public class UserEntity extends BaseEntity {
     ) {
         this.lawSmsEnabled = lawSmsEnabled;
         this.reauditAlertEnabled = reauditAlertEnabled;
+    }
+
+    // 회원 탈퇴(소프트 삭제). 이메일은 unique 제약이 걸려 있어 그대로 두면 같은
+    // 이메일로 재가입이 막히므로, 로그인에는 못 쓰지만 유일성은 보장되는 값으로
+    // 익명화한다. 이름·기관 등 다른 정보는 감사 이력 추적을 위해 그대로 둔다.
+    public void withdraw() {
+        this.isActive = false;
+        this.deletedAt = LocalDateTime.now();
+        this.email = "withdrawn_" + this.id + "@withdrawn.local";
     }
 }

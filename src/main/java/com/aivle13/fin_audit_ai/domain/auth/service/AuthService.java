@@ -10,6 +10,7 @@ import com.aivle13.fin_audit_ai.domain.user.service.email.EmailVerificationServi
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.user.DuplicateEmailException;
 import com.aivle13.fin_audit_ai.global.exception.user.InvalidCredentialsException;
+import com.aivle13.fin_audit_ai.global.exception.user.RefreshTokenMismatchException;
 import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;
 import com.aivle13.fin_audit_ai.global.jwt.JwtProperties;
 import com.aivle13.fin_audit_ai.global.jwt.JwtProvider;
@@ -83,6 +84,11 @@ public class AuthService {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
 
+        // 탈퇴한 계정인지 여부는 노출하지 않고, 다른 로그인 실패와 동일하게 처리한다.
+        if (!user.isActive()) {
+            throw new InvalidCredentialsException();
+        }
+
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
@@ -104,6 +110,12 @@ public class AuthService {
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
+
+        // 탈퇴(비활성화)된 계정은 재발급을 거부하고 남은 리프레시 세션도 정리한다.
+        if (!user.isActive()) {
+            refreshTokenService.revokeSession(userId);
+            throw new RefreshTokenMismatchException();
+        }
 
         return issueTokens(user, rememberMe);
     }
