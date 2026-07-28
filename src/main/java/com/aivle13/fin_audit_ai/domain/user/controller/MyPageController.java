@@ -11,10 +11,12 @@ import com.aivle13.fin_audit_ai.domain.user.dto.response.profile.UserResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.withdraw.WithdrawResponse;
 import com.aivle13.fin_audit_ai.domain.user.service.UserService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 public class MyPageController {
@@ -88,7 +90,13 @@ public class MyPageController {
 
         WithdrawResponse response = userService.withdraw(userId, request);
 
-        refreshTokenService.revoke(userId, accessToken);
+        // DB 탈퇴 처리는 이미 커밋되었으므로, Redis 세션 폐기가 실패해도 응답을 실패로 되돌리지 않는다.
+        // 대신 로그인/재발급 시 isActive 재검사가 잔여 세션을 막아주는 보완 통제 역할을 한다.
+        try {
+            refreshTokenService.revoke(userId, accessToken);
+        } catch (Exception e) {
+            log.error("탈퇴 처리 후 리프레시 세션/액세스 토큰 폐기 실패. userId={}", userId, e);
+        }
 
         return ResponseEntity.ok(response);
     }
