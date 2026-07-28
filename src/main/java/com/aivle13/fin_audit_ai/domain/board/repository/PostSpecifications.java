@@ -11,6 +11,8 @@ public final class PostSpecifications {
     private PostSpecifications() {
     }
 
+    private static final char LIKE_ESCAPE_CHAR = '\\';
+
     // 제목 또는 내용에 검색어를 포함하는 게시글. 검색어가 비어있으면 조건을 걸지 않는다.
     // Spring Data JPA 4.x부터 Specification.where(null)이 예외를 던지므로 항상 non-null을 반환한다.
     public static Specification<PostEntity> keywordContains(String keyword) {
@@ -18,12 +20,20 @@ public final class PostSpecifications {
             return (root, query, cb) -> cb.conjunction();
         }
 
-        String like = "%" + keyword.trim() + "%";
+        String like = "%" + escapeLike(keyword.trim()) + "%";
 
         return (root, query, cb) -> cb.or(
-                cb.like(root.get("title"), like),
-                cb.like(root.get("content"), like)
+                cb.like(root.get("title"), like, LIKE_ESCAPE_CHAR),
+                cb.like(root.get("content"), like, LIKE_ESCAPE_CHAR)
         );
+    }
+
+    // LIKE 패턴의 메타문자(%, _)와 이스케이프 문자 자체(\)를 리터럴로 취급하도록 이스케이프한다.
+    private static String escapeLike(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 
     // 공지(pinned)는 정렬 옵션과 무관하게 항상 최신순으로 최상단에 노출하고,
@@ -43,10 +53,23 @@ public final class PostSpecifications {
                     .when(cb.isFalse(root.get("pinned")), root.<LocalDateTime>get("createdAt"))
                     .otherwise(cb.nullLiteral(LocalDateTime.class));
 
+            // createdAt이 같은 게시글이 있으면 DB가 순서를 보장하지 않아 페이지 분할 시
+            // 중복/누락이 생길 수 있다. id를 마지막 결정적 tie-breaker로 추가하되, pinned는
+            // 정렬 옵션과 무관하게 항상 최신순이어야 하므로 createdAt과 동일하게 그룹별로 분리한다.
+            var pinnedId = cb.<Long>selectCase()
+                    .when(cb.isTrue(root.get("pinned")), root.<Long>get("id"))
+                    .otherwise(cb.nullLiteral(Long.class));
+
+            var unpinnedId = cb.<Long>selectCase()
+                    .when(cb.isFalse(root.get("pinned")), root.<Long>get("id"))
+                    .otherwise(cb.nullLiteral(Long.class));
+
             query.orderBy(
                     cb.desc(root.get("pinned")),
                     cb.desc(pinnedCreatedAt),
-                    oldestFirst ? cb.asc(unpinnedCreatedAt) : cb.desc(unpinnedCreatedAt)
+                    cb.desc(pinnedId),
+                    oldestFirst ? cb.asc(unpinnedCreatedAt) : cb.desc(unpinnedCreatedAt),
+                    oldestFirst ? cb.asc(unpinnedId) : cb.desc(unpinnedId)
             );
 
             return cb.conjunction();

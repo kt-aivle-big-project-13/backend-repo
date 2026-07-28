@@ -63,8 +63,9 @@ public class PostCommandService {
         List<Long> deleteIds = request.deleteAttachmentIds();
         if (deleteIds != null && !deleteIds.isEmpty()) {
             List<PostAttachmentEntity> toDelete = attachmentRepository.findByPost_IdAndIdIn(postId, deleteIds);
+            List<String> fileKeys = toDelete.stream().map(PostAttachmentEntity::getFileKey).toList();
             attachmentRepository.deleteAll(toDelete);
-            toDelete.forEach(attachment -> fileStorageService.delete(attachment.getFileKey()));
+            fileStorageService.deleteAfterCommit(fileKeys);
         }
 
         storeAttachments(post, request.files());
@@ -86,7 +87,7 @@ public class PostCommandService {
         attachmentRepository.deleteAll(attachments);
         postRepository.delete(post);
 
-        fileKeys.forEach(fileStorageService::delete);
+        fileStorageService.deleteAfterCommit(fileKeys);
     }
 
     // 관리자만 접근 가능하도록 SecurityConfig에서 경로를 제한하지만, 서비스 단에서도 방어적으로 재확인한다.
@@ -133,6 +134,10 @@ public class PostCommandService {
         if (validFiles.isEmpty()) {
             return;
         }
+
+        // 같은 게시글에 대한 동시 첨부 요청이 카운트 검증을 동시에 통과해 최대 개수를
+        // 넘기지 않도록, 카운트 확인 전에 게시글 행을 잠근다.
+        postRepository.findByIdForUpdate(post.getId()).orElseThrow(PostNotFoundException::new);
 
         long existingCount = attachmentRepository.countByPost_Id(post.getId());
         if (existingCount + validFiles.size() > MAX_ATTACHMENTS) {

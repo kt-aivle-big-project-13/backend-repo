@@ -8,6 +8,8 @@ import com.aivle13.fin_audit_ai.domain.board.dto.response.PostSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.board.service.PostCommandService;
 import com.aivle13.fin_audit_ai.domain.board.service.PostQueryService;
 import com.aivle13.fin_audit_ai.global.dto.PageResponse;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
+import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,8 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class PostController {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final PostQueryService postQueryService;
     private final PostCommandService postCommandService;
 
@@ -41,6 +45,10 @@ public class PostController {
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
+        }
+
+        if (page < 1 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
         return ResponseEntity.ok(postQueryService.list(page, size, keyword, sort));

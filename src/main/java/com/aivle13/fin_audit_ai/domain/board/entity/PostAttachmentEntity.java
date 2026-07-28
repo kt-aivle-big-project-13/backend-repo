@@ -22,7 +22,9 @@ public class PostAttachmentEntity extends BaseEntity {
     @JoinColumn(name = "post_id")
     private PostEntity post;
 
-    @Column(name = "file_key", nullable = false, length = 255)
+    // prefix + '/' + UUID + '_' + 원본 파일명으로 구성돼 원본 파일명(255자)보다
+    // 길어질 수 있으므로 여유 있게 잡는다.
+    @Column(name = "file_key", nullable = false, length = 512)
     private String fileKey;
 
     @Column(name = "original_name", nullable = false, length = 255)

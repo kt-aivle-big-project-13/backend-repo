@@ -45,4 +45,26 @@ public interface FileStorageService {
             }
         });
     }
+
+    // 교체/삭제로 더 이상 참조되지 않는 기존 S3 객체는 DB 트랜잭션이 커밋된 뒤에만 지운다.
+    // 커밋 전에 지우면, 이후 같은 트랜잭션에서 다른 작업이 실패해 롤백될 때 DB 행은
+    // 복구되지만 이미 삭제된 S3 객체는 복구되지 않아 참조가 끊긴다.
+    default void deleteAfterCommit(List<String> s3Keys) {
+        if (s3Keys.isEmpty()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                for (String s3Key : s3Keys) {
+                    try {
+                        delete(s3Key);
+                    } catch (RuntimeException e) {
+                        LOG.warn("S3 객체 정리 실패: key={}", s3Key, e);
+                    }
+                }
+            }
+        });
+    }
 }
