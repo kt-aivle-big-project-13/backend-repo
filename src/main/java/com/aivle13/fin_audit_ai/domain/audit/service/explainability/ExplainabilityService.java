@@ -164,7 +164,8 @@ public class ExplainabilityService {
     private XaiStatus mapStatus(String status) {
         return switch (status.trim().toUpperCase(Locale.ROOT)) {
             case "PASS" -> XaiStatus.PASS;
-            case "WARNING", "REVIEW" -> XaiStatus.REVIEW;
+            case "WARNING" -> XaiStatus.WARNING;
+            case "REVIEW" -> XaiStatus.REVIEW;
             default -> throw new AuditFailedException();
         };
     }

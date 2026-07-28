@@ -5,11 +5,13 @@ import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordFindReq
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordResetRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.VerifyPasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.profile.UpdateNameRequest;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.withdraw.WithdrawRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.ChangePasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordFindResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.PasswordResetResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.password.VerifyPasswordResponse;
 import com.aivle13.fin_audit_ai.domain.user.dto.response.profile.UserResponse;
+import com.aivle13.fin_audit_ai.domain.user.dto.response.withdraw.WithdrawResponse;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.domain.user.service.password.PasswordResetTokenService;
@@ -99,6 +101,21 @@ public class UserService {
         user.changePassword(passwordEncoder.encode(request.newPassword()));
 
         return ChangePasswordResponse.success();
+    }
+
+    // 회원 탈퇴 (소프트 삭제) - 파괴적 동작이라 비밀번호 재확인 후 처리
+    @Transactional
+    public WithdrawResponse withdraw(Long userId, WithdrawRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.CURRENT_PASSWORD_MISMATCH);
+        }
+
+        user.withdraw();
+
+        return WithdrawResponse.success();
     }
 
     // 비밀번호 찾기

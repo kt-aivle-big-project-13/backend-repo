@@ -2,7 +2,9 @@ package com.aivle13.fin_audit_ai.domain.audit.repository;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -12,6 +14,15 @@ import java.util.Optional;
 public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
 
     Optional<AuditEntity> findByIdAndUser_Id(Long auditId, Long userId);
+
+    // 동일 감사에 대한 동시 쓰기(예: 자율점검 응답 동시 저장)를 직렬화하기 위한 비관적 쓰기 잠금 조회.
+    // 잠금은 호출한 트랜잭션이 끝날 때까지 유지된다.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select audit from AuditEntity audit where audit.id = :auditId and audit.user.id = :userId")
+    Optional<AuditEntity> findByIdAndUser_IdForUpdate(
+            @Param("auditId") Long auditId,
+            @Param("userId") Long userId
+    );
 
     boolean existsByModel_IdAndStatusIn(Long modelId, List<AuditStatus> statuses);
 

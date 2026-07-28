@@ -9,4 +9,6 @@ public interface SelfCheckAnswerRepository
         extends JpaRepository<SelfCheckAnswerEntity, Long> {
 
     List<SelfCheckAnswerEntity> findAllByAudit_Id(Long auditId);
+
+    void deleteAllByAudit_Id(Long auditId);
 }
