@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.CacheManager;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -236,19 +237,55 @@ class FairnessResultServiceTest {
     }
 
     @Test
-    void throwsWhenAttributeMetricValueIsNull() {
+    void skipsMetricsThatAreNullInsteadOfFailingWholeAudit() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getUser())
+                .willReturn(user);
+        given(user.getId())
+                .willReturn(USER_ID);
+
+        // 일부 집단에 정상/연체 고객이 아예 없어 EQUAL_OPPORTUNITY 등은 계산 불가(null)로
+        // 온 상황을 재현 — DEMOGRAPHIC_PARITY 와 PROPORTIONAL_PARITY 만 값이 있다.
+        FairnessRunResponse response = new FairnessRunResponse(
+                "21", "테스트 감사", null, 0, null, null,
+                Map.of(
+                        "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
+                                "CODE_GENDER", "COMPUTED",
+                                new BigDecimal("0.05"), null, null,
+                                new BigDecimal("0.85"), null, null, null,
+                                List.of(), List.of(), "일부 집단에 정상 또는 연체 고객이 없어 해당 지표를 계산할 수 없음"
+                        )
+                ),
+                Map.of(),
+                List.of()
+        );
+
+        fairnessResultService.saveFairnessResult(AUDIT_ID, response);
+
+        verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessResultRepository).saveAll(resultCaptor.capture());
+
+        assertThat(resultCaptor.getValue())
+                .extracting(
+                        FairnessResultEntity::getAttribute,
+                        FairnessResultEntity::getMetricCode,
+                        FairnessResultEntity::getStatus
+                )
+                .containsExactlyInAnyOrder(
+                        tuple("CODE_GENDER", FairnessMetricCode.DEMOGRAPHIC_PARITY, FairnessStatus.PASS),
+                        tuple("CODE_GENDER", FairnessMetricCode.PROPORTIONAL_PARITY, FairnessStatus.PASS)
+                );
+    }
+
+    @Test
+    void throwsWhenAttributeItselfIsNull() {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
         FairnessRunResponse response = new FairnessRunResponse(
                 "21", "테스트 감사", null, 0, null, null,
-                Map.of(
-                        "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
-                                "CODE_GENDER", "PASS",
-                                null, null, null, null, null, null, null,
-                                List.of(), List.of(), null
-                        )
-                ),
+                Collections.singletonMap("CODE_GENDER", null),
                 Map.of(),
                 List.of()
         );

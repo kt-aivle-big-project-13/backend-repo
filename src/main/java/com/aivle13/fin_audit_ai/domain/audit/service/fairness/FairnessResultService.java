@@ -113,9 +113,7 @@ public class FairnessResultService {
             }
 
             addIfPresent(
-                    results,
-                    audit,
-                    attribute,
+                    results, audit, attribute,
                     FairnessMetricCode.DEMOGRAPHIC_PARITY,
                     fairness.demographicParityDifference(),
                     DEMOGRAPHIC_PARITY_THRESHOLD,
@@ -123,9 +121,7 @@ public class FairnessResultService {
             );
 
             addIfPresent(
-                    results,
-                    audit,
-                    attribute,
+                    results, audit, attribute,
                     FairnessMetricCode.EQUAL_OPPORTUNITY,
                     fairness.equalOpportunityDifference(),
                     EQUAL_OPPORTUNITY_THRESHOLD,
@@ -133,9 +129,7 @@ public class FairnessResultService {
             );
 
             addIfPresent(
-                    results,
-                    audit,
-                    attribute,
+                    results, audit, attribute,
                     FairnessMetricCode.EQUALIZED_ODDS,
                     fairness.equalizedOddsDifference(),
                     EQUALIZED_ODDS_THRESHOLD,
@@ -143,9 +137,7 @@ public class FairnessResultService {
             );
 
             addIfPresent(
-                    results,
-                    audit,
-                    attribute,
+                    results, audit, attribute,
                     FairnessMetricCode.FPR_PARITY,
                     fairness.fprParityDifference(),
                     FPR_PARITY_THRESHOLD,
@@ -153,9 +145,7 @@ public class FairnessResultService {
             );
 
             addIfPresent(
-                    results,
-                    audit,
-                    attribute,
+                    results, audit, attribute,
                     FairnessMetricCode.FDR_PARITY,
                     fairness.fdrParityDifference(),
                     FDR_PARITY_THRESHOLD,
@@ -163,9 +153,7 @@ public class FairnessResultService {
             );
 
             addIfPresent(
-                    results,
-                    audit,
-                    attribute,
+                    results, audit, attribute,
                     FairnessMetricCode.FOR_PARITY,
                     fairness.forParityDifference(),
                     FOR_PARITY_THRESHOLD,
@@ -173,9 +161,7 @@ public class FairnessResultService {
             );
 
             addRatioIfPresent(
-                    results,
-                    audit,
-                    attribute,
+                    results, audit, attribute,
                     FairnessMetricCode.PROPORTIONAL_PARITY,
                     fairness.proportionalParityRatio(),
                     PROPORTIONAL_PARITY_MIN_RATIO,
@@ -233,11 +219,7 @@ public class FairnessResultService {
         }
 
         results.add(FairnessResultEntity.of(
-                audit,
-                attribute,
-                metricCode,
-                value,
-                threshold,
+                audit, attribute, metricCode, value, threshold,
                 judgeStatus(value.abs(), threshold),
                 note
         ));
@@ -273,11 +255,7 @@ public class FairnessResultService {
         }
 
         results.add(FairnessResultEntity.of(
-                audit,
-                attribute,
-                metricCode,
-                ratio,
-                minRatio,
+                audit, attribute, metricCode, ratio, minRatio,
                 judgeRatioStatus(ratio, minRatio),
                 note
         ));
