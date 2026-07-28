@@ -45,7 +45,7 @@ public class PostQueryService {
         Sort sortOrder = Sort.by(Sort.Order.desc("pinned"), new Sort.Order(direction, "createdAt"));
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, sortOrder);
 
-        Specification<PostEntity> spec = Specification.where(PostSpecifications.keywordContains(keyword));
+        Specification<PostEntity> spec = PostSpecifications.keywordContains(keyword);
         Page<PostEntity> result = postRepository.findAll(spec, pageable);
 
         List<Long> postIds = result.getContent().stream().map(PostEntity::getId).toList();
