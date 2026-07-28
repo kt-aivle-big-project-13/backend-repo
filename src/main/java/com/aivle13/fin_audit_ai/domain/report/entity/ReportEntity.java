@@ -45,4 +45,21 @@ public class ReportEntity extends BaseEntity {
 
     @Column(name = "file_path", nullable = false, length = 255)
     private String filePath;
+
+    // 생성 완료된 보고서 파일 메타데이터 생성
+    public static ReportEntity create(
+            AuditEntity audit,
+            ReportType reportType,
+            ReportFormat format,
+            String filePath
+    ) {
+        ReportEntity report = new ReportEntity();
+        report.audit = audit;
+        report.reportType = reportType;
+        report.format = format;
+        report.status = ReportStatus.COMPLETED;
+        report.filePath = filePath;
+
+        return report;
+    }
 }

@@ -26,11 +26,7 @@ public class S3FileStorageService implements FileStorageService {
 
     @Override
     public StoredFile store(MultipartFile file, String prefix) {
-        String key = "%s/%s_%s".formatted(
-                prefix,
-                UUID.randomUUID(),
-                file.getOriginalFilename()
-        );
+        String key = createKey(prefix, file.getOriginalFilename());
 
         try {
             s3Client.putObject(
@@ -39,13 +35,50 @@ public class S3FileStorageService implements FileStorageService {
                             .key(key)
                             .contentType(file.getContentType())
                             .build(),
-                    RequestBody.fromInputStream(file.getInputStream(), file.getSize())
+                    RequestBody.fromInputStream(
+                            file.getInputStream(),
+                            file.getSize()
+                    )
             );
         } catch (IOException e) {
             throw new FileUploadFailedException(file.getOriginalFilename(), e);
         }
 
         return new StoredFile(key, file.getOriginalFilename(), file.getContentType(), file.getSize());
+    }
+
+    // PDF/WORD byte[] 파일 저장
+    @Override
+    public StoredFile store(
+            byte[] content,
+            String originalFilename,
+            String contentType,
+            String prefix
+    ) {
+        String key = createKey(prefix, originalFilename);
+
+        try {
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(key)
+                            .contentType(contentType)
+                            .build(),
+                    RequestBody.fromBytes(content)
+            );
+        } catch (RuntimeException e) {
+            throw new FileUploadFailedException(
+                    originalFilename,
+                    e
+            );
+        }
+
+        return new StoredFile(
+                key,
+                originalFilename,
+                contentType,
+                content.length
+        );
     }
 
     @Override
@@ -55,6 +88,18 @@ public class S3FileStorageService implements FileStorageService {
                         .bucket(bucket)
                         .key(s3Key)
                         .build()
+        );
+    }
+
+    // S3 객체 키 생성
+    private String createKey(
+            String prefix,
+            String originalFilename
+    ) {
+        return "%s/%s_%s".formatted(
+                prefix,
+                UUID.randomUUID(),
+                originalFilename
         );
     }
 }
