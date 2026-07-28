@@ -67,7 +67,13 @@ public enum ErrorCode {
     // ===== File Storage (EF) =====
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EF001", "파일 업로드에 실패했습니다."),
     EMPTY_FILE(HttpStatus.BAD_REQUEST, "EF002", "업로드할 파일이 존재하지 않습니다."),
-    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "EF003", "지원하지 않는 파일 형식입니다.");
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "EF003", "지원하지 않는 파일 형식입니다."),
+
+    // ===== Board (EB) =====
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "EB001", "게시글을 찾을 수 없습니다."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "EB002", "댓글을 찾을 수 없습니다."),
+    ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "EB003", "첨부파일을 찾을 수 없습니다."),
+    ATTACHMENT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EB004", "첨부파일은 게시글당 최대 5개까지 첨부할 수 있습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

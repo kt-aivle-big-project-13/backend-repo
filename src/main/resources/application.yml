@@ -94,6 +94,10 @@ cloud:
       bucket: ${AWS_S3_BUCKET}
 
 app:
+  admin:
+    email: ${ADMIN_EMAIL:admin@finaudit.ai}
+    password: ${ADMIN_PASSWORD:1234}
+
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
 
   ai-server:
