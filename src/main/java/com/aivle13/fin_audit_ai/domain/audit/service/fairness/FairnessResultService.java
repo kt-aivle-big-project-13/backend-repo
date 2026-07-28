@@ -35,7 +35,17 @@ public class FairnessResultService {
     private static final BigDecimal DEMOGRAPHIC_PARITY_THRESHOLD = new BigDecimal("0.10");
     private static final BigDecimal EQUAL_OPPORTUNITY_THRESHOLD = new BigDecimal("0.10");
     private static final BigDecimal EQUALIZED_ODDS_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal FPR_PARITY_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal FDR_PARITY_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal FOR_PARITY_THRESHOLD = new BigDecimal("0.10");
     private static final BigDecimal REVIEW_THRESHOLD_MULTIPLIER = BigDecimal.valueOf(2);
+
+    // Proportional Parity(80% Rule)는 값이 낮을수록 불공정한 "비율" 지표라, 위 세 지표와
+    // 판정 방향이 반대다(다른 지표는 값이 "작을수록" 공정, 이건 "클수록" 공정). 그래서
+    // 별도 임계값·판정 로직(judgeRatioStatus)을 쓴다.
+    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
+    private static final BigDecimal PROPORTIONAL_PARITY_MIN_RATIO = new BigDecimal("0.80");
+    private static final BigDecimal PROPORTIONAL_PARITY_REVIEW_MARGIN = new BigDecimal("0.10");
 
     private final AuditRepository auditRepository;
     private final FairnessResultRepository fairnessResultRepository;
@@ -125,6 +135,38 @@ public class FairnessResultService {
                     fairness.equalizedOddsDifference(),
                     EQUALIZED_ODDS_THRESHOLD
             ));
+
+            results.add(toEntity(
+                    audit,
+                    attribute,
+                    FairnessMetricCode.FPR_PARITY,
+                    fairness.fprParityDifference(),
+                    FPR_PARITY_THRESHOLD
+            ));
+
+            results.add(toEntity(
+                    audit,
+                    attribute,
+                    FairnessMetricCode.FDR_PARITY,
+                    fairness.fdrParityDifference(),
+                    FDR_PARITY_THRESHOLD
+            ));
+
+            results.add(toEntity(
+                    audit,
+                    attribute,
+                    FairnessMetricCode.FOR_PARITY,
+                    fairness.forParityDifference(),
+                    FOR_PARITY_THRESHOLD
+            ));
+
+            results.add(toRatioEntity(
+                    audit,
+                    attribute,
+                    FairnessMetricCode.PROPORTIONAL_PARITY,
+                    fairness.proportionalParityRatio(),
+                    PROPORTIONAL_PARITY_MIN_RATIO
+            ));
         }
 
         fairnessResultRepository.deleteAllByAudit_Id(auditId);
@@ -187,6 +229,42 @@ public class FairnessResultService {
         }
 
         if (absValue.compareTo(threshold.multiply(REVIEW_THRESHOLD_MULTIPLIER)) <= 0) {
+            return FairnessStatus.REVIEW;
+        }
+
+        return FairnessStatus.FAIL;
+    }
+
+    // Proportional Parity(80% Rule) 전용. 다른 지표(toEntity/judgeStatus)와 달리 값이
+    // "클수록" 공정하므로 abs() 없이 그대로 최소 기준(minRatio)과 비교한다.
+    private FairnessResultEntity toRatioEntity(
+            AuditEntity audit,
+            String attribute,
+            FairnessMetricCode metricCode,
+            BigDecimal ratio,
+            BigDecimal minRatio
+    ) {
+        if (ratio == null) {
+            throw new AuditFailedException();
+        }
+
+        return FairnessResultEntity.of(
+                audit,
+                attribute,
+                metricCode,
+                ratio,
+                minRatio,
+                judgeRatioStatus(ratio, minRatio)
+        );
+    }
+
+    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
+    private FairnessStatus judgeRatioStatus(BigDecimal ratio, BigDecimal minRatio) {
+        if (ratio.compareTo(minRatio) >= 0) {
+            return FairnessStatus.PASS;
+        }
+
+        if (ratio.compareTo(minRatio.subtract(PROPORTIONAL_PARITY_REVIEW_MARGIN)) >= 0) {
             return FairnessStatus.REVIEW;
         }
 
