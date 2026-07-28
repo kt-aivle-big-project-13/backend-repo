@@ -30,7 +30,10 @@ public class SelfCheckAnswerService {
 
     @Transactional
     public SelfCheckAnswerResponse save(Long userId, Long auditId, SelfCheckAnswerSaveRequest request) {
-        AuditEntity audit = findAudit(userId, auditId);
+        // 동일 auditId에 대한 동시 저장 요청을 직렬화하기 위해 감사 행에 비관적 쓰기 잠금을 건다.
+        // 잠금은 이 트랜잭션이 끝날 때(delete+save 완료 후 커밋)까지 유지되어, 뒤이은 요청은
+        // 앞 요청이 끝난 뒤에야 조회를 진행한다.
+        AuditEntity audit = findAuditForUpdate(userId, auditId);
 
         // 자율점검(STEP4)은 SHAP·Fairlearn 분석이 끝난 뒤 화면에 결과와 함께 노출되는 단계라,
         // 분석이 아직 안 끝난 감사(PENDING/IN_PROGRESS)에는 제출을 막는다.
@@ -60,6 +63,11 @@ public class SelfCheckAnswerService {
 
     private AuditEntity findAudit(Long userId, Long auditId) {
         return auditRepository.findByIdAndUser_Id(auditId, userId)
+                .orElseThrow(AuditNotFoundException::new);
+    }
+
+    private AuditEntity findAuditForUpdate(Long userId, Long auditId) {
+        return auditRepository.findByIdAndUser_IdForUpdate(auditId, userId)
                 .orElseThrow(AuditNotFoundException::new);
     }
 

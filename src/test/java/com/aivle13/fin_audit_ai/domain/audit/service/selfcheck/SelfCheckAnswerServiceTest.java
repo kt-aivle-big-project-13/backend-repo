@@ -48,7 +48,7 @@ class SelfCheckAnswerServiceTest {
 
     @Test
     void savesAllFiveAnswersAndReturnsResponse() {
-        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
         given(audit.getStatus()).willReturn(AuditStatus.COMPLIANT);
 
@@ -77,7 +77,7 @@ class SelfCheckAnswerServiceTest {
 
     @Test
     void throwsWhenAnswerIsMissingAnItem() {
-        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
@@ -96,7 +96,7 @@ class SelfCheckAnswerServiceTest {
 
     @Test
     void throwsWhenAnswerHasDuplicateItem() {
-        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
@@ -115,7 +115,7 @@ class SelfCheckAnswerServiceTest {
 
     @Test
     void throwsWhenAuditAnalysisNotCompleted() {
-        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
         given(audit.getStatus()).willReturn(AuditStatus.IN_PROGRESS);
 
