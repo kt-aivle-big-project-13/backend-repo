@@ -54,6 +54,9 @@ public class ReportDownloadService {
             case WORD ->
                     "final-audit-report-%d.docx"
                             .formatted(report.getAudit().getId());
+
+            case HTML -> "final-audit-report-%d.html"
+                    .formatted(report.getAudit().getId());
         };
     }
 }
