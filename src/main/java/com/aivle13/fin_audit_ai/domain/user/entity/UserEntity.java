@@ -32,13 +32,15 @@ public class UserEntity extends BaseEntity {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "law_sms_enabled", nullable = false)
-    private boolean lawSmsEnabled = true;
+    @Column(name = "law_email_enabled", nullable = false,
+            columnDefinition = "boolean not null default true")
+    private boolean lawEmailEnabled = true;
 
     @Column(name = "reaudit_alert_enabled", nullable = false)
     private boolean reauditAlertEnabled = true;
 
-    @Column(name = "audit_complete_alert_enabled", nullable = false)
+    @Column(name = "audit_complete_alert_enabled", nullable = false,
+            columnDefinition = "boolean not null default true")
     private boolean auditCompleteAlertEnabled = true;
 
     @Enumerated(EnumType.STRING)
@@ -69,7 +71,7 @@ public class UserEntity extends BaseEntity {
         user.email = email;
         user.passwordHash = passwordHash;
         user.role = role;
-        user.lawSmsEnabled = true;
+        user.lawEmailEnabled = true;
         user.reauditAlertEnabled = true;
         user.auditCompleteAlertEnabled = true;
 
@@ -89,11 +91,11 @@ public class UserEntity extends BaseEntity {
     }
 
     public void updateNotificationPreferences(
-            boolean lawSmsEnabled,
+            boolean lawEmailEnabled,
             boolean reauditAlertEnabled,
             boolean auditCompleteAlertEnabled
     ) {
-        this.lawSmsEnabled = lawSmsEnabled;
+        this.lawEmailEnabled = lawEmailEnabled;
         this.reauditAlertEnabled = reauditAlertEnabled;
         this.auditCompleteAlertEnabled = auditCompleteAlertEnabled;
     }

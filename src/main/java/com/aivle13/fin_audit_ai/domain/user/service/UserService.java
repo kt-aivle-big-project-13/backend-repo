@@ -82,7 +82,7 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
 
         user.updateNotificationPreferences(
-                request.lawSmsEnabled(),
+                request.lawEmailEnabled(),
                 request.reauditAlertEnabled(),
                 request.auditCompleteAlertEnabled()
         );
