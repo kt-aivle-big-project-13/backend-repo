@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.request.selfcheck.SelfCheckAnsw
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.selfcheck.SelfCheckAnswerResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
+import com.aivle13.fin_audit_ai.domain.audit.event.SelfCheckAnswersSubmittedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
@@ -12,6 +13,7 @@ import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedExceptio
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.InvalidSelfCheckAnswersException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class SelfCheckAnswerService {
 
     private final AuditRepository auditRepository;
     private final SelfCheckAnswerRepository selfCheckAnswerRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public SelfCheckAnswerResponse save(Long userId, Long auditId, SelfCheckAnswerSaveRequest request) {
@@ -49,6 +52,9 @@ public class SelfCheckAnswerService {
 
         selfCheckAnswerRepository.deleteAllByAudit_Id(auditId);
         List<SelfCheckAnswerEntity> saved = selfCheckAnswerRepository.saveAll(entities);
+
+        // 커밋 후 비동기로 법령 매핑 후보를 생성한다(SelfCheckLawMappingEventListener).
+        eventPublisher.publishEvent(new SelfCheckAnswersSubmittedEvent(auditId));
 
         return SelfCheckAnswerResponse.of(auditId, saved);
     }
