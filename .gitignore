@@ -44,3 +44,7 @@ out/
 !.env.example
 
 /image
+
+# 로컬 참고 문서 (원격 미반영)
+/CLAUDE.md
+/api-spec.md
