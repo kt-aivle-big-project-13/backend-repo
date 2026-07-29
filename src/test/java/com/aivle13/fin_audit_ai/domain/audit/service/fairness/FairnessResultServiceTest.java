@@ -180,17 +180,19 @@ class FairnessResultServiceTest {
                 new BigDecimal("0.91"),
                 "validation_dataset",
                 Map.of(
+                        // 격차 지표 밴드: PASS ≤ 0.20, REVIEW ≤ 0.40, 초과 FAIL.
+                        // Proportional Parity 는 ≥ 0.80 이면 PASS(80% Rule).
                         "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
                                 "CODE_GENDER",
                                 "REVIEW",
-                                new BigDecimal("0.05"),
-                                new BigDecimal("0.15"),
-                                new BigDecimal("-0.30"),
-                                new BigDecimal("0.85"),
-                                new BigDecimal("0.05"),
-                                new BigDecimal("0.15"),
-                                new BigDecimal("-0.35"),
-                                new BigDecimal("0.15"),
+                                new BigDecimal("0.05"),   // DP  → PASS
+                                new BigDecimal("0.30"),   // EO  → REVIEW
+                                new BigDecimal("-0.50"),  // EOdds → FAIL
+                                new BigDecimal("0.85"),   // Proportional → PASS
+                                new BigDecimal("0.05"),   // FPR → PASS
+                                new BigDecimal("0.30"),   // FDR → REVIEW
+                                new BigDecimal("-0.50"),  // FOR → FAIL
+                                new BigDecimal("0.30"),   // FNR → REVIEW
                                 List.of(),
                                 List.of(),
                                 null
