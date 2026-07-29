@@ -26,6 +26,7 @@ public class ReportPersistenceService {
     @Transactional
     public Long save(
             Long auditId,
+            ReportType reportType,
             ReportFormat format,
             String s3Key
     ) {
@@ -43,7 +44,7 @@ public class ReportPersistenceService {
 
         ReportEntity report = ReportEntity.create(
                 audit,
-                ReportType.FINAL_AUDIT_REPORT,
+                reportType,
                 format,
                 s3Key
         );
