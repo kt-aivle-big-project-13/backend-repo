@@ -44,6 +44,8 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
 
     // validationDataset은 nullable이라 inner join fetch를 쓰면 값이 없는 감사가
     // 통째로 빠지므로 left join fetch로 가져온다.
+    // validationDataset은 nullable이라 inner join fetch를 쓰면 값이 없는 감사가
+    // 통째로 빠지므로 left join fetch로 가져온다.
     @Query("""
             select audit
             from AuditEntity audit
@@ -54,5 +56,18 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
             """)
     Optional<AuditEntity> findByIdWithModelAndDataset(
             @Param("auditId") Long auditId
+    );
+
+    @Query("""
+            select audit
+            from AuditEntity audit
+            join fetch audit.model
+            join fetch audit.dataset
+            where audit.id = :auditId
+              and audit.user.id = :userId
+            """)
+    Optional<AuditEntity> findByIdAndUser_IdWithModelAndDataset(
+            @Param("auditId") Long auditId,
+            @Param("userId") Long userId
     );
 }
