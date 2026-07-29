@@ -83,7 +83,7 @@ com.aivle13.fin_audit_ai
 │   ├── auth/                    # 로그인/회원가입/토큰 재발급 (AuthService, RefreshTokenService)
 │   ├── model/                  # 감사 대상 AI 모델 (AiModelEntity, ModelType, ModelStatus)
 │   ├── diagnosis/               # 고영향 여부 사전진단 (PreDiagnosisEntity, DiagnosisAnswerEntity, DiagnosisResult)
-│   ├── audit/                   # 감사 진행/결과 (AuditEntity, XaiResultEntity, FairnessResultEntity, SelfCheckAnswerEntity, AuditLawMappingEntity)
+│   ├── audit/                   # 감사 진행/결과 (AuditEntity, XaiResultEntity, FairnessResultEntity, SelfCheckAnswerEntity, AuditRegulationMappingEntity)
 │   ├── law/                     # 법령 조항/개정 추적 (LawArticleEntity, LawRevisionEntity)
 │   ├── report/                  # 감사 보고서 (ReportEntity)
 │   ├── notification/            # 알림 발송 이력 (NotificationEntity)

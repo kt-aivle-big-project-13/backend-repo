@@ -1,6 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.report.dto;
 
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ public record ReportGenerationContext(
         List<AuditMetricView> xaiResults,
         List<AuditMetricView> fairnessResults,
         List<AuditMetricView> selfCheckResults,
-        List<AuditLawComplianceView> lawCompliances,
+        List<AuditRegulationComplianceView> regulationCompliances,
         List<String> improvementGuides
 ) {
 }

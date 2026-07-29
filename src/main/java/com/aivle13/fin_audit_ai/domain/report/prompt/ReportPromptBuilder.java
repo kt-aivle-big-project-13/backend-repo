@@ -1,6 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.report.prompt;
 
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.report.dto.AuditMetricView;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
 import com.aivle13.fin_audit_ai.domain.report.template.ReportSectionTemplate;
@@ -46,9 +46,9 @@ public final class ReportPromptBuilder {
                 context.selfCheckResults()
         );
 
-        appendLawCompliances(
+        appendRegulationCompliances(
                 prompt,
-                context.lawCompliances()
+                context.regulationCompliances()
         );
 
         appendImprovementGuides(
@@ -96,9 +96,9 @@ public final class ReportPromptBuilder {
     }
 
     // 확정된 법령 준수 결과를 프롬프트 형식으로 변환
-    private static void appendLawCompliances(
+    private static void appendRegulationCompliances(
             StringBuilder prompt,
-            List<AuditLawComplianceView> mappings
+            List<AuditRegulationComplianceView> mappings
     ) {
         prompt.append("[확정된 법령 준수 결과]\n");
 
@@ -107,7 +107,7 @@ public final class ReportPromptBuilder {
             return;
         }
 
-        for (AuditLawComplianceView mapping : mappings) {
+        for (AuditRegulationComplianceView mapping : mappings) {
             prompt.append("- 조항: ")
                     .append(valueOrEmpty(mapping.articleNumber()))
                     .append(' ')

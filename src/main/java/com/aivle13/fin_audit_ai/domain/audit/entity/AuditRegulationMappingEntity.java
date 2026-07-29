@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_audit_law_mappings_audit_article",
                 columnNames = {"audit_id", "article_id"}))
-public class AuditLawMappingEntity {
+public class AuditRegulationMappingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,13 +39,13 @@ public class AuditLawMappingEntity {
     @Column(columnDefinition = "TEXT")
     private String evidence;
 
-    public static AuditLawMappingEntity of(
+    public static AuditRegulationMappingEntity of(
             AuditEntity audit,
             LawArticleEntity article,
             ComplianceStatus compliance,
             String evidence
     ) {
-        AuditLawMappingEntity entity = new AuditLawMappingEntity();
+        AuditRegulationMappingEntity entity = new AuditRegulationMappingEntity();
         entity.audit = audit;
         entity.article = article;
         entity.compliance = compliance;
