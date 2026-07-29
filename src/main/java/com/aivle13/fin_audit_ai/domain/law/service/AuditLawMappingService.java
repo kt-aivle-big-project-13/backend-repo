@@ -6,6 +6,7 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.AuditLawMappingRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
@@ -18,14 +19,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 자율점검 응답을 질의로 삼아 관련 법령 조항을 찾아 audit_law_mappings에 저장한다.
+ * 자율점검 응답을 질의로 삼아 관련 법령 조항을 찾아 audit_law_mappings에 저장/조회한다.
  * compliance는 사람이 검토해서 정하는 게 아니라 해당 항목의 답변으로 즉시 결정된다:
  * 예(true) → COMPLIANT, 아니요(false) → NON_COMPLIANT. 재제출 시 이전 매핑을 전부 지우고
  * 다시 채운다.
  */
 @Service
 @RequiredArgsConstructor
-public class AuditLawMappingService {
+public class AuditLawMappingService implements AuditLawMappingQueryService {
 
     private static final int TOP_K = 5;
 
@@ -74,5 +75,13 @@ public class AuditLawMappingService {
         }
 
         auditLawMappingRepository.saveAll(mappings.values());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AuditLawComplianceView> getMappings(Long auditId) {
+        return auditLawMappingRepository.findAllByAudit_Id(auditId).stream()
+                .map(AuditLawComplianceView::from)
+                .toList();
     }
 }

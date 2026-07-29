@@ -6,9 +6,6 @@ import java.util.List;
 
 public interface AuditLawMappingQueryService {
 
-    // 담당자가 검토를 완료한 법령 매핑 조회
-    List<AuditLawComplianceView> getConfirmedMappings(Long auditId);
-
-    // 검토되지 않은 PENDING 매핑 존재 여부
-    boolean hasPendingMappings(Long auditId);
+    // 감사에 매칭된 법령 조항별 준수 판정 조회
+    List<AuditLawComplianceView> getMappings(Long auditId);
 }
