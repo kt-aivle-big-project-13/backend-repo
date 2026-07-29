@@ -59,11 +59,11 @@ class SelfCheckAnswerServiceTest {
         given(audit.getStatus()).willReturn(AuditStatus.COMPLIANT);
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.PRIOR_NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.EXPLANATION_PROCEDURE, false),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OBJECTION, false),
                 new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOC_RETENTION, false)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOCUMENTATION, false)
         ));
 
         given(selfCheckAnswerRepository.saveAll(anyList()))
@@ -89,9 +89,9 @@ class SelfCheckAnswerServiceTest {
                 .willReturn(Optional.of(audit));
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.PRIOR_NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.EXPLANATION_PROCEDURE, false),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OBJECTION, false),
                 new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true)
         ));
 
@@ -109,11 +109,11 @@ class SelfCheckAnswerServiceTest {
                 .willReturn(Optional.of(audit));
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.PRIOR_NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, false),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, false),
                 new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOC_RETENTION, false)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOCUMENTATION, false)
         ));
 
         assertThatThrownBy(() -> selfCheckAnswerService.save(USER_ID, AUDIT_ID, request))
@@ -129,11 +129,11 @@ class SelfCheckAnswerServiceTest {
         given(audit.getStatus()).willReturn(AuditStatus.IN_PROGRESS);
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.PRIOR_NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.EXPLANATION_PROCEDURE, false),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OBJECTION, false),
                 new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOC_RETENTION, false)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOCUMENTATION, false)
         ));
 
         assertThatThrownBy(() -> selfCheckAnswerService.save(USER_ID, AUDIT_ID, request))
