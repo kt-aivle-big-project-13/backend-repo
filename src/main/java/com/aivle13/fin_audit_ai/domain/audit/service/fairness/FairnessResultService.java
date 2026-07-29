@@ -41,7 +41,6 @@ public class FairnessResultService {
     private static final BigDecimal FPR_PARITY_THRESHOLD = new BigDecimal("0.20");
     private static final BigDecimal FDR_PARITY_THRESHOLD = new BigDecimal("0.20");
     private static final BigDecimal FOR_PARITY_THRESHOLD = new BigDecimal("0.20");
-    private static final BigDecimal FNR_PARITY_THRESHOLD = new BigDecimal("0.20");
     private static final BigDecimal REVIEW_THRESHOLD_MULTIPLIER = BigDecimal.valueOf(2);
 
     // Proportional Parity 는 80% Rule(min/max 승인율 ≥ 0.80)을 그대로 표현하는 "비율" 지표라
@@ -160,14 +159,6 @@ public class FairnessResultService {
                     FairnessMetricCode.FOR_PARITY,
                     fairness.forParityDifference(),
                     FOR_PARITY_THRESHOLD,
-                    fairness.note()
-            );
-
-            addIfPresent(
-                    results, audit, attribute,
-                    FairnessMetricCode.FNR_PARITY,
-                    fairness.fnrParityDifference(),
-                    FNR_PARITY_THRESHOLD,
                     fairness.note()
             );
 
