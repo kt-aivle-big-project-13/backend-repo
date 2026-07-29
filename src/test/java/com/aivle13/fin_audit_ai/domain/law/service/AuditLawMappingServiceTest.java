@@ -7,6 +7,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.AuditLawMappingRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
@@ -121,6 +122,24 @@ class AuditLawMappingServiceTest {
         assertThat(captor.getValue())
                 .singleElement()
                 .satisfies(mapping -> assertThat(mapping.getCompliance()).isEqualTo(ComplianceStatus.NON_COMPLIANT));
+    }
+
+    @Test
+    void getMappingsReturnsAllMappingsForAudit() {
+        LawArticleEntity article = article(1L);
+        AuditLawMappingEntity mapping = AuditLawMappingEntity.of(
+                audit, article, ComplianceStatus.NON_COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditLawMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+
+        List<AuditLawComplianceView> views = auditLawMappingService.getMappings(AUDIT_ID);
+
+        assertThat(views).singleElement().satisfies(view -> {
+            assertThat(view.articleNumber()).isEqualTo("제1조");
+            assertThat(view.articleTitle()).isEqualTo("인공지능 기본법");
+            assertThat(view.compliance()).isEqualTo(ComplianceStatus.NON_COMPLIANT);
+            assertThat(view.evidence()).isEqualTo("자율점검 기반 자동 매칭");
+        });
     }
 
     @Test
