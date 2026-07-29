@@ -49,15 +49,10 @@ public class PostController {
                     공지(pinned) 게시글은 정렬 옵션과 무관하게 항상 최상단에 노출됩니다.
                     """
     )
+    // 200 응답은 content를 명시하지 않아, 실제 반환 타입인 PageResponse<PostSummaryResponse>를
+    // springdoc이 그대로 추론하도록 둔다(PostSummaryResponse만 명시하면 페이지네이션 래퍼가 문서에서 빠진다).
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "게시글 목록 조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = PostSummaryResponse.class)
-                    )
-            ),
+            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
             @ApiResponse(responseCode = "400", description = "페이지/사이즈 값이 올바르지 않음"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
