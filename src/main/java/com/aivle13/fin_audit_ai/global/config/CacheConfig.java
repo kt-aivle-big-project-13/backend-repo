@@ -28,6 +28,9 @@ public class CacheConfig {
     private static final PolymorphicTypeValidator CACHE_TYPE_VALIDATOR = BasicPolymorphicTypeValidator.builder()
             .allowIfSubType("com.aivle13.fin_audit_ai")
             .allowIfSubType("java.util")
+            // FairnessMetricResponse/XaiMetricResponse의 value/threshold가 BigDecimal이라
+            // 캐시 역직렬화 시 이 타입도 허용되어야 한다.
+            .allowIfSubType("java.math")
             .build();
 
     @Bean
