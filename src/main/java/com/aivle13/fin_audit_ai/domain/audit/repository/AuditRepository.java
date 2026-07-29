@@ -55,4 +55,17 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
     Optional<AuditEntity> findByIdWithModelAndDataset(
             @Param("auditId") Long auditId
     );
+
+    @Query("""
+            select audit
+            from AuditEntity audit
+            join fetch audit.model
+            join fetch audit.dataset
+            where audit.id = :auditId
+              and audit.user.id = :userId
+            """)
+    Optional<AuditEntity> findByIdAndUser_IdWithModelAndDataset(
+            @Param("auditId") Long auditId,
+            @Param("userId") Long userId
+    );
 }

@@ -35,6 +35,9 @@ public class DefaultReportDocumentGenerator
         return switch (format) {
             case PDF -> generatePdf(auditId, content);
             case WORD -> generateWord(auditId, content);
+            case HTML -> throw new IllegalArgumentException(
+                    "HTML 보고서는 AI 서버에서 생성해야 합니다."
+            );
         };
     }
 

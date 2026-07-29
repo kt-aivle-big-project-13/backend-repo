@@ -8,6 +8,7 @@ import com.aivle13.fin_audit_ai.domain.report.prompt.ReportOutputValidator;
 import com.aivle13.fin_audit_ai.domain.report.prompt.ReportPromptBuilder;
 import com.aivle13.fin_audit_ai.domain.report.prompt.ReportPromptTemplate;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.llm.ReportLlmClient;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
@@ -41,7 +42,6 @@ public class ReportGenerationService {
         ReportGenerationContext context =
                 contextLoader.load(auditId);
 
-        // 설명 가능성 + 편향 진단 + 규제 준수 + 개선 권고를 포함한 최종 통합 보고서 본문을 한 번만 생성한다.
         String generatedContent =
                 generateContent(context);
 
@@ -57,7 +57,7 @@ public class ReportGenerationService {
                 .toList();
     }
 
-    // 같은 최종 통합 보고서 본문을 PDF 또는 Word로 변환하고 S3 및 DB에 각각 저장한다.
+    // 같은 보고서 본문을 PDF 또는 Word로 변환하고 각각 저장한다.
     private GeneratedReportResponse generateAndSave(
             Long auditId,
             String generatedContent,
@@ -81,6 +81,7 @@ public class ReportGenerationService {
         Long reportId =
                 reportPersistenceService.save(
                         auditId,
+                        ReportType.FINAL_AUDIT_REPORT,
                         format,
                         storedFile.s3Key()
                 );
@@ -92,7 +93,9 @@ public class ReportGenerationService {
     }
 
     // 보고서 입력 데이터를 기반으로 최종 통합 보고서 본문 생성
-    public String generateContent(ReportGenerationContext context) {
+    public String generateContent(
+            ReportGenerationContext context
+    ) {
         String systemPrompt =
                 ReportPromptTemplate.buildSystemPrompt();
 

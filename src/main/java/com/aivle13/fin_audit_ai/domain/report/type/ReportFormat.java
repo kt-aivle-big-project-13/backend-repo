@@ -1,5 +1,5 @@
 package com.aivle13.fin_audit_ai.domain.report.type;
 
 public enum ReportFormat {
-    PDF, WORD
+    PDF, WORD, HTML
 }

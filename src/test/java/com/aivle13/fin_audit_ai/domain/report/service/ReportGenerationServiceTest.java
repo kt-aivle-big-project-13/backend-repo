@@ -5,6 +5,7 @@ import com.aivle13.fin_audit_ai.domain.report.document.ReportDocumentGenerator;
 import com.aivle13.fin_audit_ai.domain.report.dto.GeneratedReportResponse;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.llm.ReportLlmClient;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
@@ -67,8 +68,12 @@ class ReportGenerationServiceTest {
         given(fileStorageService.store(any(), anyString(), anyString(), anyString()))
                 .willReturn(storedFile);
 
-        given(reportPersistenceService.save(AUDIT_ID, ReportFormat.PDF, "s3-key"))
-                .willReturn(REPORT_ID);
+        given(reportPersistenceService.save(
+                AUDIT_ID,
+                ReportType.FINAL_AUDIT_REPORT,
+                ReportFormat.PDF,
+                "s3-key"
+        )).willReturn(REPORT_ID);
 
         List<GeneratedReportResponse> responses =
                 reportGenerationService.generate(AUDIT_ID, List.of(ReportFormat.PDF));
