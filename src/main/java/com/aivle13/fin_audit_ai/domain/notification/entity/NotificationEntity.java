@@ -24,7 +24,8 @@ import java.util.Objects;
         check = @CheckConstraint(
                 name = "ck_notifications_type_reference",
                 constraint = "(notif_type = 'LAW_REVISION' AND revision_id IS NOT NULL AND audit_id IS NULL) "
-                        + "OR (notif_type = 'REAUDIT_RECOMMEND' AND audit_id IS NOT NULL AND revision_id IS NULL)"))
+                        + "OR (notif_type = 'REAUDIT_RECOMMEND' AND audit_id IS NOT NULL AND revision_id IS NULL) "
+                        + "OR (notif_type = 'AUDIT_COMPLETE' AND audit_id IS NOT NULL AND revision_id IS NULL)"))
 public class NotificationEntity {
 
     @Id
@@ -61,8 +62,13 @@ public class NotificationEntity {
     @Column(name = "sent_at", nullable = false)
     private LocalDateTime sentAt;
 
+    // 알림 벨(피드)에서의 읽음 여부. channel/status는 발송 기록이고, 이건 별개로 사용자가
+    // 인앱에서 확인했는지를 나타낸다.
+    @Column(name = "is_read", nullable = false)
+    private boolean isRead = false;
+
     public static NotificationEntity ofLawRevision(UserEntity user, LawRevisionEntity revision,
-                                                     NotifChannel channel, NotifStatus status, LocalDateTime sentAt) {
+                                                   NotifChannel channel, NotifStatus status, LocalDateTime sentAt) {
         Objects.requireNonNull(revision, "revision must not be null for LAW_REVISION notification");
         NotificationEntity notification = new NotificationEntity();
         notification.user = user;
@@ -75,7 +81,7 @@ public class NotificationEntity {
     }
 
     public static NotificationEntity ofReauditRecommend(UserEntity user, AuditEntity audit,
-                                                          NotifChannel channel, NotifStatus status, LocalDateTime sentAt) {
+                                                        NotifChannel channel, NotifStatus status, LocalDateTime sentAt) {
         Objects.requireNonNull(audit, "audit must not be null for REAUDIT_RECOMMEND notification");
         NotificationEntity notification = new NotificationEntity();
         notification.user = user;
@@ -85,5 +91,22 @@ public class NotificationEntity {
         notification.status = status;
         notification.sentAt = sentAt;
         return notification;
+    }
+
+    public static NotificationEntity ofAuditComplete(UserEntity user, AuditEntity audit,
+                                                     NotifChannel channel, NotifStatus status, LocalDateTime sentAt) {
+        Objects.requireNonNull(audit, "audit must not be null for AUDIT_COMPLETE notification");
+        NotificationEntity notification = new NotificationEntity();
+        notification.user = user;
+        notification.audit = audit;
+        notification.notifType = NotifType.AUDIT_COMPLETE;
+        notification.channel = channel;
+        notification.status = status;
+        notification.sentAt = sentAt;
+        return notification;
+    }
+
+    public void markRead() {
+        this.isRead = true;
     }
 }

@@ -9,6 +9,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,9 @@ class AuditProgressServiceTest {
 
     @Mock
     private XaiResultRepository xaiResultRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @Mock
     private AuditEntity audit;
@@ -86,6 +90,7 @@ class AuditProgressServiceTest {
         auditProgressService.markFairnessCompleted(AUDIT_ID);
 
         verify(audit).complete(4, AuditStatus.COMPLIANT);
+        verify(notificationService).notifyAuditComplete(audit);
     }
 
     @Test

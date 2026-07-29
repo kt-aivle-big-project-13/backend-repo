@@ -9,6 +9,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class AuditProgressService {
     private final AuditRepository auditRepository;
     private final FairnessResultRepository fairnessResultRepository;
     private final XaiResultRepository xaiResultRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public void markInProgress(Long auditId) {
@@ -43,6 +45,7 @@ public class AuditProgressService {
     public void markFairnessCompleted(Long auditId) {
         AuditEntity audit = findAudit(auditId);
         audit.complete(COMPLETED_STEP, determineVerdict(auditId));
+        notificationService.notifyAuditComplete(audit);
     }
 
     // 저장된 공정성·설명가능성 지표 판정을 종합해 감사 준수 상태를 산출한다.

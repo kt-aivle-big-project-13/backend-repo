@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.user.service;
 
+import com.aivle13.fin_audit_ai.domain.user.dto.request.notification.UpdateNotificationPreferencesRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.ChangePasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordFindRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.PasswordResetRequest;
@@ -70,6 +71,21 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
 
         user.updateName(name.trim());
+
+        return UserResponse.from(user);
+    }
+
+    // 마이페이지 알림 설정 저장
+    @Transactional
+    public UserResponse updateNotificationPreferences(Long userId, UpdateNotificationPreferencesRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        user.updateNotificationPreferences(
+                request.lawSmsEnabled(),
+                request.reauditAlertEnabled(),
+                request.auditCompleteAlertEnabled()
+        );
 
         return UserResponse.from(user);
     }
