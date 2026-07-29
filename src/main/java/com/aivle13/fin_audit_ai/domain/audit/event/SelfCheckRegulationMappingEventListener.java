@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditProgressService;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditLawMappingService;
+import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -17,9 +17,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SelfCheckLawMappingEventListener {
+public class SelfCheckRegulationMappingEventListener {
 
-    private final AuditLawMappingService auditLawMappingService;
+    private final AuditRegulationMappingService auditRegulationMappingService;
     private final AuditProgressService auditProgressService;
 
     @Async("auditTaskExecutor")
@@ -28,7 +28,7 @@ public class SelfCheckLawMappingEventListener {
     )
     public void handle(SelfCheckAnswersSubmittedEvent event) {
         try {
-            auditLawMappingService.mapFromSelfCheckAnswers(event.auditId());
+            auditRegulationMappingService.mapFromSelfCheckAnswers(event.auditId());
 
             log.info(
                     "자율점검 기반 법령 매핑 완료: auditId={}",

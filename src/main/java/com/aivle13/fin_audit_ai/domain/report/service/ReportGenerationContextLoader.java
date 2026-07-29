@@ -6,8 +6,8 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditLawMappingQueryService;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingQueryService;
 import com.aivle13.fin_audit_ai.domain.report.dto.AuditMetricView;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class ReportGenerationContextLoader {
     private final XaiResultRepository xaiResultRepository;
     private final FairnessResultRepository fairnessResultRepository;
     private final SelfCheckAnswerRepository selfCheckAnswerRepository;
-    private final AuditLawMappingQueryService auditLawMappingQueryService;
+    private final AuditRegulationMappingQueryService auditRegulationMappingQueryService;
 
     // 감사 결과와 법령 매핑을 보고서 생성 컨텍스트로 변환
     public ReportGenerationContext load(Long auditId) {
@@ -46,15 +46,15 @@ public class ReportGenerationContextLoader {
                 .map(this::toSelfCheckMetricView)
                 .toList();
 
-        List<AuditLawComplianceView> lawCompliances =
-                auditLawMappingQueryService.getMappings(auditId);
+        List<AuditRegulationComplianceView> regulationCompliances =
+                auditRegulationMappingQueryService.getMappings(auditId);
 
         return new ReportGenerationContext(
                 auditId,
                 xaiResults,
                 fairnessResults,
                 selfCheckResults,
-                lawCompliances,
+                regulationCompliances,
                 List.of()
         );
     }

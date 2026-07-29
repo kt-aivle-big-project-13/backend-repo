@@ -25,7 +25,7 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
     );
 
     // 자율점검 저장은 사용자 요청마다 매핑 이벤트를 발행하므로, 동일 auditId에 대한
-    // 매핑 재생성(AuditLawMappingService)이 겹치지 않도록 같은 방식으로 직렬화한다.
+    // 매핑 재생성(AuditRegulationMappingService)이 겹치지 않도록 같은 방식으로 직렬화한다.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select audit from AuditEntity audit where audit.id = :auditId")
     Optional<AuditEntity> findByIdForUpdate(@Param("auditId") Long auditId);

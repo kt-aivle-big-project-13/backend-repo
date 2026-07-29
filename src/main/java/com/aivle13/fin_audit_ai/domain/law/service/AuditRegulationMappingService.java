@@ -1,14 +1,14 @@
 package com.aivle13.fin_audit_ai.domain.law.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
-import com.aivle13.fin_audit_ai.domain.audit.entity.AuditLawMappingEntity;
+import com.aivle13.fin_audit_ai.domain.audit.entity.AuditRegulationMappingEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
-import com.aivle13.fin_audit_ai.domain.law.repository.AuditLawMappingRepository;
+import com.aivle13.fin_audit_ai.domain.law.repository.AuditRegulationMappingRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,13 +26,13 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
-public class AuditLawMappingService implements AuditLawMappingQueryService {
+public class AuditRegulationMappingService implements AuditRegulationMappingQueryService {
 
     private static final int TOP_K = 5;
 
     private final AuditRepository auditRepository;
     private final SelfCheckAnswerRepository selfCheckAnswerRepository;
-    private final AuditLawMappingRepository auditLawMappingRepository;
+    private final AuditRegulationMappingRepository auditRegulationMappingRepository;
     private final LawArticleSearchService lawArticleSearchService;
 
     @Transactional
@@ -45,9 +45,9 @@ public class AuditLawMappingService implements AuditLawMappingQueryService {
 
         List<SelfCheckAnswerEntity> answers = selfCheckAnswerRepository.findAllByAudit_Id(auditId);
 
-        auditLawMappingRepository.deleteAllByAudit_Id(auditId);
+        auditRegulationMappingRepository.deleteAllByAudit_Id(auditId);
 
-        Map<Long, AuditLawMappingEntity> mappings = new LinkedHashMap<>();
+        Map<Long, AuditRegulationMappingEntity> mappings = new LinkedHashMap<>();
 
         for (SelfCheckAnswerEntity answer : answers) {
             String queryText = answer.getItemCode().label();
@@ -64,7 +64,7 @@ public class AuditLawMappingService implements AuditLawMappingQueryService {
                     continue;
                 }
 
-                mappings.put(article.getId(), AuditLawMappingEntity.of(
+                mappings.put(article.getId(), AuditRegulationMappingEntity.of(
                         audit,
                         article,
                         compliance,
@@ -74,14 +74,14 @@ public class AuditLawMappingService implements AuditLawMappingQueryService {
             }
         }
 
-        auditLawMappingRepository.saveAll(mappings.values());
+        auditRegulationMappingRepository.saveAll(mappings.values());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<AuditLawComplianceView> getMappings(Long auditId) {
-        return auditLawMappingRepository.findAllByAudit_Id(auditId).stream()
-                .map(AuditLawComplianceView::from)
+    public List<AuditRegulationComplianceView> getMappings(Long auditId) {
+        return auditRegulationMappingRepository.findAllByAudit_Id(auditId).stream()
+                .map(AuditRegulationComplianceView::from)
                 .toList();
     }
 }

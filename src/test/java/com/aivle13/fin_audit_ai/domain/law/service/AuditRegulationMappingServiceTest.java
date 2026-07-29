@@ -1,15 +1,15 @@
 package com.aivle13.fin_audit_ai.domain.law.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
-import com.aivle13.fin_audit_ai.domain.audit.entity.AuditLawMappingEntity;
+import com.aivle13.fin_audit_ai.domain.audit.entity.AuditRegulationMappingEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
-import com.aivle13.fin_audit_ai.domain.law.repository.AuditLawMappingRepository;
+import com.aivle13.fin_audit_ai.domain.law.repository.AuditRegulationMappingRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +30,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class AuditLawMappingServiceTest {
+class AuditRegulationMappingServiceTest {
 
     private static final Long AUDIT_ID = 21L;
 
@@ -41,7 +41,7 @@ class AuditLawMappingServiceTest {
     private SelfCheckAnswerRepository selfCheckAnswerRepository;
 
     @Mock
-    private AuditLawMappingRepository auditLawMappingRepository;
+    private AuditRegulationMappingRepository auditRegulationMappingRepository;
 
     @Mock
     private LawArticleSearchService lawArticleSearchService;
@@ -50,7 +50,7 @@ class AuditLawMappingServiceTest {
     private AuditEntity audit;
 
     @InjectMocks
-    private AuditLawMappingService auditLawMappingService;
+    private AuditRegulationMappingService auditRegulationMappingService;
 
     @Test
     void derivesComplianceFromAnswerAndDedupesAcrossItems() {
@@ -71,12 +71,12 @@ class AuditLawMappingServiceTest {
                 SelfCheckItemCode.RISK_MANAGEMENT.label(), 5))
                 .willReturn(List.of(sharedArticle, onlyFromRisk));
 
-        auditLawMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
+        auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
 
-        verify(auditLawMappingRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(auditRegulationMappingRepository).deleteAllByAudit_Id(AUDIT_ID);
 
-        ArgumentCaptor<Collection<AuditLawMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
-        verify(auditLawMappingRepository).saveAll(captor.capture());
+        ArgumentCaptor<Collection<AuditRegulationMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
+        verify(auditRegulationMappingRepository).saveAll(captor.capture());
 
         assertThat(captor.getValue()).hasSize(2);
 
@@ -110,14 +110,14 @@ class AuditLawMappingServiceTest {
         given(lawArticleSearchService.searchSimilarArticles(eq(SelfCheckItemCode.SUPERVISION.label()), eq(5)))
                 .willReturn(List.of(article));
 
-        auditLawMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
+        auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
 
         // 이전에 어떤 compliance로 저장돼 있었든 재생성 시 전부 지우고 새로 채운다 —
         // 사람이 확정한 값이라 보존해야 한다는 개념 자체가 없다.
-        verify(auditLawMappingRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(auditRegulationMappingRepository).deleteAllByAudit_Id(AUDIT_ID);
 
-        ArgumentCaptor<Collection<AuditLawMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
-        verify(auditLawMappingRepository).saveAll(captor.capture());
+        ArgumentCaptor<Collection<AuditRegulationMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
+        verify(auditRegulationMappingRepository).saveAll(captor.capture());
 
         assertThat(captor.getValue())
                 .singleElement()
@@ -127,12 +127,12 @@ class AuditLawMappingServiceTest {
     @Test
     void getMappingsReturnsAllMappingsForAudit() {
         LawArticleEntity article = article(1L);
-        AuditLawMappingEntity mapping = AuditLawMappingEntity.of(
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
                 audit, article, ComplianceStatus.NON_COMPLIANT, "자율점검 기반 자동 매칭"
         );
-        given(auditLawMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
 
-        List<AuditLawComplianceView> views = auditLawMappingService.getMappings(AUDIT_ID);
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
 
         assertThat(views).singleElement().satisfies(view -> {
             assertThat(view.articleNumber()).isEqualTo("제1조");
@@ -146,7 +146,7 @@ class AuditLawMappingServiceTest {
     void throwsWhenAuditDoesNotExist() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> auditLawMappingService.mapFromSelfCheckAnswers(AUDIT_ID))
+        assertThatThrownBy(() -> auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID))
                 .isInstanceOf(AuditNotFoundException.class);
     }
 

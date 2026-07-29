@@ -4,8 +4,8 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditLawMappingQueryService;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingQueryService;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,25 +33,25 @@ class ReportGenerationContextLoaderTest {
     private SelfCheckAnswerRepository selfCheckAnswerRepository;
 
     @Mock
-    private AuditLawMappingQueryService auditLawMappingQueryService;
+    private AuditRegulationMappingQueryService auditRegulationMappingQueryService;
 
     @InjectMocks
     private ReportGenerationContextLoader contextLoader;
 
     @Test
-    void loadsLawCompliancesFromQueryService() {
+    void loadsRegulationCompliancesFromQueryService() {
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
 
-        AuditLawComplianceView view = new AuditLawComplianceView(
+        AuditRegulationComplianceView view = new AuditRegulationComplianceView(
                 1L, "제12조", "인공지능 기본법", ComplianceStatus.NON_COMPLIANT, "근거"
         );
-        given(auditLawMappingQueryService.getMappings(AUDIT_ID)).willReturn(List.of(view));
+        given(auditRegulationMappingQueryService.getMappings(AUDIT_ID)).willReturn(List.of(view));
 
         ReportGenerationContext context = contextLoader.load(AUDIT_ID);
 
         assertThat(context.auditId()).isEqualTo(AUDIT_ID);
-        assertThat(context.lawCompliances()).containsExactly(view);
+        assertThat(context.regulationCompliances()).containsExactly(view);
     }
 }
