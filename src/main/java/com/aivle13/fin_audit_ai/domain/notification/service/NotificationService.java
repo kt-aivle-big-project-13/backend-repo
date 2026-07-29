@@ -78,7 +78,9 @@ public class NotificationService {
 
     // 법령 개정 감지 시점(추후 크롤러/배치)에서 호출될 실제 이메일 발송 지점.
     // 감지 로직 자체는 아직 없어 현재는 호출부가 없다.
-    @Transactional
+    // SMTP 발송을 DB 트랜잭션 밖에서 수행해, 발송 지연이 커넥션을 오래 잡아두거나
+    // 트랜잭션 재시도 시 메일이 중복 발송되는 것을 막는다. save()는 Spring Data
+    // JPA가 자체적으로 트랜잭션을 열어 처리한다.
     public void notifyLawRevision(UserEntity user, LawRevisionEntity revision) {
         if (!user.isLawEmailEnabled()) {
             return;

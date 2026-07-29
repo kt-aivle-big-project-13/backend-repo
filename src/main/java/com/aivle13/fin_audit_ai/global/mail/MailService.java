@@ -8,6 +8,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 @Service
 public class MailService {
@@ -267,7 +268,7 @@ public class MailService {
                             자세한 내용은 마이페이지 알림에서 확인해주세요.
                         </p>
                     </div>
-                    """.formatted(revisionTitle);
+                    """.formatted(HtmlUtils.htmlEscape(revisionTitle));
 
             helper.setText(html, true);
 
