@@ -35,7 +35,7 @@ class AuditSelfCheckControllerTest {
     @Test
     void savesAnswersAndReturnsResponse() {
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, true)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true)
         ));
         SelfCheckAnswerResponse expected = new SelfCheckAnswerResponse(AUDIT_ID, List.of());
 
@@ -61,7 +61,7 @@ class AuditSelfCheckControllerTest {
     @Test
     void throwsWhenSavingWithoutAuthentication() {
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.SUPERVISION, true)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true)
         ));
 
         assertThatThrownBy(() -> controller.save(null, AUDIT_ID, request))
