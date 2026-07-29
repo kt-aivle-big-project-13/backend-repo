@@ -38,6 +38,9 @@ public class UserEntity extends BaseEntity {
     @Column(name = "reaudit_alert_enabled", nullable = false)
     private boolean reauditAlertEnabled = true;
 
+    @Column(name = "audit_complete_alert_enabled", nullable = false)
+    private boolean auditCompleteAlertEnabled = true;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role;
@@ -68,6 +71,7 @@ public class UserEntity extends BaseEntity {
         user.role = role;
         user.lawSmsEnabled = true;
         user.reauditAlertEnabled = true;
+        user.auditCompleteAlertEnabled = true;
 
         return user;
     }
@@ -86,10 +90,12 @@ public class UserEntity extends BaseEntity {
 
     public void updateNotificationPreferences(
             boolean lawSmsEnabled,
-            boolean reauditAlertEnabled
+            boolean reauditAlertEnabled,
+            boolean auditCompleteAlertEnabled
     ) {
         this.lawSmsEnabled = lawSmsEnabled;
         this.reauditAlertEnabled = reauditAlertEnabled;
+        this.auditCompleteAlertEnabled = auditCompleteAlertEnabled;
     }
 
     // 회원 탈퇴(소프트 삭제). 이메일은 unique 제약이 걸려 있어 그대로 두면 같은

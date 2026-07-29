@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.user.controller;
 
 import com.aivle13.fin_audit_ai.domain.auth.service.RefreshTokenService;
+import com.aivle13.fin_audit_ai.domain.user.dto.request.notification.UpdateNotificationPreferencesRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.ChangePasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.password.VerifyPasswordRequest;
 import com.aivle13.fin_audit_ai.domain.user.dto.request.profile.UpdateNameRequest;
@@ -48,6 +49,19 @@ public class MyPageController {
         Long userId = (Long) authentication.getPrincipal();
 
         UserResponse response = userService.updateMyProfile(userId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 알림 설정 저장
+    @PatchMapping("/me/notifications")
+    public ResponseEntity<UserResponse> updateNotificationPreferences(
+            Authentication authentication,
+            @Valid @RequestBody UpdateNotificationPreferencesRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        UserResponse response = userService.updateNotificationPreferences(userId, request);
 
         return ResponseEntity.ok(response);
     }

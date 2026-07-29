@@ -6,6 +6,8 @@ import com.aivle13.fin_audit_ai.domain.report.entity.ReportEntity;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
+import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,17 +31,16 @@ public class ReportPersistenceService {
             ReportFormat format,
             String s3Key
     ) {
-        AuditEntity audit = auditRepository.findById(auditId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "감사 정보를 찾을 수 없습니다. auditId="
-                                        + auditId
-                        )
-                );
-
         fileStorageService.deleteOnRollback(
                 List.of(s3Key)
         );
+
+        AuditEntity audit = auditRepository.findById(auditId)
+                .orElseThrow(() ->
+                        new BusinessException(
+                                ErrorCode.AUDIT_NOT_FOUND
+                        )
+                );
 
         ReportEntity report = ReportEntity.create(
                 audit,

@@ -11,14 +11,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -30,7 +34,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@ConditionalOnBean(ReportGenerationService.class)
 public class ReportController {
 
     private final ReportGenerationService reportGenerationService;
@@ -52,10 +55,6 @@ public class ReportController {
             @ApiResponse(
                     responseCode = "404",
                     description = "감사 정보를 찾을 수 없음"
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "검토되지 않은 법령 매핑이 존재함"
             )
     })
     @PostMapping("/audits/{auditId}/deliverables")
@@ -119,9 +118,11 @@ public class ReportController {
                         HttpHeaders.CONTENT_DISPOSITION,
                         contentDisposition.toString()
                 )
-                .contentType(resolveMediaType(
-                        result.file().contentType()
-                ))
+                .contentType(
+                        resolveMediaType(
+                                result.file().contentType()
+                        )
+                )
                 .contentLength(
                         result.file().contentLength()
                 )
