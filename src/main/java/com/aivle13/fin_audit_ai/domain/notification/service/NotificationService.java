@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.notification.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
 import com.aivle13.fin_audit_ai.domain.notification.dto.response.NotificationResponse;
 import com.aivle13.fin_audit_ai.domain.notification.entity.NotificationEntity;
 import com.aivle13.fin_audit_ai.domain.notification.repository.NotificationRepository;
@@ -8,7 +9,9 @@ import com.aivle13.fin_audit_ai.domain.notification.type.NotifChannel;
 import com.aivle13.fin_audit_ai.domain.notification.type.NotifStatus;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.global.dto.PageResponse;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.notification.NotificationNotFoundException;
+import com.aivle13.fin_audit_ai.global.mail.MailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +28,7 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final MailService mailService;
 
     // 알림 벨 목록 (최신순 페이징)
     public PageResponse<NotificationResponse> list(Long userId, int page, int size) {
@@ -68,6 +72,28 @@ public class NotificationService {
 
         NotificationEntity notification = NotificationEntity.ofAuditComplete(
                 user, audit, NotifChannel.IN_APP, NotifStatus.SENT, LocalDateTime.now());
+
+        notificationRepository.save(notification);
+    }
+
+    // 법령 개정 감지 시점(추후 크롤러/배치)에서 호출될 실제 이메일 발송 지점.
+    // 감지 로직 자체는 아직 없어 현재는 호출부가 없다.
+    @Transactional
+    public void notifyLawRevision(UserEntity user, LawRevisionEntity revision) {
+        if (!user.isLawEmailEnabled()) {
+            return;
+        }
+
+        NotifStatus status;
+        try {
+            mailService.sendLawRevisionMail(user.getEmail(), revision.getTitle());
+            status = NotifStatus.SENT;
+        } catch (BusinessException exception) {
+            status = NotifStatus.FAILED;
+        }
+
+        NotificationEntity notification = NotificationEntity.ofLawRevision(
+                user, revision, NotifChannel.EMAIL, status, LocalDateTime.now());
 
         notificationRepository.save(notification);
     }

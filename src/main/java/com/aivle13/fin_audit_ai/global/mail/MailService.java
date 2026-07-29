@@ -203,4 +203,78 @@ public class MailService {
             throw new EmailSendFailedException(e);
         }
     }
+
+    // 법령 개정 알림 이메일 발송
+    public void sendLawRevisionMail(
+            String receiverEmail,
+            String revisionTitle
+    ) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(
+                            message,
+                            false,
+                            "UTF-8"
+                    );
+
+            helper.setFrom(senderEmail);
+            helper.setTo(receiverEmail);
+            helper.setSubject(
+                    "[FinAuditAI] 법령 개정 안내"
+            );
+
+            String html = """
+                    <div style="
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 32px;
+                        font-family: Arial, sans-serif;
+                        color: #202939;
+                    ">
+                        <h1 style="
+                            margin-bottom: 24px;
+                            font-size: 28px;
+                        ">
+                            법령 개정 안내
+                        </h1>
+
+                        <p style="
+                            line-height: 1.7;
+                            font-size: 15px;
+                        ">
+                            관련 법령·고시가 개정되었습니다.
+                        </p>
+
+                        <div style="
+                            margin-top: 24px;
+                            margin-bottom: 24px;
+                            padding: 20px;
+                            border-radius: 8px;
+                            background-color: #f2f4f7;
+                        ">
+                            <strong style="font-size: 16px;">
+                                %s
+                            </strong>
+                        </div>
+
+                        <p style="
+                            color: #667085;
+                            font-size: 13px;
+                            line-height: 1.6;
+                        ">
+                            자세한 내용은 마이페이지 알림에서 확인해주세요.
+                        </p>
+                    </div>
+                    """.formatted(revisionTitle);
+
+            helper.setText(html, true);
+
+            mailSender.send(message);
+
+        } catch (MessagingException | MailException e) {
+            throw new EmailSendFailedException(e);
+        }
+    }
 }

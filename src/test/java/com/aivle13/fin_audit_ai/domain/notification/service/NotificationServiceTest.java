@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.notification.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
 import com.aivle13.fin_audit_ai.domain.notification.dto.response.NotificationResponse;
 import com.aivle13.fin_audit_ai.domain.notification.entity.NotificationEntity;
 import com.aivle13.fin_audit_ai.domain.notification.repository.NotificationRepository;
@@ -9,7 +10,9 @@ import com.aivle13.fin_audit_ai.domain.notification.type.NotifStatus;
 import com.aivle13.fin_audit_ai.domain.notification.type.NotifType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.global.dto.PageResponse;
+import com.aivle13.fin_audit_ai.global.exception.mail.EmailSendFailedException;
 import com.aivle13.fin_audit_ai.global.exception.notification.NotificationNotFoundException;
+import com.aivle13.fin_audit_ai.global.mail.MailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,7 +29,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -40,7 +45,13 @@ class NotificationServiceTest {
     private NotificationRepository notificationRepository;
 
     @Mock
+    private MailService mailService;
+
+    @Mock
     private AuditEntity audit;
+
+    @Mock
+    private LawRevisionEntity revision;
 
     @Mock
     private UserEntity user;
@@ -119,6 +130,48 @@ class NotificationServiceTest {
 
         notificationService.notifyAuditComplete(audit);
 
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void 법령개정_이메일_알림설정이_켜져있으면_실제로_메일을_보내고_SENT로_기록한다() {
+        given(user.isLawEmailEnabled()).willReturn(true);
+        given(user.getEmail()).willReturn("user@example.com");
+        given(revision.getTitle()).willReturn("신용정보법 개정안");
+
+        notificationService.notifyLawRevision(user, revision);
+
+        verify(mailService).sendLawRevisionMail("user@example.com", "신용정보법 개정안");
+
+        ArgumentCaptor<NotificationEntity> captor = ArgumentCaptor.forClass(NotificationEntity.class);
+        verify(notificationRepository).save(captor.capture());
+        assertThat(captor.getValue().getNotifType()).isEqualTo(NotifType.LAW_REVISION);
+        assertThat(captor.getValue().getChannel()).isEqualTo(NotifChannel.EMAIL);
+        assertThat(captor.getValue().getStatus()).isEqualTo(NotifStatus.SENT);
+    }
+
+    @Test
+    void 법령개정_메일_발송이_실패하면_FAILED로_기록한다() {
+        given(user.isLawEmailEnabled()).willReturn(true);
+        given(user.getEmail()).willReturn("user@example.com");
+        given(revision.getTitle()).willReturn("신용정보법 개정안");
+        willThrow(new EmailSendFailedException())
+                .given(mailService).sendLawRevisionMail(anyString(), anyString());
+
+        notificationService.notifyLawRevision(user, revision);
+
+        ArgumentCaptor<NotificationEntity> captor = ArgumentCaptor.forClass(NotificationEntity.class);
+        verify(notificationRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(NotifStatus.FAILED);
+    }
+
+    @Test
+    void 법령개정_이메일_알림설정이_꺼져있으면_메일을_보내지_않는다() {
+        given(user.isLawEmailEnabled()).willReturn(false);
+
+        notificationService.notifyLawRevision(user, revision);
+
+        verify(mailService, never()).sendLawRevisionMail(any(), any());
         verify(notificationRepository, never()).save(any());
     }
 }

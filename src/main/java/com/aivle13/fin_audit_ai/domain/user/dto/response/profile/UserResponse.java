@@ -14,7 +14,7 @@ public record UserResponse(
         String institution,
         LocalDateTime createdAt,
         LocalDateTime lastLoginAt,
-        boolean lawSmsEnabled,
+        boolean lawEmailEnabled,
         boolean reauditAlertEnabled,
         boolean auditCompleteAlertEnabled
 ) {
@@ -31,7 +31,7 @@ public record UserResponse(
                 user.getInstitution(),
                 user.getCreatedAt(),
                 user.getLastLoginAt(),
-                user.isLawSmsEnabled(),
+                user.isLawEmailEnabled(),
                 user.isReauditAlertEnabled(),
                 user.isAuditCompleteAlertEnabled()
         );
