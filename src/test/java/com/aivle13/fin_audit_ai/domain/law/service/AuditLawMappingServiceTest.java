@@ -52,15 +52,13 @@ class AuditLawMappingServiceTest {
     private AuditLawMappingService auditLawMappingService;
 
     @Test
-    void createsPendingMappingsDedupedAcrossItems() {
+    void derivesComplianceFromAnswerAndDedupesAcrossItems() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
         SelfCheckAnswerEntity supervisionAnswer = answer(SelfCheckItemCode.SUPERVISION, true);
         SelfCheckAnswerEntity riskAnswer = answer(SelfCheckItemCode.RISK_MANAGEMENT, false);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(supervisionAnswer, riskAnswer));
-
-        given(auditLawMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
 
         LawArticleEntity sharedArticle = article(1L);
         LawArticleEntity onlyFromRisk = article(2L);
@@ -74,52 +72,55 @@ class AuditLawMappingServiceTest {
 
         auditLawMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
 
-        verify(auditLawMappingRepository)
-                .deleteAllByAudit_IdAndCompliance(AUDIT_ID, ComplianceStatus.PENDING);
+        verify(auditLawMappingRepository).deleteAllByAudit_Id(AUDIT_ID);
 
         ArgumentCaptor<Collection<AuditLawMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
         verify(auditLawMappingRepository).saveAll(captor.capture());
 
         assertThat(captor.getValue()).hasSize(2);
-        assertThat(captor.getValue())
-                .allSatisfy(mapping -> assertThat(mapping.getCompliance()).isEqualTo(ComplianceStatus.PENDING));
 
         // 먼저 처리된 항목(SUPERVISION, 답변 '예')이 매핑을 선점하므로, 두 항목 모두에서
-        // 검색되는 sharedArticle의 근거 문구에는 '예'가 남는다.
+        // 검색되는 sharedArticle은 COMPLIANT로 남는다.
         assertThat(captor.getValue())
                 .filteredOn(mapping -> mapping.getArticle().getId().equals(1L))
                 .singleElement()
-                .satisfies(mapping -> assertThat(mapping.getEvidence()).contains("답변: 예"));
+                .satisfies(mapping -> {
+                    assertThat(mapping.getCompliance()).isEqualTo(ComplianceStatus.COMPLIANT);
+                    assertThat(mapping.getEvidence()).contains("답변: 예");
+                });
         assertThat(captor.getValue())
                 .filteredOn(mapping -> mapping.getArticle().getId().equals(2L))
                 .singleElement()
-                .satisfies(mapping -> assertThat(mapping.getEvidence()).contains("답변: 아니요"));
+                .satisfies(mapping -> {
+                    assertThat(mapping.getCompliance()).isEqualTo(ComplianceStatus.NON_COMPLIANT);
+                    assertThat(mapping.getEvidence()).contains("답변: 아니요");
+                });
     }
 
     @Test
-    void skipsArticlesAlreadyDecidedByHuman() {
+    void regenerationDeletesAllPreviousMappingsRegardlessOfCompliance() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
-        SelfCheckAnswerEntity supervisionAnswer = answer(SelfCheckItemCode.SUPERVISION, true);
+        SelfCheckAnswerEntity supervisionAnswer = answer(SelfCheckItemCode.SUPERVISION, false);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(supervisionAnswer));
 
-        LawArticleEntity decidedArticle = article(1L);
-        AuditLawMappingEntity confirmedMapping = AuditLawMappingEntity.of(
-                audit, decidedArticle, ComplianceStatus.COMPLIANT, "이미 검토됨"
-        );
-        given(auditLawMappingRepository.findAllByAudit_Id(AUDIT_ID))
-                .willReturn(List.of(confirmedMapping));
-
+        LawArticleEntity article = article(1L);
         given(lawArticleSearchService.searchSimilarArticles(eq(SelfCheckItemCode.SUPERVISION.label()), eq(5)))
-                .willReturn(List.of(decidedArticle));
+                .willReturn(List.of(article));
 
         auditLawMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
+
+        // 이전에 어떤 compliance로 저장돼 있었든 재생성 시 전부 지우고 새로 채운다 —
+        // 사람이 확정한 값이라 보존해야 한다는 개념 자체가 없다.
+        verify(auditLawMappingRepository).deleteAllByAudit_Id(AUDIT_ID);
 
         ArgumentCaptor<Collection<AuditLawMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
         verify(auditLawMappingRepository).saveAll(captor.capture());
 
-        assertThat(captor.getValue()).isEmpty();
+        assertThat(captor.getValue())
+                .singleElement()
+                .satisfies(mapping -> assertThat(mapping.getCompliance()).isEqualTo(ComplianceStatus.NON_COMPLIANT));
     }
 
     @Test
