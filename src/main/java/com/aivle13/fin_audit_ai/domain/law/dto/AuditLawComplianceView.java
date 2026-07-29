@@ -8,6 +8,7 @@ public record AuditLawComplianceView(
         Long mappingId,
         String articleNumber,
         String articleTitle,
+        String content,
         ComplianceStatus compliance,
         String evidence
 ) {
@@ -16,6 +17,7 @@ public record AuditLawComplianceView(
                 mapping.getId(),
                 mapping.getArticle().getArticleNo(),
                 mapping.getArticle().getLawName(),
+                mapping.getArticle().getContent(),
                 mapping.getCompliance(),
                 mapping.getEvidence()
         );
