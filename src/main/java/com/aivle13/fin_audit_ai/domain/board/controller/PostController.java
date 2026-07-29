@@ -1,12 +1,12 @@
 package com.aivle13.fin_audit_ai.domain.board.controller;
 
-import com.aivle13.fin_audit_ai.domain.board.dto.request.PostCreateRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.request.PostPinRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.request.PostUpdateRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.response.PostDetailResponse;
-import com.aivle13.fin_audit_ai.domain.board.dto.response.PostSummaryResponse;
-import com.aivle13.fin_audit_ai.domain.board.service.PostCommandService;
-import com.aivle13.fin_audit_ai.domain.board.service.PostQueryService;
+import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostCreateRequest;
+import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostPinRequest;
+import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostUpdateRequest;
+import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostDetailResponse;
+import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostSummaryResponse;
+import com.aivle13.fin_audit_ai.domain.board.service.post.PostCommandService;
+import com.aivle13.fin_audit_ai.domain.board.service.post.PostQueryService;
 import com.aivle13.fin_audit_ai.global.dto.PageResponse;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;

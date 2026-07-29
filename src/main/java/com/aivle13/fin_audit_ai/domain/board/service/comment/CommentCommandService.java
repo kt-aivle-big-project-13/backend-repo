@@ -1,8 +1,8 @@
-package com.aivle13.fin_audit_ai.domain.board.service;
+package com.aivle13.fin_audit_ai.domain.board.service.comment;
 
-import com.aivle13.fin_audit_ai.domain.board.dto.request.CommentCreateRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.request.CommentUpdateRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.response.CommentResponse;
+import com.aivle13.fin_audit_ai.domain.board.dto.request.comment.CommentCreateRequest;
+import com.aivle13.fin_audit_ai.domain.board.dto.request.comment.CommentUpdateRequest;
+import com.aivle13.fin_audit_ai.domain.board.dto.response.comment.CommentResponse;
 import com.aivle13.fin_audit_ai.domain.board.entity.CommentEntity;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostEntity;
 import com.aivle13.fin_audit_ai.domain.board.repository.CommentRepository;

@@ -1,10 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.board.controller;
 
-import com.aivle13.fin_audit_ai.domain.board.dto.request.CommentCreateRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.request.CommentUpdateRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.response.CommentResponse;
-import com.aivle13.fin_audit_ai.domain.board.service.CommentCommandService;
-import com.aivle13.fin_audit_ai.domain.board.service.CommentQueryService;
+import com.aivle13.fin_audit_ai.domain.board.dto.request.comment.CommentCreateRequest;
+import com.aivle13.fin_audit_ai.domain.board.dto.request.comment.CommentUpdateRequest;
+import com.aivle13.fin_audit_ai.domain.board.dto.response.comment.CommentResponse;
+import com.aivle13.fin_audit_ai.domain.board.service.comment.CommentCommandService;
+import com.aivle13.fin_audit_ai.domain.board.service.comment.CommentQueryService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

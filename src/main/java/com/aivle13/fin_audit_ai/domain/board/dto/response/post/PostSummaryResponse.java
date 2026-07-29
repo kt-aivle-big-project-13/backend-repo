@@ -1,4 +1,4 @@
-package com.aivle13.fin_audit_ai.domain.board.dto.response;
+package com.aivle13.fin_audit_ai.domain.board.dto.response.post;
 
 import com.aivle13.fin_audit_ai.domain.board.entity.PostEntity;
 
