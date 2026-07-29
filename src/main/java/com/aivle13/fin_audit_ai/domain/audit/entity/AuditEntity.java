@@ -89,6 +89,14 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "retention_until")
     private LocalDate retentionUntil;
 
+    // 감사셋 전체 모델 판별 성능 (AI 서버 산출). 성능-공정성 트레이드오프 표시에 쓴다.
+    // 감사셋에 한 클래스만 있으면 AUC 가 정의되지 않아 null.
+    @Column(name = "model_auc", precision = 6, scale = 4)
+    private BigDecimal modelAuc;
+
+    @Column(name = "model_accuracy", precision = 6, scale = 4)
+    private BigDecimal modelAccuracy;
+
     public static AuditEntity create(AiModelEntity model, DatasetEntity dataset, UserEntity user, String auditName,
                                       String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
                                       BigDecimal targetApprovalRate, BigDecimal manualThreshold,
@@ -124,5 +132,10 @@ public class AuditEntity extends BaseEntity {
     // AI 서버 오류·타임아웃
     public void markFailed() {
         this.status = AuditStatus.FAILED;
+    }
+    // 공정성 단계에서 AI가 준 모델 성능(AUC·정확도)을 기록. 값이 없으면 null 로 남는다.
+    public void applyPerformance(BigDecimal modelAuc, BigDecimal modelAccuracy) {
+        this.modelAuc = modelAuc;
+        this.modelAccuracy = modelAccuracy;
     }
 }

@@ -21,6 +21,7 @@ public record FairnessRunResponse(
         @JsonProperty("calibration_source") String calibrationSource,
         @JsonProperty("fairness_by_attribute") Map<String, AttributeFairness> fairnessByAttribute,
         @JsonProperty("fairness_summary") Map<String, FairnessMetricValues> fairnessSummary,
+        Performance performance,
         List<ValidationIssue> warnings
 ) {
 
@@ -53,7 +54,20 @@ public record FairnessRunResponse(
             String group,
             int n,
             @JsonProperty("approval_rate") BigDecimal approvalRate,
-            @JsonProperty("actual_default_rate") BigDecimal actualDefaultRate
+            @JsonProperty("actual_default_rate") BigDecimal actualDefaultRate,
+            int tp,
+            int fp,
+            int tn,
+            int fn,
+            BigDecimal auc
+    ) {
+    }
+
+    // 감사셋 전체 모델 판별 성능 (AUC·정확도). 감사 단위 1건.
+    public record Performance(
+            BigDecimal auc,
+            BigDecimal accuracy,
+            String note
     ) {
     }
 

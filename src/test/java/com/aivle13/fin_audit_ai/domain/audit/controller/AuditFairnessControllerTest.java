@@ -55,7 +55,9 @@ class AuditFairnessControllerTest {
                                         FairnessStatus.FAIL,
                                         null
                                 )
-                        )
+                        ),
+                        null,
+                        List.of()
                 );
 
         given(fairnessResultService.getFairness(USER_ID, AUDIT_ID, null))
@@ -71,7 +73,7 @@ class AuditFairnessControllerTest {
     @Test
     void passesAttributeFilterToService() {
         FairnessResultResponse expected =
-                new FairnessResultResponse(AUDIT_ID, "FAIRLEARN", List.of());
+                new FairnessResultResponse(AUDIT_ID, "FAIRLEARN", List.of(), null, List.of());
 
         given(fairnessResultService.getFairness(USER_ID, AUDIT_ID, "CODE_GENDER"))
                 .willReturn(expected);

@@ -3,8 +3,10 @@ package com.aivle13.fin_audit_ai.domain.audit.service.fairness;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.fairness.FairnessResultResponse;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.fairness.FairnessRunResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessGroupStatEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessGroupStatRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
@@ -49,6 +51,9 @@ class FairnessResultServiceTest {
     private FairnessResultRepository fairnessResultRepository;
 
     @Mock
+    private FairnessGroupStatRepository fairnessGroupStatRepository;
+
+    @Mock
     private AuditEntity audit;
 
     @Mock
@@ -66,6 +71,9 @@ class FairnessResultServiceTest {
     @Captor
     private ArgumentCaptor<List<FairnessResultEntity>> resultCaptor;
 
+    @Captor
+    private ArgumentCaptor<List<FairnessGroupStatEntity>> groupStatCaptor;
+
     @Test
     void returnsFairnessResults() {
         given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID))
@@ -79,6 +87,8 @@ class FairnessResultServiceTest {
 
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(results);
+        given(fairnessGroupStatRepository.findAllByAudit_Id(AUDIT_ID))
+                .willReturn(List.of());
 
         FairnessResultResponse response =
                 fairnessResultService.getFairness(USER_ID, AUDIT_ID, null);
@@ -115,6 +125,8 @@ class FairnessResultServiceTest {
                         createResult("CODE_GENDER", FairnessMetricCode.DEMOGRAPHIC_PARITY,
                                 "0.0500", "0.1000", FairnessStatus.PASS)
                 ));
+        given(fairnessGroupStatRepository.findAllByAudit_IdAndAttribute(AUDIT_ID, "CODE_GENDER"))
+                .willReturn(List.of());
 
         FairnessResultResponse response =
                 fairnessResultService.getFairness(USER_ID, AUDIT_ID, "CODE_GENDER");
@@ -199,6 +211,7 @@ class FairnessResultServiceTest {
                         )
                 ),
                 Map.of(),
+                null,
                 List.of()
         );
 
@@ -226,13 +239,65 @@ class FairnessResultServiceTest {
     }
 
     @Test
+    void savesGroupStatsAndPerformancePerAttribute() {
+        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(audit.getUser()).willReturn(user);
+        given(user.getId()).willReturn(USER_ID);
+
+        FairnessRunResponse response = new FairnessRunResponse(
+                "21", "테스트 감사", null, 0, null, null,
+                Map.of(
+                        "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
+                                "CODE_GENDER", "COMPUTED",
+                                new BigDecimal("0.05"), null, null, new BigDecimal("0.85"),
+                                null, null, null, null,
+                                List.of(
+                                        new FairnessRunResponse.GroupStat(
+                                                "M", 780, new BigDecimal("0.90"), new BigDecimal("0.06"),
+                                                431, 270, 55, 24, new BigDecimal("0.7352")),
+                                        new FairnessRunResponse.GroupStat(
+                                                "F", 720, new BigDecimal("0.84"), new BigDecimal("0.07"),
+                                                400, 250, 50, 20, null)
+                                ),
+                                List.of(), null
+                        )
+                ),
+                Map.of(),
+                new FairnessRunResponse.Performance(
+                        new BigDecimal("0.733"), new BigDecimal("0.6367"), null),
+                List.of()
+        );
+
+        fairnessResultService.saveFairnessResult(AUDIT_ID, response);
+
+        // 집단별 confusion matrix 가 그대로 저장 엔티티로 옮겨진다.
+        verify(fairnessGroupStatRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository).saveAll(groupStatCaptor.capture());
+        assertThat(groupStatCaptor.getValue())
+                .extracting(
+                        FairnessGroupStatEntity::getAttribute,
+                        FairnessGroupStatEntity::getGroupName,
+                        FairnessGroupStatEntity::getTp,
+                        FairnessGroupStatEntity::getFp,
+                        FairnessGroupStatEntity::getTn,
+                        FairnessGroupStatEntity::getFn)
+                .containsExactlyInAnyOrder(
+                        tuple("CODE_GENDER", "M", 431, 270, 55, 24),
+                        tuple("CODE_GENDER", "F", 400, 250, 50, 20)
+                );
+
+        // 감사셋 전체 성능이 audit 에 기록된다.
+        verify(audit).applyPerformance(new BigDecimal("0.733"), new BigDecimal("0.6367"));
+    }
+
+    @Test
     void throwsWhenFairnessByAttributeIsEmpty() {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
         FairnessRunResponse response = new FairnessRunResponse(
                 "21", "테스트 감사", null, 0, null, null,
-                Map.of(), Map.of(), List.of()
+                Map.of(), Map.of(), null, List.of()
         );
 
         assertThatThrownBy(() ->
@@ -262,6 +327,7 @@ class FairnessResultServiceTest {
                         )
                 ),
                 Map.of(),
+                null,
                 List.of()
         );
 
@@ -291,6 +357,7 @@ class FairnessResultServiceTest {
                 "21", "테스트 감사", null, 0, null, null,
                 Collections.singletonMap("CODE_GENDER", null),
                 Map.of(),
+                null,
                 List.of()
         );
 
