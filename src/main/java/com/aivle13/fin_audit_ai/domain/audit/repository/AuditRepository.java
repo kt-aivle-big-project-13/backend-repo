@@ -24,6 +24,12 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
             @Param("userId") Long userId
     );
 
+    // 자율점검 저장은 사용자 요청마다 매핑 이벤트를 발행하므로, 동일 auditId에 대한
+    // 매핑 재생성(AuditLawMappingService)이 겹치지 않도록 같은 방식으로 직렬화한다.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select audit from AuditEntity audit where audit.id = :auditId")
+    Optional<AuditEntity> findByIdForUpdate(@Param("auditId") Long auditId);
+
     boolean existsByModel_IdAndStatusIn(Long modelId, List<AuditStatus> statuses);
 
     // 목록에서 모델명을 같이 보여줘야 해서 N+1을 피하기 위해 model을 fetch join 한다.

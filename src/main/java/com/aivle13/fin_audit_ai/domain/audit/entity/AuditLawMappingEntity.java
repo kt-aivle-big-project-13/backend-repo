@@ -38,4 +38,18 @@ public class AuditLawMappingEntity {
 
     @Column(columnDefinition = "TEXT")
     private String evidence;
+
+    public static AuditLawMappingEntity of(
+            AuditEntity audit,
+            LawArticleEntity article,
+            ComplianceStatus compliance,
+            String evidence
+    ) {
+        AuditLawMappingEntity entity = new AuditLawMappingEntity();
+        entity.audit = audit;
+        entity.article = article;
+        entity.compliance = compliance;
+        entity.evidence = evidence;
+        return entity;
+    }
 }

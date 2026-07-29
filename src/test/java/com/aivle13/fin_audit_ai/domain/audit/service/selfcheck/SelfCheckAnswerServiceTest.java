@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.request.selfcheck.SelfCheckAnsw
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.selfcheck.SelfCheckAnswerResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
+import com.aivle13.fin_audit_ai.domain.audit.event.SelfCheckAnswersSubmittedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
@@ -17,12 +18,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -39,6 +42,9 @@ class SelfCheckAnswerServiceTest {
 
     @Mock
     private SelfCheckAnswerRepository selfCheckAnswerRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Mock
     private AuditEntity audit;
@@ -73,6 +79,8 @@ class SelfCheckAnswerServiceTest {
 
         assertThat(response.auditId()).isEqualTo(AUDIT_ID);
         assertThat(response.answers()).hasSize(5);
+
+        verify(eventPublisher).publishEvent(new SelfCheckAnswersSubmittedEvent(AUDIT_ID));
     }
 
     @Test
@@ -92,6 +100,7 @@ class SelfCheckAnswerServiceTest {
 
         verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(selfCheckAnswerRepository, never()).saveAll(anyList());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -132,6 +141,7 @@ class SelfCheckAnswerServiceTest {
 
         verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(selfCheckAnswerRepository, never()).saveAll(anyList());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
