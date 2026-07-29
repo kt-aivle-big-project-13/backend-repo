@@ -12,6 +12,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import tools.jackson.databind.jsontype.PolymorphicTypeValidator;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
 
@@ -29,8 +30,9 @@ public class CacheConfig {
             .allowIfSubType("com.aivle13.fin_audit_ai")
             .allowIfSubType("java.util")
             // FairnessMetricResponse/XaiMetricResponse의 value/threshold가 BigDecimal이라
-            // 캐시 역직렬화 시 이 타입도 허용되어야 한다.
-            .allowIfSubType("java.math")
+            // 캐시 역직렬화 시 이 타입도 허용되어야 한다. 패키지 전체가 아닌 실제로 쓰는
+            // 클래스만 허용해 범위를 최소화한다 (CodeRabbit 리뷰 반영).
+            .allowIfSubType(BigDecimal.class)
             .build();
 
     @Bean
