@@ -5,6 +5,7 @@ import com.aivle13.fin_audit_ai.domain.report.document.ReportDocumentGenerator;
 import com.aivle13.fin_audit_ai.domain.report.dto.GeneratedReportResponse;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportStatus;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.llm.ReportLlmClient;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
@@ -14,15 +15,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.aivle13.fin_audit_ai.domain.report.type.ReportStatus;
-import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ReportGenerationServiceTest {
@@ -68,12 +69,11 @@ class ReportGenerationServiceTest {
         given(fileStorageService.store(any(), anyString(), anyString(), anyString()))
                 .willReturn(storedFile);
 
-        given(reportPersistenceService.save(
+        given(reportPersistenceService.saveAll(
                 AUDIT_ID,
                 ReportType.FINAL_AUDIT_REPORT,
-                ReportFormat.PDF,
-                "s3-key"
-        )).willReturn(REPORT_ID);
+                Map.of(ReportFormat.PDF, "s3-key")
+        )).willReturn(Map.of(ReportFormat.PDF, REPORT_ID));
 
         List<GeneratedReportResponse> responses =
                 reportGenerationService.generate(AUDIT_ID, List.of(ReportFormat.PDF));
