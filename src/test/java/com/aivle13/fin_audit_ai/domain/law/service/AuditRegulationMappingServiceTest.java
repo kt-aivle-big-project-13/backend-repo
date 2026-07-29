@@ -57,16 +57,16 @@ class AuditRegulationMappingServiceTest {
     void derivesComplianceFromAnswerAndDedupesAcrossItems() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
-        SelfCheckAnswerEntity supervisionAnswer = answer(SelfCheckItemCode.SUPERVISION, true);
+        SelfCheckAnswerEntity oversightAnswer = answer(SelfCheckItemCode.OVERSIGHT, true);
         SelfCheckAnswerEntity riskAnswer = answer(SelfCheckItemCode.RISK_MANAGEMENT, false);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
-                .willReturn(List.of(supervisionAnswer, riskAnswer));
+                .willReturn(List.of(oversightAnswer, riskAnswer));
 
         LawArticleEntity sharedArticle = article(1L);
         LawArticleEntity onlyFromRisk = article(2L);
 
         given(lawArticleSearchService.searchSimilarArticles(
-                SelfCheckItemCode.SUPERVISION.label(), 5))
+                SelfCheckItemCode.OVERSIGHT.label(), 5))
                 .willReturn(List.of(sharedArticle));
         given(lawArticleSearchService.searchSimilarArticles(
                 SelfCheckItemCode.RISK_MANAGEMENT.label(), 5))
@@ -81,7 +81,7 @@ class AuditRegulationMappingServiceTest {
 
         assertThat(captor.getValue()).hasSize(2);
 
-        // 먼저 처리된 항목(SUPERVISION, 답변 '예')이 매핑을 선점하므로, 두 항목 모두에서
+        // 먼저 처리된 항목(OVERSIGHT, 답변 '예')이 매핑을 선점하므로, 두 항목 모두에서
         // 검색되는 sharedArticle은 COMPLIANT로 남는다.
         assertThat(captor.getValue())
                 .filteredOn(mapping -> mapping.getArticle().getId().equals(1L))
@@ -103,12 +103,12 @@ class AuditRegulationMappingServiceTest {
     void regenerationDeletesAllPreviousMappingsRegardlessOfCompliance() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
-        SelfCheckAnswerEntity supervisionAnswer = answer(SelfCheckItemCode.SUPERVISION, false);
+        SelfCheckAnswerEntity oversightAnswer = answer(SelfCheckItemCode.OVERSIGHT, false);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
-                .willReturn(List.of(supervisionAnswer));
+                .willReturn(List.of(oversightAnswer));
 
         LawArticleEntity article = article(1L);
-        given(lawArticleSearchService.searchSimilarArticles(eq(SelfCheckItemCode.SUPERVISION.label()), eq(5)))
+        given(lawArticleSearchService.searchSimilarArticles(eq(SelfCheckItemCode.OVERSIGHT.label()), eq(5)))
                 .willReturn(List.of(article));
 
         auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
