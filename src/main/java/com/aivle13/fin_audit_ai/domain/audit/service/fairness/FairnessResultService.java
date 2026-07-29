@@ -31,19 +31,22 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class FairnessResultService {
 
-    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
-    private static final BigDecimal DEMOGRAPHIC_PARITY_THRESHOLD = new BigDecimal("0.10");
-    private static final BigDecimal EQUAL_OPPORTUNITY_THRESHOLD = new BigDecimal("0.10");
-    private static final BigDecimal EQUALIZED_ODDS_THRESHOLD = new BigDecimal("0.10");
-    private static final BigDecimal FPR_PARITY_THRESHOLD = new BigDecimal("0.10");
-    private static final BigDecimal FDR_PARITY_THRESHOLD = new BigDecimal("0.10");
-    private static final BigDecimal FOR_PARITY_THRESHOLD = new BigDecimal("0.10");
+    // 격차(difference) 지표 기본 임계값 — 금융 AI 가이드라인 80% Rule을 격차 기준으로
+    // 근사한 값이다. 80% Rule은 본래 비율 기준(min/max ≥ 0.80)이라 Proportional Parity에만
+    // 정확히 대응하고, 격차 지표에는 고정 숫자로 딱 떨어지지 않아 "집단 간 최대 20%p 이내"로
+    // 근사한다(1 − 0.80 = 0.20). REVIEW 밴드는 이 값의 2배(0.40)까지다.
+    private static final BigDecimal DEMOGRAPHIC_PARITY_THRESHOLD = new BigDecimal("0.20");
+    private static final BigDecimal EQUAL_OPPORTUNITY_THRESHOLD = new BigDecimal("0.20");
+    private static final BigDecimal EQUALIZED_ODDS_THRESHOLD = new BigDecimal("0.20");
+    private static final BigDecimal FPR_PARITY_THRESHOLD = new BigDecimal("0.20");
+    private static final BigDecimal FDR_PARITY_THRESHOLD = new BigDecimal("0.20");
+    private static final BigDecimal FOR_PARITY_THRESHOLD = new BigDecimal("0.20");
+    private static final BigDecimal FNR_PARITY_THRESHOLD = new BigDecimal("0.20");
     private static final BigDecimal REVIEW_THRESHOLD_MULTIPLIER = BigDecimal.valueOf(2);
 
-    // Proportional Parity(80% Rule)는 값이 낮을수록 불공정한 "비율" 지표라, 위 세 지표와
-    // 판정 방향이 반대다(다른 지표는 값이 "작을수록" 공정, 이건 "클수록" 공정). 그래서
-    // 별도 임계값·판정 로직(judgeRatioStatus)을 쓴다.
-    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
+    // Proportional Parity 는 80% Rule(min/max 승인율 ≥ 0.80)을 그대로 표현하는 "비율" 지표라
+    // 격차 지표와 판정 방향이 반대다(격차는 "작을수록" 공정, 이건 "클수록" 공정). 그래서
+    // 별도 임계값·판정 로직(judgeRatioStatus)을 쓴다. 0.80 은 금융 AI 가이드라인 기준값이다.
     private static final BigDecimal PROPORTIONAL_PARITY_MIN_RATIO = new BigDecimal("0.80");
     private static final BigDecimal PROPORTIONAL_PARITY_REVIEW_MARGIN = new BigDecimal("0.10");
 
@@ -157,6 +160,14 @@ public class FairnessResultService {
                     FairnessMetricCode.FOR_PARITY,
                     fairness.forParityDifference(),
                     FOR_PARITY_THRESHOLD,
+                    fairness.note()
+            );
+
+            addIfPresent(
+                    results, audit, attribute,
+                    FairnessMetricCode.FNR_PARITY,
+                    fairness.fnrParityDifference(),
+                    FNR_PARITY_THRESHOLD,
                     fairness.note()
             );
 
