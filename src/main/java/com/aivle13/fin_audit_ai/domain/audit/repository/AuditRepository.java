@@ -44,8 +44,6 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
 
     // validationDataset은 nullable이라 inner join fetch를 쓰면 값이 없는 감사가
     // 통째로 빠지므로 left join fetch로 가져온다.
-    // validationDataset은 nullable이라 inner join fetch를 쓰면 값이 없는 감사가
-    // 통째로 빠지므로 left join fetch로 가져온다.
     @Query("""
             select audit
             from AuditEntity audit
