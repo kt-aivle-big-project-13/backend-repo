@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.law.controller;
 
 import com.aivle13.fin_audit_ai.domain.law.dto.response.RegulationMappingResponse;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditLawMappingService;
+import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuditRegulationMappingController {
 
-    private final AuditLawMappingService auditLawMappingService;
+    private final AuditRegulationMappingService auditRegulationMappingService;
 
     @Operation(
             summary = "RAG 기반 규제 매핑 결과 조회",
@@ -60,7 +60,7 @@ public class AuditRegulationMappingController {
 
         RegulationMappingResponse response = RegulationMappingResponse.of(
                 auditId,
-                auditLawMappingService.getMappings(userId, auditId)
+                auditRegulationMappingService.getMappings(userId, auditId)
         );
 
         return ResponseEntity.ok(response);

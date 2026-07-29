@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.law.dto.response;
 
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 
 import java.util.List;
 
@@ -9,7 +9,7 @@ public record RegulationMappingResponse(
         Long auditId,
         List<RegulationMapping> mappings
 ) {
-    public static RegulationMappingResponse of(Long auditId, List<AuditLawComplianceView> views) {
+    public static RegulationMappingResponse of(Long auditId, List<AuditRegulationComplianceView> views) {
         List<RegulationMapping> mappings = views.stream()
                 .map(RegulationMapping::from)
                 .toList();
@@ -25,7 +25,7 @@ public record RegulationMappingResponse(
             ComplianceStatus compliance,
             String evidence
     ) {
-        public static RegulationMapping from(AuditLawComplianceView view) {
+        public static RegulationMapping from(AuditRegulationComplianceView view) {
             return new RegulationMapping(
                     view.mappingId(),
                     view.articleTitle(),

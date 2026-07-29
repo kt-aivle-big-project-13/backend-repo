@@ -53,7 +53,7 @@ public class SelfCheckAnswerService {
         selfCheckAnswerRepository.deleteAllByAudit_Id(auditId);
         List<SelfCheckAnswerEntity> saved = selfCheckAnswerRepository.saveAll(entities);
 
-        // 커밋 후 비동기로 법령 매핑 후보를 생성한다(SelfCheckLawMappingEventListener).
+        // 커밋 후 비동기로 법령 매핑 후보를 생성한다(SelfCheckRegulationMappingEventListener).
         eventPublisher.publishEvent(new SelfCheckAnswersSubmittedEvent(auditId));
 
         return SelfCheckAnswerResponse.of(auditId, saved);

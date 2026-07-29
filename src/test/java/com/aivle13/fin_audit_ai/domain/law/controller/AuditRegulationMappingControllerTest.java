@@ -1,9 +1,9 @@
 package com.aivle13.fin_audit_ai.domain.law.controller;
 
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.law.dto.AuditLawComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.dto.response.RegulationMappingResponse;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditLawMappingService;
+import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,17 +27,17 @@ class AuditRegulationMappingControllerTest {
     private static final Long AUDIT_ID = 21L;
 
     @Mock
-    private AuditLawMappingService auditLawMappingService;
+    private AuditRegulationMappingService auditRegulationMappingService;
 
     @InjectMocks
     private AuditRegulationMappingController controller;
 
     @Test
     void returnsRegulationMappings() {
-        AuditLawComplianceView view = new AuditLawComplianceView(
+        AuditRegulationComplianceView view = new AuditRegulationComplianceView(
                 1L, "제12조", "인공지능 기본법", "조문 원문", ComplianceStatus.NON_COMPLIANT, "근거"
         );
-        given(auditLawMappingService.getMappings(USER_ID, AUDIT_ID)).willReturn(List.of(view));
+        given(auditRegulationMappingService.getMappings(USER_ID, AUDIT_ID)).willReturn(List.of(view));
 
         ResponseEntity<RegulationMappingResponse> response =
                 controller.getRegulationMappings(USER_ID, AUDIT_ID);
@@ -54,6 +54,6 @@ class AuditRegulationMappingControllerTest {
                 controller.getRegulationMappings(null, AUDIT_ID)
         ).isInstanceOf(UnauthorizedException.class);
 
-        verifyNoInteractions(auditLawMappingService);
+        verifyNoInteractions(auditRegulationMappingService);
     }
 }
