@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 감사 결과로 생성되는 보고서(XAI, 편향, 준수판정 등) 파일 메타데이터.
+ * 감사 결과로 생성되는 보고서(XAI, 편향, 준수판정 등) 파일 메타데이터
  */
 @Entity
 @Getter
