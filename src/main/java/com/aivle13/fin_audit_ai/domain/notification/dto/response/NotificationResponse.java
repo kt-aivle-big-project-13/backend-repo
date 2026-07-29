@@ -11,7 +11,8 @@ public record NotificationResponse(
         String title,
         String message,
         boolean isRead,
-        LocalDateTime sentAt
+        LocalDateTime sentAt,
+        Long auditId
 ) {
     public static NotificationResponse from(NotificationEntity notification) {
         String title = switch (notification.getNotifType()) {
@@ -29,13 +30,16 @@ public record NotificationResponse(
                     "'" + notification.getAudit().getAuditName() + "' 감사가 완료되었습니다.";
         };
 
+        Long auditId = notification.getAudit() != null ? notification.getAudit().getId() : null;
+
         return new NotificationResponse(
                 notification.getId(),
                 notification.getNotifType(),
                 title,
                 message,
                 notification.isRead(),
-                notification.getSentAt()
+                notification.getSentAt(),
+                auditId
         );
     }
 }
