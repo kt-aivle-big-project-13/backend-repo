@@ -84,4 +84,12 @@ public class AuditLawMappingService implements AuditLawMappingQueryService {
                 .map(AuditLawComplianceView::from)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<AuditLawComplianceView> getMappings(Long userId, Long auditId) {
+        auditRepository.findByIdAndUser_Id(auditId, userId)
+                .orElseThrow(AuditNotFoundException::new);
+
+        return getMappings(auditId);
+    }
 }
