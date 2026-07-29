@@ -190,6 +190,7 @@ class FairnessResultServiceTest {
                                 new BigDecimal("0.05"),
                                 new BigDecimal("0.15"),
                                 new BigDecimal("-0.35"),
+                                new BigDecimal("0.15"),
                                 List.of(),
                                 List.of(),
                                 null
@@ -217,6 +218,7 @@ class FairnessResultServiceTest {
                         tuple("CODE_GENDER", FairnessMetricCode.FPR_PARITY, FairnessStatus.PASS),
                         tuple("CODE_GENDER", FairnessMetricCode.FDR_PARITY, FairnessStatus.REVIEW),
                         tuple("CODE_GENDER", FairnessMetricCode.FOR_PARITY, FairnessStatus.FAIL),
+                        tuple("CODE_GENDER", FairnessMetricCode.FNR_PARITY, FairnessStatus.REVIEW),
                         tuple("CODE_GENDER", FairnessMetricCode.PROPORTIONAL_PARITY, FairnessStatus.PASS)
                 );
     }
@@ -253,7 +255,7 @@ class FairnessResultServiceTest {
                         "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
                                 "CODE_GENDER", "COMPUTED",
                                 new BigDecimal("0.05"), null, null,
-                                new BigDecimal("0.85"), null, null, null,
+                                new BigDecimal("0.85"), null, null, null, null,
                                 List.of(), List.of(), "일부 집단에 정상 또는 연체 고객이 없어 해당 지표를 계산할 수 없음"
                         )
                 ),

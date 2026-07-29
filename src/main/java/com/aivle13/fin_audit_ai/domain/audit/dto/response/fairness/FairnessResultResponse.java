@@ -37,6 +37,7 @@ public record FairnessResultResponse(
             case FPR_PARITY -> 4;
             case FDR_PARITY -> 5;
             case FOR_PARITY -> 6;
+            case FNR_PARITY -> 7;
         };
     }
 }

@@ -38,6 +38,7 @@ public class FairnessResultService {
     private static final BigDecimal FPR_PARITY_THRESHOLD = new BigDecimal("0.10");
     private static final BigDecimal FDR_PARITY_THRESHOLD = new BigDecimal("0.10");
     private static final BigDecimal FOR_PARITY_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal FNR_PARITY_THRESHOLD = new BigDecimal("0.10");
     private static final BigDecimal REVIEW_THRESHOLD_MULTIPLIER = BigDecimal.valueOf(2);
 
     // Proportional Parity(80% Rule)는 값이 낮을수록 불공정한 "비율" 지표라, 위 세 지표와
@@ -157,6 +158,14 @@ public class FairnessResultService {
                     FairnessMetricCode.FOR_PARITY,
                     fairness.forParityDifference(),
                     FOR_PARITY_THRESHOLD,
+                    fairness.note()
+            );
+
+            addIfPresent(
+                    results, audit, attribute,
+                    FairnessMetricCode.FNR_PARITY,
+                    fairness.fnrParityDifference(),
+                    FNR_PARITY_THRESHOLD,
                     fairness.note()
             );
 
