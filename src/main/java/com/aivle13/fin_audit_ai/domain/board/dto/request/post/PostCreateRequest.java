@@ -1,4 +1,4 @@
-package com.aivle13.fin_audit_ai.domain.board.dto.request;
+package com.aivle13.fin_audit_ai.domain.board.dto.request.post;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.web.multipart.MultipartFile;

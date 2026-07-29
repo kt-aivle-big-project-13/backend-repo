@@ -1,6 +1,6 @@
-package com.aivle13.fin_audit_ai.domain.board.service;
+package com.aivle13.fin_audit_ai.domain.board.service.comment;
 
-import com.aivle13.fin_audit_ai.domain.board.dto.response.CommentResponse;
+import com.aivle13.fin_audit_ai.domain.board.dto.response.comment.CommentResponse;
 import com.aivle13.fin_audit_ai.domain.board.repository.CommentRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostRepository;
 import com.aivle13.fin_audit_ai.global.exception.board.PostNotFoundException;
