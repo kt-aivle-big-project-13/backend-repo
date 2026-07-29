@@ -7,11 +7,13 @@ import com.aivle13.fin_audit_ai.domain.report.prompt.ReportOutputValidator;
 import com.aivle13.fin_audit_ai.domain.report.prompt.ReportPromptBuilder;
 import com.aivle13.fin_audit_ai.domain.report.prompt.ReportPromptTemplate;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.llm.ReportLlmClient;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +52,7 @@ public class ReportGenerationService {
 
         return reportPersistenceService.save(
                 auditId,
+                ReportType.FINAL_AUDIT_REPORT,
                 format,
                 storedFile.s3Key()
         );
