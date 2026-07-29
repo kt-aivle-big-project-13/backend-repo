@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 class AuditRegulationMappingServiceTest {
 
     private static final Long AUDIT_ID = 21L;
+    private static final Long USER_ID = 7L;
 
     @Mock
     private AuditRepository auditRepository;
@@ -137,9 +138,33 @@ class AuditRegulationMappingServiceTest {
         assertThat(views).singleElement().satisfies(view -> {
             assertThat(view.articleNumber()).isEqualTo("제1조");
             assertThat(view.articleTitle()).isEqualTo("인공지능 기본법");
+            assertThat(view.content()).isEqualTo("조문 원문");
             assertThat(view.compliance()).isEqualTo(ComplianceStatus.NON_COMPLIANT);
             assertThat(view.evidence()).isEqualTo("자율점검 기반 자동 매칭");
         });
+    }
+
+    @Test
+    void getMappingsForUserReturnsMappingsWhenAuditOwnedByUser() {
+        LawArticleEntity article = article(1L);
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
+                audit, article, ComplianceStatus.COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID)).willReturn(Optional.of(audit));
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(USER_ID, AUDIT_ID);
+
+        assertThat(views).singleElement()
+                .satisfies(view -> assertThat(view.compliance()).isEqualTo(ComplianceStatus.COMPLIANT));
+    }
+
+    @Test
+    void getMappingsForUserThrowsWhenAuditNotOwnedByUser() {
+        given(auditRepository.findByIdAndUser_Id(AUDIT_ID, USER_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> auditRegulationMappingService.getMappings(USER_ID, AUDIT_ID))
+                .isInstanceOf(AuditNotFoundException.class);
     }
 
     @Test

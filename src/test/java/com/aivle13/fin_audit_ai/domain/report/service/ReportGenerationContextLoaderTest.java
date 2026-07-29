@@ -45,7 +45,7 @@ class ReportGenerationContextLoaderTest {
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
 
         AuditRegulationComplianceView view = new AuditRegulationComplianceView(
-                1L, "제12조", "인공지능 기본법", ComplianceStatus.NON_COMPLIANT, "근거"
+                1L, "제12조", "인공지능 기본법", "조문 원문", ComplianceStatus.NON_COMPLIANT, "근거"
         );
         given(auditRegulationMappingQueryService.getMappings(AUDIT_ID)).willReturn(List.of(view));
 
