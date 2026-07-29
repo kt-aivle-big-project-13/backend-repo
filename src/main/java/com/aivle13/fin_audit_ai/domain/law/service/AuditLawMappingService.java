@@ -37,7 +37,10 @@ public class AuditLawMappingService {
 
     @Transactional
     public void mapFromSelfCheckAnswers(Long auditId) {
-        AuditEntity audit = auditRepository.findById(auditId)
+        // 동일 auditId에 대한 매핑 재생성이 겹치면 PENDING delete+insert가 경합해
+        // uk_audit_law_mappings_audit_article 유니크 제약을 위반할 수 있다. 감사 행에
+        // 비관적 쓰기 잠금을 걸어 트랜잭션이 끝날 때까지 뒤이은 요청을 직렬화한다.
+        AuditEntity audit = auditRepository.findByIdForUpdate(auditId)
                 .orElseThrow(AuditNotFoundException::new);
 
         List<SelfCheckAnswerEntity> answers = selfCheckAnswerRepository.findAllByAudit_Id(auditId);

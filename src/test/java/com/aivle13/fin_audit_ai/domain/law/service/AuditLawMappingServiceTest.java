@@ -53,7 +53,7 @@ class AuditLawMappingServiceTest {
 
     @Test
     void createsPendingMappingsDedupedAcrossItems() {
-        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
         SelfCheckAnswerEntity supervisionAnswer = answer(SelfCheckItemCode.SUPERVISION, true);
         SelfCheckAnswerEntity riskAnswer = answer(SelfCheckItemCode.RISK_MANAGEMENT, false);
@@ -98,7 +98,7 @@ class AuditLawMappingServiceTest {
 
     @Test
     void skipsArticlesAlreadyDecidedByHuman() {
-        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
         SelfCheckAnswerEntity supervisionAnswer = answer(SelfCheckItemCode.SUPERVISION, true);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
@@ -124,7 +124,7 @@ class AuditLawMappingServiceTest {
 
     @Test
     void throwsWhenAuditDoesNotExist() {
-        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.empty());
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> auditLawMappingService.mapFromSelfCheckAnswers(AUDIT_ID))
                 .isInstanceOf(AuditNotFoundException.class);
