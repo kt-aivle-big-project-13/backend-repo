@@ -94,7 +94,7 @@ public final class ReportPromptBuilder {
             StringBuilder prompt,
             List<AuditRegulationComplianceView> mappings
     ) {
-        prompt.append("[확정된 법령 준수 결과]\n");
+        prompt.append("[규제 준수 판정]\n");
 
         if (mappings == null || mappings.isEmpty()) {
             prompt.append("- 확정된 법령 매핑 없음\n\n");
