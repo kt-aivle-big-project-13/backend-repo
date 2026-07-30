@@ -3,8 +3,10 @@ package com.aivle13.fin_audit_ai.domain.audit.service.fairness;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.fairness.FairnessResultResponse;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.fairness.FairnessRunResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessGroupStatEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessGroupStatRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
@@ -51,6 +53,7 @@ public class FairnessResultService {
 
     private final AuditRepository auditRepository;
     private final FairnessResultRepository fairnessResultRepository;
+    private final FairnessGroupStatRepository fairnessGroupStatRepository;
     private final CacheManager cacheManager;
 
     // getFairness(2-arg)에서 @Cacheable이 붙은 3-arg 메서드를 this로 직접 호출하면
@@ -60,11 +63,13 @@ public class FairnessResultService {
     public FairnessResultService(
             AuditRepository auditRepository,
             FairnessResultRepository fairnessResultRepository,
+            FairnessGroupStatRepository fairnessGroupStatRepository,
             CacheManager cacheManager,
             @Lazy FairnessResultService self
     ) {
         this.auditRepository = auditRepository;
         this.fairnessResultRepository = fairnessResultRepository;
+        this.fairnessGroupStatRepository = fairnessGroupStatRepository;
         this.cacheManager = cacheManager;
         this.self = self;
     }
@@ -83,16 +88,21 @@ public class FairnessResultService {
             throw new AuditNotCompletedException();
         }
 
-        List<FairnessResultEntity> results =
-                (attribute != null && !attribute.isBlank())
-                        ? fairnessResultRepository.findAllByAudit_IdAndAttribute(auditId, attribute)
-                        : fairnessResultRepository.findAllByAudit_Id(auditId);
+        boolean byAttribute = attribute != null && !attribute.isBlank();
+
+        List<FairnessResultEntity> results = byAttribute
+                ? fairnessResultRepository.findAllByAudit_IdAndAttribute(auditId, attribute)
+                : fairnessResultRepository.findAllByAudit_Id(auditId);
 
         if (results.isEmpty()) {
             throw new FairnessResultNotFoundException();
         }
 
-        return FairnessResultResponse.of(auditId, results);
+        List<FairnessGroupStatEntity> groupStats = byAttribute
+                ? fairnessGroupStatRepository.findAllByAudit_IdAndAttribute(auditId, attribute)
+                : fairnessGroupStatRepository.findAllByAudit_Id(auditId);
+
+        return FairnessResultResponse.of(auditId, results, groupStats, audit);
     }
 
     @Transactional
@@ -103,6 +113,7 @@ public class FairnessResultService {
         validateResponse(response);
 
         List<FairnessResultEntity> results = new ArrayList<>();
+        List<FairnessGroupStatEntity> groupStats = new ArrayList<>();
 
         for (Map.Entry<String, FairnessRunResponse.AttributeFairness> entry
                 : response.fairnessByAttribute().entrySet()) {
@@ -113,6 +124,8 @@ public class FairnessResultService {
             if (fairness == null) {
                 throw new AuditFailedException();
             }
+
+            addGroupStats(groupStats, audit, attribute, fairness.groups());
 
             addIfPresent(
                     results, audit, attribute,
@@ -174,7 +187,40 @@ public class FairnessResultService {
         fairnessResultRepository.deleteAllByAudit_Id(auditId);
         fairnessResultRepository.saveAll(results);
 
+        fairnessGroupStatRepository.deleteAllByAudit_Id(auditId);
+        fairnessGroupStatRepository.saveAll(groupStats);
+
+        applyPerformance(audit, response.performance());
+
         evictCache(audit.getUser().getId(), auditId, response.fairnessByAttribute().keySet());
+    }
+
+    // AI 응답의 집단별 기초통계·혼동행렬을 저장 엔티티로 옮긴다. groups 가 없으면(구버전
+    // 응답·표본 부족) 아무것도 추가하지 않는다.
+    private void addGroupStats(
+            List<FairnessGroupStatEntity> target,
+            AuditEntity audit,
+            String attribute,
+            List<FairnessRunResponse.GroupStat> groups
+    ) {
+        if (groups == null) {
+            return;
+        }
+        for (FairnessRunResponse.GroupStat group : groups) {
+            target.add(FairnessGroupStatEntity.of(
+                    audit, attribute, group.group(), group.n(),
+                    group.approvalRate(), group.actualDefaultRate(),
+                    group.tp(), group.fp(), group.tn(), group.fn(), group.auc()
+            ));
+        }
+    }
+
+    // 감사셋 전체 모델 성능을 audit 에 기록한다. 성능 정보가 없으면(구버전 응답) 건너뛴다.
+    private void applyPerformance(AuditEntity audit, FairnessRunResponse.Performance performance) {
+        if (performance == null) {
+            return;
+        }
+        audit.applyPerformance(performance.auc(), performance.accuracy());
     }
 
     private void evictCache(Long userId, Long auditId, Set<String> attributes) {
