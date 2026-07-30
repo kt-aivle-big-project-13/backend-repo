@@ -5,6 +5,9 @@ import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawRevisionRepository;
 import com.aivle13.fin_audit_ai.domain.law.type.RevisionType;
+import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
+import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
+import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.lawapi.client.LawApiClient;
 import com.aivle13.fin_audit_ai.global.lawapi.client.LawArticleRevision;
@@ -48,6 +51,8 @@ public class LawRevisionDetectionService {
     private final LawArticleRepository lawArticleRepository;
     private final LawRevisionRepository lawRevisionRepository;
     private final ReportLlmClient reportLlmClient;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public List<LawRevisionEntity> detectAndApply() {
         List<LawRevisionEntity> revisions = new ArrayList<>();
@@ -64,7 +69,33 @@ public class LawRevisionDetectionService {
             }
         }
 
+        if (!revisions.isEmpty()) {
+            notifyActiveUsers(revisions);
+        }
+
         return revisions;
+    }
+
+    // 개정 알림은 감사(트랜잭션)와 무관한 브로드캐스트라 모든 법령 처리(및 커밋)가 끝난
+    // 뒤에 트랜잭션 밖에서 실행한다 — NotificationService.notifyLawRevision도 메일 발송을
+    // DB 트랜잭션 밖에서 수행하도록 설계돼 있어 이 순서와 맞는다.
+    private void notifyActiveUsers(List<LawRevisionEntity> revisions) {
+        List<UserEntity> activeUsers = userRepository.findByIsActiveTrue();
+
+        for (LawRevisionEntity revision : revisions) {
+            for (UserEntity user : activeUsers) {
+                try {
+                    notificationService.notifyLawRevision(user, revision);
+                } catch (RuntimeException exception) {
+                    log.error(
+                            "법령 개정 알림 발송 실패, 다음 사용자로 계속함: userId={}, revisionId={}",
+                            user.getId(),
+                            revision.getId(),
+                            exception
+                    );
+                }
+            }
+        }
     }
 
     @Transactional

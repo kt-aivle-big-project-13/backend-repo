@@ -5,6 +5,10 @@ import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawRevisionRepository;
 import com.aivle13.fin_audit_ai.domain.law.type.RevisionType;
+import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
+import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
+import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.law.LawApiErrorException;
 import com.aivle13.fin_audit_ai.global.exception.llm.LlmServerErrorException;
 import com.aivle13.fin_audit_ai.global.lawapi.client.LawApiClient;
@@ -46,6 +50,12 @@ class LawRevisionDetectionServiceTest {
 
     @Mock
     private ReportLlmClient reportLlmClient;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private LawRevisionDetectionService lawRevisionDetectionService;
@@ -147,5 +157,44 @@ class LawRevisionDetectionServiceTest {
         List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
 
         assertThat(revisions).isEmpty();
+        verify(userRepository, never()).findByIsActiveTrue();
+    }
+
+    @Test
+    void notifiesAllActiveUsersForEachDetectedRevision() {
+        LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제31조", "옛 내용", LocalDate.of(2026, 1, 22));
+        article.updateSummary("옛 요약");
+
+        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
+                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21))
+        ));
+        given(lawApiClient.fetchArticles(OFFICIAL_DECREE_NAME)).willReturn(List.of());
+        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
+                .willReturn(Optional.of(article));
+        given(reportLlmClient.generate(anyString(), anyString())).willReturn("새 요약");
+        given(lawRevisionRepository.save(any(LawRevisionEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        UserEntity activeUser1 = UserEntity.create("김철수", "핀테크뱅크", "a@test.com", "hash", UserRole.USER);
+        UserEntity activeUser2 = UserEntity.create("이영희", "핀테크뱅크", "b@test.com", "hash", UserRole.USER);
+        given(userRepository.findByIsActiveTrue()).willReturn(List.of(activeUser1, activeUser2));
+
+        List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
+
+        assertThat(revisions).hasSize(1);
+        verify(notificationService).notifyLawRevision(activeUser1, revisions.get(0));
+        verify(notificationService).notifyLawRevision(activeUser2, revisions.get(0));
+    }
+
+    @Test
+    void doesNotLookUpUsersWhenNoRevisionsDetected() {
+        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of());
+        given(lawApiClient.fetchArticles(OFFICIAL_DECREE_NAME)).willReturn(List.of());
+
+        List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
+
+        assertThat(revisions).isEmpty();
+        verify(userRepository, never()).findByIsActiveTrue();
+        verify(notificationService, never()).notifyLawRevision(any(), any());
     }
 }
