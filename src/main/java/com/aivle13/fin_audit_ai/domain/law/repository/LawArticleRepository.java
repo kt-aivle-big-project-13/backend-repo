@@ -6,10 +6,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LawArticleRepository extends JpaRepository<LawArticleEntity, Long> {
 
     boolean existsByLawNameAndArticleNo(String lawName, String articleNo);
+
+    Optional<LawArticleEntity> findByLawNameAndArticleNo(String lawName, String articleNo);
 
     List<LawArticleEntity> findByEmbeddingIsNull();
 
