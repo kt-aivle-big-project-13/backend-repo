@@ -46,19 +46,14 @@ public class ReportGenerationService {
         // LLM 호출 및 S3 업로드 전에 감사 존재 여부를 검증한다.
         reportPersistenceService.validateAuditExists(auditId);
 
-        List<ReportFormat> distinctFormats = formats.stream()
-                .distinct()
-                .toList();
+        List<ReportFormat> distinctFormats = formats.stream().distinct().toList();
 
-        ReportGenerationContext context =
-                contextLoader.load(auditId);
+        ReportGenerationContext context = contextLoader.load(auditId);
 
-        String generatedContent =
-                generateContent(context);
+        String generatedContent = generateContent(context);
 
         // 요청 순서를 유지하면서 포맷별 S3 key를 저장한다.
-        Map<ReportFormat, String> storedFiles =
-                new LinkedHashMap<>();
+        Map<ReportFormat, String> storedFiles = new LinkedHashMap<>();
 
         try {
             for (ReportFormat format : distinctFormats) {
@@ -108,9 +103,7 @@ public class ReportGenerationService {
     }
 
     // 생성 또는 업로드 도중 실패했을 때 이미 저장된 S3 파일을 정리한다.
-    private void deleteStoredFiles(
-            Iterable<String> s3Keys
-    ) {
+    private void deleteStoredFiles(Iterable<String> s3Keys) {
         for (String s3Key : s3Keys) {
             try {
                 fileStorageService.delete(s3Key);
@@ -126,20 +119,12 @@ public class ReportGenerationService {
     }
 
     // 보고서 입력 데이터를 기반으로 최종 통합 보고서 본문 생성
-    public String generateContent(
-            ReportGenerationContext context
-    ) {
-        String systemPrompt =
-                ReportPromptTemplate.buildSystemPrompt();
+    public String generateContent(ReportGenerationContext context) {
+        String systemPrompt = ReportPromptTemplate.buildSystemPrompt();
 
-        String userPrompt =
-                ReportPromptBuilder.build(context);
+        String userPrompt = ReportPromptBuilder.build(context);
 
-        String generatedContent =
-                reportLlmClient.generate(
-                        systemPrompt,
-                        userPrompt
-                );
+        String generatedContent = reportLlmClient.generate(systemPrompt, userPrompt);
 
         ReportOutputValidator.validate(generatedContent);
 
