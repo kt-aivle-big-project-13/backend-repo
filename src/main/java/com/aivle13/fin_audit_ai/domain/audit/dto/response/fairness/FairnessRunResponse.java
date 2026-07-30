@@ -43,7 +43,6 @@ public record FairnessRunResponse(
             @JsonProperty("fpr_parity_difference") BigDecimal fprParityDifference,
             @JsonProperty("fdr_parity_difference") BigDecimal fdrParityDifference,
             @JsonProperty("for_parity_difference") BigDecimal forParityDifference,
-            @JsonProperty("fnr_parity_difference") BigDecimal fnrParityDifference,
             List<GroupStat> groups,
             @JsonProperty("excluded_groups") List<String> excludedGroups,
             String note
@@ -81,8 +80,7 @@ public record FairnessRunResponse(
             @JsonProperty("PROPORTIONAL_PARITY") BigDecimal proportionalParity,
             @JsonProperty("FPR_PARITY") BigDecimal fprParity,
             @JsonProperty("FDR_PARITY") BigDecimal fdrParity,
-            @JsonProperty("FOR_PARITY") BigDecimal forParity,
-            @JsonProperty("FNR_PARITY") BigDecimal fnrParity
+            @JsonProperty("FOR_PARITY") BigDecimal forParity
     ) {
     }
 

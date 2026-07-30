@@ -49,13 +49,17 @@ public class ReportGenerationContextLoader {
         List<AuditRegulationComplianceView> regulationCompliances =
                 auditRegulationMappingQueryService.getMappings(auditId);
 
+        // 개선 권고 조회 또는 생성 기능이 구현되면 실제 데이터를 연결한다.
+        // 현재는 확정되지 않은 권고 내용을 임의로 생성하지 않기 위해 빈 목록을 사용한다.
+        List<String> improvementGuides = List.of();
+
         return new ReportGenerationContext(
                 auditId,
                 xaiResults,
                 fairnessResults,
                 selfCheckResults,
                 regulationCompliances,
-                List.of()
+                improvementGuides
         );
     }
 
