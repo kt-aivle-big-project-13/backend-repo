@@ -52,7 +52,7 @@ class ReportGenerationServiceTest {
     @Test
     void generatesReportWithoutAnyPendingMappingGate() {
         ReportGenerationContext context = new ReportGenerationContext(
-                AUDIT_ID, List.of(), List.of(), List.of(), List.of(), List.of()
+                AUDIT_ID, List.of(), List.of(), List.of(), List.of()
         );
         given(contextLoader.load(AUDIT_ID)).willReturn(context);
 

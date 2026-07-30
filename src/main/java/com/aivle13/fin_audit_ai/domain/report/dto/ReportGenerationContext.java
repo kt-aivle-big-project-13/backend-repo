@@ -9,7 +9,6 @@ public record ReportGenerationContext(
         Long auditId,
         List<AuditMetricView> xaiResults,
         List<AuditMetricView> fairnessResults,
-        List<AuditMetricView> selfCheckResults,
         List<AuditRegulationComplianceView> regulationCompliances,
         List<String> improvementGuides
 ) {
