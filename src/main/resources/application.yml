@@ -106,6 +106,13 @@ app:
     connect-timeout: ${AI_SERVER_CONNECT_TIMEOUT:3s}
     read-timeout: ${AI_SERVER_READ_TIMEOUT:120s}
 
+  law-api:
+    enabled: ${LAW_API_ENABLED:false}
+    oc-key: ${LAW_API_OC_KEY:}
+    base-url: ${LAW_API_BASE_URL:http://www.law.go.kr}
+    connect-timeout: ${LAW_API_CONNECT_TIMEOUT:3s}
+    read-timeout: ${LAW_API_READ_TIMEOUT:10s}
+
   llm:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:}

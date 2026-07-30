@@ -64,6 +64,8 @@ public enum ErrorCode {
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "EA003", "외부 서비스 요청에 실패했습니다."),
     EMAIL_SEND_FAILED(HttpStatus.BAD_GATEWAY, "EA004", "이메일 발송에 실패했습니다."),
     RECAPTCHA_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "EA005", "로봇 인증 서버 요청에 실패했습니다."),
+    LAW_API_ERROR(HttpStatus.BAD_GATEWAY, "EA006", "법령 정보 API 요청에 실패했습니다."),
+    LAW_API_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "EA007", "법령 정보 API 응답 시간이 초과되었습니다."),
 
     // ===== File Storage (EF) =====
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EF001", "파일 업로드에 실패했습니다."),
