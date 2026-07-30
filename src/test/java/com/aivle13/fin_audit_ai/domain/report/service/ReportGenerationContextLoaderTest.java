@@ -1,7 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.report.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
-import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
@@ -30,9 +29,6 @@ class ReportGenerationContextLoaderTest {
     private FairnessResultRepository fairnessResultRepository;
 
     @Mock
-    private SelfCheckAnswerRepository selfCheckAnswerRepository;
-
-    @Mock
     private AuditRegulationMappingQueryService auditRegulationMappingQueryService;
 
     @InjectMocks
@@ -42,7 +38,6 @@ class ReportGenerationContextLoaderTest {
     void loadsRegulationCompliancesFromQueryService() {
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
-        given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
 
         AuditRegulationComplianceView view = new AuditRegulationComplianceView(
                 1L, "제12조", "인공지능 기본법", "조문 원문", ComplianceStatus.NON_COMPLIANT, "근거"

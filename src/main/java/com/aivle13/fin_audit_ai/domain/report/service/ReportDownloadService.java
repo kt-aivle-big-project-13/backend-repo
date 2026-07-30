@@ -32,17 +32,11 @@ public class ReportDownloadService {
                         )
                 );
 
-        DownloadedFile downloadedFile =
-                fileStorageService.download(
-                        report.getFilePath()
-                );
+        DownloadedFile downloadedFile = fileStorageService.download(report.getFilePath());
 
         String fileName = createFileName(report);
 
-        return new ReportDownloadResult(
-                downloadedFile,
-                fileName
-        );
+        return new ReportDownloadResult(downloadedFile, fileName);
     }
 
     private String createFileName(ReportEntity report) {

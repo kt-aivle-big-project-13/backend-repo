@@ -40,12 +40,6 @@ public final class ReportPromptBuilder {
                 context.fairnessResults()
         );
 
-        appendMetrics(
-                prompt,
-                "자가진단 결과",
-                context.selfCheckResults()
-        );
-
         appendRegulationCompliances(
                 prompt,
                 context.regulationCompliances()
@@ -129,7 +123,7 @@ public final class ReportPromptBuilder {
             StringBuilder prompt,
             List<String> guides
     ) {
-        prompt.append("[개선 권고]\n");
+        prompt.append("[개선 권고 가이드]\n");
 
         if (guides == null || guides.isEmpty()) {
             prompt.append("- 확정된 개선 권고 없음\n");

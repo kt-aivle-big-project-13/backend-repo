@@ -64,8 +64,7 @@ public class ReportPersistenceService {
             ReportType reportType,
             Map<ReportFormat, String> storedFiles
     ) {
-        List<String> s3Keys =
-                List.copyOf(storedFiles.values());
+        List<String> s3Keys = List.copyOf(storedFiles.values());
 
         fileStorageService.deleteOnRollback(s3Keys);
 
@@ -83,11 +82,9 @@ public class ReportPersistenceService {
                 )
                 .toList();
 
-        List<ReportEntity> savedReports =
-                reportRepository.saveAll(reports);
+        List<ReportEntity> savedReports = reportRepository.saveAll(reports);
 
-        Map<ReportFormat, Long> savedReportIds =
-                new LinkedHashMap<>();
+        Map<ReportFormat, Long> savedReportIds = new LinkedHashMap<>();
 
         for (ReportEntity savedReport : savedReports) {
             savedReportIds.put(
@@ -101,11 +98,6 @@ public class ReportPersistenceService {
 
     // 감사 조회와 AUDIT_NOT_FOUND 예외 처리를 공통으로 사용한다.
     private AuditEntity findAudit(Long auditId) {
-        return auditRepository.findById(auditId)
-                .orElseThrow(() ->
-                        new BusinessException(
-                                ErrorCode.AUDIT_NOT_FOUND
-                        )
-                );
+        return auditRepository.findById(auditId).orElseThrow(() -> new BusinessException(ErrorCode.AUDIT_NOT_FOUND));
     }
 }
