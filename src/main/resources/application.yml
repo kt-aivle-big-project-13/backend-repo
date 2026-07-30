@@ -113,6 +113,9 @@ app:
     connect-timeout: ${LAW_API_CONNECT_TIMEOUT:3s}
     read-timeout: ${LAW_API_READ_TIMEOUT:10s}
 
+  law-revision-job:
+    cron: ${LAW_REVISION_CRON:0 0 6 * * *}
+
   llm:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:}
