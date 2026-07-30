@@ -248,7 +248,7 @@ class FairnessResultServiceTest {
                         "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
                                 "CODE_GENDER", "COMPUTED",
                                 new BigDecimal("0.05"), null, null, new BigDecimal("0.85"),
-                                null, null, null, null,
+                                null, null, null,
                                 List.of(
                                         new FairnessRunResponse.GroupStat(
                                                 "M", 780, new BigDecimal("0.90"), new BigDecimal("0.06"),

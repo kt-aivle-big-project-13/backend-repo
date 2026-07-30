@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  * 감사의 보호속성별 집단(예: 성별 M/F) 하나의 기초 통계·혼동행렬.
  * 지표 단위인 {@link FairnessResultEntity} 와 달리 집단(group) 단위로 저장한다.
  * 혼동행렬은 favorable(승인=유리) 관점 — 정상 승인=TP, 연체 승인=FP(오승인),
- * 연체 거절=TN, 정상 거절=FN(오거절). FPR/FDR/FOR/FNR Parity 의 원자료다.
+ * 연체 거절=TN, 정상 거절=FN(오거절). FPR/FDR/FOR Parity 의 원자료다.
  */
 @Entity
 @Getter
