@@ -77,4 +77,17 @@ public class NotificationController {
         notificationService.markAllAsRead(userId);
         return ResponseEntity.noContent().build();
     }
+
+    // 알림 벨 목록 초기화(전체 삭제)
+    @DeleteMapping
+    public ResponseEntity<Void> clearAll(
+            @AuthenticationPrincipal Long userId
+    ) {
+        if (userId == null) {
+            throw new UnauthorizedException();
+        }
+
+        notificationService.clearAll(userId);
+        return ResponseEntity.noContent().build();
+    }
 }
