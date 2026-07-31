@@ -255,6 +255,39 @@ class AuditRegulationMappingServiceTest {
     }
 
     @Test
+    void getMappingsIncludesParagraphLabelWhenArticleHasOne() {
+        // 제31조는 PARAGRAPH_LABELS에 "①"로 채워져 있다(투명성 확보 의무 사전고지 조항).
+        LawArticleEntity article = LawArticleEntity.of(
+                "AI 기본법", "제31조", "조문 원문", LocalDate.of(2026, 1, 22)
+        );
+        setId(article, 1L);
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
+                audit, article, ComplianceStatus.COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
+
+        assertThat(views).singleElement()
+                .satisfies(view -> assertThat(view.paragraphLabel()).isEqualTo("①"));
+    }
+
+    @Test
+    void getMappingsLeavesParagraphLabelNullWhenArticleHasNone() {
+        // 제1조는 PARAGRAPH_LABELS에 없는 조항이라 라벨 없이 null로 내려가야 한다.
+        LawArticleEntity article = article(1L);
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
+                audit, article, ComplianceStatus.COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
+
+        assertThat(views).singleElement()
+                .satisfies(view -> assertThat(view.paragraphLabel()).isNull());
+    }
+
+    @Test
     void getMappingsForUserReturnsMappingsWhenAuditOwnedByUser() {
         LawArticleEntity article = article(1L);
         AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(

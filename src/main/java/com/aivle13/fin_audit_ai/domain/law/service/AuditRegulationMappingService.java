@@ -86,8 +86,26 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
     // ArticleRef의 equals/hashCode(법령명+조번호)에는 영향을 주지 않도록 별도 맵으로 분리했다
     // — ArticleRef에 항 필드를 직접 추가하면 resolveItemCodesByArticle()에서 LawArticleEntity로
     // 새로 만드는 조회용 키(항 정보 없음)와 안 맞아 조회가 깨진다.
-    // 매칭 로직과 무관한 순수 표시용이라, 조 단위 조문 검토 후 해당 항만 사람이 채워 넣는다.
-    private static final Map<ArticleRef, String> PARAGRAPH_LABELS = Map.of();
+    // 매칭 로직과 무관한 순수 표시용이며, law_articles 시드 원문을 대조해 채운 초안이다
+    // — 병합 전 사람 검토가 필요하다. 아래는 원문을 대조했지만 해당 문항과 직접 대응하는
+    // 항을 찾지 못해 라벨을 비워둔 조항이다(조 전체가 배경/근거 조항으로만 참조된 것으로 보임):
+    //  - NOTICE: 제6조(기본계획 수립), 제12조(안전연구소 운영), 제40조(사실조사 권한)
+    //  - OBJECTION: 제20조(제도개선), 시행령 제3조(기본계획 경미변경) — "이의제기"와 무관해 보임
+    //  - OVERSIGHT: 제23조(집적단지 지정), 제27조(윤리원칙), 시행령 제18조(집적단지 전담기관)
+    //  - RISK_MANAGEMENT: 시행령 제10조(안전연구소 운영)
+    //  - DOCUMENTATION: 시행령 제6조(위원회 지원단), 제13조(학습데이터 통합제공시스템) — 문서화·
+    //    보관과 무관해 보임. 오히려 시행령 제27조②("근거를 문서로 5년간 보관")이 내용상 더
+    //    적합해 보이는데, 그 조항은 RISK_MANAGEMENT 매핑에만 들어가 있다 — ARTICLE_MAPPING
+    //    자체를 재검토하는 게 좋겠다.
+    private static final Map<ArticleRef, String> PARAGRAPH_LABELS = Map.of(
+            new ArticleRef("AI 기본법", "제31조"), "①",
+            new ArticleRef("AI 기본법 시행령", "제23조"), "①",
+            new ArticleRef("AI 기본법", "제43조"), "①1호",
+            new ArticleRef("AI 기본법 시행령", "제25조"), "④",
+            new ArticleRef("AI 기본법", "제34조"), "①4호",
+            new ArticleRef("AI 기본법", "제32조"), "①",
+            new ArticleRef("AI 기본법 시행령", "제27조"), "①1호"
+    );
 
     private final AuditRepository auditRepository;
     private final SelfCheckAnswerRepository selfCheckAnswerRepository;
