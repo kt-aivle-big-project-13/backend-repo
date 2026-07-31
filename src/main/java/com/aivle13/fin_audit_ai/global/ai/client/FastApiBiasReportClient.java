@@ -24,7 +24,7 @@ public class FastApiBiasReportClient
     private final RestClient restClient;
 
     public FastApiBiasReportClient(
-            @Qualifier("shapRestClient") RestClient restClient
+            @Qualifier("reportRestClient") RestClient restClient
     ) {
         this.restClient = restClient;
     }

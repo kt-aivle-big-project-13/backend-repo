@@ -24,15 +24,15 @@ public class BiasReportQueryService {
     @Transactional(readOnly = true)
     public BiasReportMetadataResponse getLatest(
             Long userId,
-            Long auditId
+            Long auditId,
+            ReportFormat format
     ) {
-        // 편향 리포트는 아직 HTML만 저장한다. PDF 저장·조회는 #162에서 다룬다.
         ReportEntity report = reportRepository
                 .findFirstByAudit_IdAndAudit_User_IdAndReportTypeAndFormatOrderByCreatedAtDescIdDesc(
                         auditId,
                         userId,
                         ReportType.BIAS_REPORT,
-                        ReportFormat.HTML
+                        format
                 )
                 .orElseThrow(ReportNotFoundException::new);
 
@@ -58,13 +58,39 @@ public class BiasReportQueryService {
         );
 
         return new ReportDownload(
-                "bias-report-%d.html".formatted(
-                        auditId
-                ),
-                file.contentType(),
+                createFilename(auditId, report.getFormat()),
+                resolveContentType(report.getFormat()),
                 file.contentLength(),
                 file.content()
         );
+    }
+
+    private String createFilename(
+            Long auditId,
+            ReportFormat format
+    ) {
+        String extension = switch (format) {
+            case HTML -> "html";
+            case PDF -> "pdf";
+            case WORD -> "docx";
+        };
+
+        return "bias-report-%d.%s".formatted(
+                auditId,
+                extension
+        );
+    }
+
+    private String resolveContentType(
+            ReportFormat format
+    ) {
+        return switch (format) {
+            case HTML -> "text/html; charset=UTF-8";
+            case PDF -> "application/pdf";
+            case WORD ->
+                    "application/vnd.openxmlformats-officedocument"
+                            + ".wordprocessingml.document";
+        };
     }
 
     public record ReportDownload(

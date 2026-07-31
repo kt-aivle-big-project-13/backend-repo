@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -39,12 +40,29 @@ public class BiasReportGenerationService {
 
         validateResponse(auditId, response);
 
-        return reportPersistenceService.save(
-                auditId,
-                ReportType.BIAS_REPORT,
-                ReportFormat.HTML,
-                response.reportS3Key()
-        );
+        // HTML·PDF를 한 트랜잭션으로 저장한다. 하나라도 실패하면 업로드된 S3 파일까지
+        // 함께 정리된다.
+        Map<ReportFormat, Long> reportIds =
+                reportPersistenceService.saveAll(
+                        auditId,
+                        ReportType.BIAS_REPORT,
+                        Map.of(
+                                ReportFormat.HTML,
+                                response.reportS3Key(),
+                                ReportFormat.PDF,
+                                response.pdfReportS3Key()
+                        )
+                );
+
+        // 생성 응답은 기존 계약대로 HTML 리포트 ID를 반환한다.
+        Long htmlReportId =
+                reportIds.get(ReportFormat.HTML);
+
+        if (htmlReportId == null) {
+            throw new AuditFailedException();
+        }
+
+        return htmlReportId;
     }
 
     private BiasReportRequest createRequest(
@@ -96,6 +114,8 @@ public class BiasReportGenerationService {
                 || !auditId.equals(response.auditId())
                 || response.reportS3Key() == null
                 || response.reportS3Key().isBlank()
+                || response.pdfReportS3Key() == null
+                || response.pdfReportS3Key().isBlank()
                 || response.format() == null
                 || !"html".equalsIgnoreCase(
                         response.format().trim()
