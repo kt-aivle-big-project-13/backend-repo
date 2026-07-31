@@ -150,6 +150,25 @@ class BiasReportGenerationServiceTest {
     }
 
     @Test
+    void rejectsValidationDatasetWithoutFileKey() {
+        givenAuditLookup();
+
+        given(audit.getValidationDataset())
+                .willReturn(validationDataset);
+        given(validationDataset.getDatasetFileKey())
+                .willReturn("");
+
+        assertThatThrownBy(() ->
+                service.generateAndSave(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditFailedException.class);
+
+        verify(reportClient, never())
+                .generate(any());
+        verify(reportPersistenceService, never())
+                .save(any(), any(), any(), any());
+    }
+
+    @Test
     void throwsWhenAuditDoesNotExist() {
         given(auditRepository.findByIdAndUser_IdWithModelAndDataset(
                 AUDIT_ID,
@@ -218,28 +237,34 @@ class BiasReportGenerationServiceTest {
         )).willReturn(response);
     }
 
-    private void givenAudit() {
+    // 모델·감사 데이터셋 키까지만 필요한 셋업. 그 뒤 단계에서 실패하는 테스트가 쓴다.
+    private void givenAuditLookup() {
         given(auditRepository.findByIdAndUser_IdWithModelAndDataset(
                 AUDIT_ID,
                 USER_ID
         ))
                 .willReturn(Optional.of(audit));
 
-        given(audit.getId()).willReturn(AUDIT_ID);
         given(audit.getModel()).willReturn(model);
         given(audit.getDataset()).willReturn(dataset);
-        given(audit.getAuditName())
-                .willReturn("테스트 감사");
-        given(audit.getSensitiveFeatures())
-                .willReturn(
-                        "CODE_GENDER, AGE_GROUP, CODE_GENDER"
-                );
 
         given(model.getArtifactPath())
                 .willReturn("models/model.json");
 
         given(dataset.getDatasetFileKey())
                 .willReturn("datasets/audit.csv");
+    }
+
+    private void givenAudit() {
+        givenAuditLookup();
+
+        given(audit.getId()).willReturn(AUDIT_ID);
+        given(audit.getAuditName())
+                .willReturn("테스트 감사");
+        given(audit.getSensitiveFeatures())
+                .willReturn(
+                        "CODE_GENDER, AGE_GROUP, CODE_GENDER"
+                );
     }
 
     // 검증 데이터셋으로 목표 승인율에 맞춰 임계값을 산출하는 감사
