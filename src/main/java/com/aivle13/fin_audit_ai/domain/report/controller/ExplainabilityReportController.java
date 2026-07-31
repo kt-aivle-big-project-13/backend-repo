@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.report.dto.ExplainabilityReportGeneration
 import com.aivle13.fin_audit_ai.domain.report.dto.ExplainabilityReportMetadataResponse;
 import com.aivle13.fin_audit_ai.domain.report.service.ExplainabilityReportGenerationService;
 import com.aivle13.fin_audit_ai.domain.report.service.ExplainabilityReportQueryService;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URLEncoder;
@@ -102,14 +104,16 @@ public class ExplainabilityReportController {
     @GetMapping("/{auditId}/reports/explainability")
     public ResponseEntity<ExplainabilityReportMetadataResponse> getLatest(
             @AuthenticationPrincipal Long userId,
-            @PathVariable Long auditId
+            @PathVariable Long auditId,
+            @RequestParam(defaultValue = "HTML")
+            ReportFormat format
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
         return ResponseEntity.ok(
-                queryService.getLatest(userId, auditId)
+                queryService.getLatest(userId, auditId, format)
         );
     }
 

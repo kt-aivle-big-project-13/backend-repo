@@ -17,11 +17,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ReportPersistenceServiceTest {
@@ -87,5 +90,72 @@ class ReportPersistenceServiceTest {
 
         verify(fileStorageService)
                 .deleteOnRollback(List.of(S3_KEY));
+    }
+
+    @Test
+    void savesAllExplainabilityReportFormatsInOneOperation() {
+        String pdfS3Key =
+                "explainability-reports/21/run-123/report.pdf";
+        String wordS3Key =
+                "explainability-reports/21/run-123/report.docx";
+
+        Map<ReportFormat, String> storedFiles =
+                new LinkedHashMap<>();
+
+        storedFiles.put(ReportFormat.HTML, S3_KEY);
+        storedFiles.put(ReportFormat.PDF, pdfS3Key);
+        storedFiles.put(ReportFormat.WORD, wordS3Key);
+
+        ReportEntity savedPdfReport =
+                mock(ReportEntity.class);
+        ReportEntity savedWordReport =
+                mock(ReportEntity.class);
+
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        given(reportRepository.saveAll(any()))
+                .willReturn(
+                        List.of(
+                                savedReport,
+                                savedPdfReport,
+                                savedWordReport
+                        )
+                );
+
+        given(savedReport.getFormat())
+                .willReturn(ReportFormat.HTML);
+        given(savedReport.getId()).willReturn(31L);
+
+        given(savedPdfReport.getFormat())
+                .willReturn(ReportFormat.PDF);
+        given(savedPdfReport.getId()).willReturn(32L);
+
+        given(savedWordReport.getFormat())
+                .willReturn(ReportFormat.WORD);
+        given(savedWordReport.getId()).willReturn(33L);
+
+        Map<ReportFormat, Long> result =
+                service.saveAll(
+                        AUDIT_ID,
+                        ReportType.XAI_REPORT,
+                        storedFiles
+                );
+
+        assertThat(result)
+                .containsEntry(ReportFormat.HTML, 31L)
+                .containsEntry(ReportFormat.PDF, 32L)
+                .containsEntry(ReportFormat.WORD, 33L)
+                .hasSize(3);
+
+        verify(fileStorageService).deleteOnRollback(
+                List.of(
+                        S3_KEY,
+                        pdfS3Key,
+                        wordS3Key
+                )
+        );
+
+        verify(reportRepository).saveAll(any());
     }
 }

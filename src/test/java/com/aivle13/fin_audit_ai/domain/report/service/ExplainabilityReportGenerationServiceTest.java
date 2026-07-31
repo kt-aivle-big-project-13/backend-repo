@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,6 +64,8 @@ class ExplainabilityReportGenerationServiceTest {
                 new ExplainabilityReportResponse(
                         AUDIT_ID,
                         "explainability-reports/21/run-123/report.html",
+                        "explainability-reports/21/run-123/report.pdf",
+                        "explainability-reports/21/run-123/report.docx",
                         "html",
                         "WARNING",
                         "2026-07-29T10:00:00Z"
@@ -72,12 +75,30 @@ class ExplainabilityReportGenerationServiceTest {
                 any(ExplainabilityReportRequest.class)
         )).willReturn(response);
 
-        given(reportPersistenceService.save(
+        Map<ReportFormat, String> storedFiles =
+                Map.of(
+                        ReportFormat.HTML,
+                        response.reportS3Key(),
+                        ReportFormat.PDF,
+                        response.pdfReportS3Key(),
+                        ReportFormat.WORD,
+                        response.wordReportS3Key()
+                );
+
+        given(reportPersistenceService.saveAll(
                 AUDIT_ID,
                 ReportType.XAI_REPORT,
-                ReportFormat.HTML,
-                response.reportS3Key()
-        )).willReturn(REPORT_ID);
+                storedFiles
+        )).willReturn(
+                Map.of(
+                        ReportFormat.HTML,
+                        REPORT_ID,
+                        ReportFormat.PDF,
+                        32L,
+                        ReportFormat.WORD,
+                        33L
+                )
+        );
 
         Long result = service.generateAndSave(USER_ID, AUDIT_ID);
 
@@ -108,11 +129,10 @@ class ExplainabilityReportGenerationServiceTest {
                 );
         assertThat(request.reportTopN()).isEqualTo(20);
 
-        verify(reportPersistenceService).save(
+        verify(reportPersistenceService).saveAll(
                 AUDIT_ID,
                 ReportType.XAI_REPORT,
-                ReportFormat.HTML,
-                response.reportS3Key()
+                storedFiles
         );
     }
 
@@ -142,6 +162,8 @@ class ExplainabilityReportGenerationServiceTest {
                 new ExplainabilityReportResponse(
                         AUDIT_ID,
                         "",
+                        "explainability-reports/21/run-123/report.pdf",
+                        "explainability-reports/21/run-123/report.docx",
                         "html",
                         "WARNING",
                         "2026-07-29T10:00:00Z"
@@ -156,7 +178,61 @@ class ExplainabilityReportGenerationServiceTest {
         ).isInstanceOf(AuditFailedException.class);
 
         verify(reportPersistenceService, never())
-                .save(any(), any(), any(), any());
+                .saveAll(any(), any(), any());
+    }
+
+    @Test
+    void rejectsResponseWhenPdfReportS3KeyIsBlank() {
+        givenAudit();
+
+        ExplainabilityReportResponse invalidResponse =
+                new ExplainabilityReportResponse(
+                        AUDIT_ID,
+                        "explainability-reports/21/run-123/report.html",
+                        "",
+                        "explainability-reports/21/run-123/report.docx",
+                        "html",
+                        "WARNING",
+                        "2026-07-29T10:00:00Z"
+                );
+
+        given(reportClient.generate(
+                any(ExplainabilityReportRequest.class)
+        )).willReturn(invalidResponse);
+
+        assertThatThrownBy(() ->
+                service.generateAndSave(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditFailedException.class);
+
+        verify(reportPersistenceService, never())
+                .saveAll(any(), any(), any());
+    }
+
+    @Test
+    void rejectsResponseWhenWordReportS3KeyIsBlank() {
+        givenAudit();
+
+        ExplainabilityReportResponse invalidResponse =
+                new ExplainabilityReportResponse(
+                        AUDIT_ID,
+                        "explainability-reports/21/run-123/report.html",
+                        "explainability-reports/21/run-123/report.pdf",
+                        "",
+                        "html",
+                        "WARNING",
+                        "2026-07-29T10:00:00Z"
+                );
+
+        given(reportClient.generate(
+                any(ExplainabilityReportRequest.class)
+        )).willReturn(invalidResponse);
+
+        assertThatThrownBy(() ->
+                service.generateAndSave(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditFailedException.class);
+
+        verify(reportPersistenceService, never())
+                .saveAll(any(), any(), any());
     }
 
     private void givenAudit() {
