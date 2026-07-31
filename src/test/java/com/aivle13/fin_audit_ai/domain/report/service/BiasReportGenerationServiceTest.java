@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +35,12 @@ class BiasReportGenerationServiceTest {
     private static final Long USER_ID = 2L;
     private static final Long AUDIT_ID = 21L;
     private static final Long REPORT_ID = 31L;
+    private static final Long PDF_REPORT_ID = 32L;
+
+    private static final String HTML_S3_KEY =
+            "bias-reports/21/run-123/report.html";
+    private static final String PDF_S3_KEY =
+            "bias-reports/21/run-123/report.pdf";
 
     private static final BigDecimal TARGET_APPROVAL_RATE =
             new BigDecimal("0.8500");
@@ -69,28 +76,11 @@ class BiasReportGenerationServiceTest {
     void generatesAndSavesBiasReport() {
         givenAudit();
         givenValidationDatasetThreshold();
-
-        BiasReportResponse response =
-                new BiasReportResponse(
-                        AUDIT_ID,
-                        "bias-reports/21/run-123/report.html",
-                        "html",
-                        "2026-07-30T10:00:00Z"
-                );
-
-        given(reportClient.generate(
-                any(BiasReportRequest.class)
-        )).willReturn(response);
-
-        given(reportPersistenceService.save(
-                AUDIT_ID,
-                ReportType.BIAS_REPORT,
-                ReportFormat.HTML,
-                response.reportS3Key()
-        )).willReturn(REPORT_ID);
+        givenSuccessfulReportGeneration();
 
         Long result = service.generateAndSave(USER_ID, AUDIT_ID);
 
+        // 생성 응답은 기존 계약대로 HTML 리포트 ID를 반환한다.
         assertThat(result).isEqualTo(REPORT_ID);
 
         BiasReportRequest request = capturedRequest();
@@ -107,13 +97,50 @@ class BiasReportGenerationServiceTest {
                         "CODE_GENDER",
                         "AGE_GROUP"
                 );
+    }
 
-        verify(reportPersistenceService).save(
+    @Test
+    void savesHtmlAndPdfInOneTransaction() {
+        givenAudit();
+        givenValidationDatasetThreshold();
+        givenSuccessfulReportGeneration();
+
+        service.generateAndSave(USER_ID, AUDIT_ID);
+
+        verify(reportPersistenceService).saveAll(
                 AUDIT_ID,
                 ReportType.BIAS_REPORT,
-                ReportFormat.HTML,
-                response.reportS3Key()
+                Map.of(
+                        ReportFormat.HTML, HTML_S3_KEY,
+                        ReportFormat.PDF, PDF_S3_KEY
+                )
         );
+    }
+
+    @Test
+    void rejectsResponseWithoutPdfKey() {
+        givenAudit();
+        givenValidationDatasetThreshold();
+
+        BiasReportResponse missingPdf =
+                new BiasReportResponse(
+                        AUDIT_ID,
+                        HTML_S3_KEY,
+                        "",
+                        "html",
+                        "2026-07-30T10:00:00Z"
+                );
+
+        given(reportClient.generate(
+                any(BiasReportRequest.class)
+        )).willReturn(missingPdf);
+
+        assertThatThrownBy(() ->
+                service.generateAndSave(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditFailedException.class);
+
+        verify(reportPersistenceService, never())
+                .saveAll(any(), any(), any());
     }
 
     @Test
@@ -165,7 +192,7 @@ class BiasReportGenerationServiceTest {
         verify(reportClient, never())
                 .generate(any());
         verify(reportPersistenceService, never())
-                .save(any(), any(), any(), any());
+                .saveAll(any(), any(), any());
     }
 
     @Test
@@ -183,7 +210,7 @@ class BiasReportGenerationServiceTest {
         verify(reportClient, never())
                 .generate(any());
         verify(reportPersistenceService, never())
-                .save(any(), any(), any(), any());
+                .saveAll(any(), any(), any());
     }
 
     @Test
@@ -195,6 +222,7 @@ class BiasReportGenerationServiceTest {
                 new BiasReportResponse(
                         AUDIT_ID,
                         "",
+                        PDF_S3_KEY,
                         "html",
                         "2026-07-30T10:00:00Z"
                 );
@@ -208,7 +236,7 @@ class BiasReportGenerationServiceTest {
         ).isInstanceOf(AuditFailedException.class);
 
         verify(reportPersistenceService, never())
-                .save(any(), any(), any(), any());
+                .saveAll(any(), any(), any());
     }
 
     private BiasReportRequest capturedRequest() {
@@ -227,7 +255,8 @@ class BiasReportGenerationServiceTest {
         BiasReportResponse response =
                 new BiasReportResponse(
                         AUDIT_ID,
-                        "bias-reports/21/run-123/report.html",
+                        HTML_S3_KEY,
+                        PDF_S3_KEY,
                         "html",
                         "2026-07-30T10:00:00Z"
                 );
@@ -235,6 +264,20 @@ class BiasReportGenerationServiceTest {
         given(reportClient.generate(
                 any(BiasReportRequest.class)
         )).willReturn(response);
+
+        given(reportPersistenceService.saveAll(
+                AUDIT_ID,
+                ReportType.BIAS_REPORT,
+                Map.of(
+                        ReportFormat.HTML, HTML_S3_KEY,
+                        ReportFormat.PDF, PDF_S3_KEY
+                )
+        )).willReturn(
+                Map.of(
+                        ReportFormat.HTML, REPORT_ID,
+                        ReportFormat.PDF, PDF_REPORT_ID
+                )
+        );
     }
 
     // 모델·감사 데이터셋 키까지만 필요한 셋업. 그 뒤 단계에서 실패하는 테스트가 쓴다.

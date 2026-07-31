@@ -24,7 +24,7 @@ public class FastApiExplainabilityReportClient
     private final RestClient restClient;
 
     public FastApiExplainabilityReportClient(
-            @Qualifier("shapRestClient") RestClient restClient
+            @Qualifier("reportRestClient") RestClient restClient
     ) {
         this.restClient = restClient;
     }
