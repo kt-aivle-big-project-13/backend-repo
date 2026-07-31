@@ -45,8 +45,8 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
 
     // answer가 null이면 자율점검 답변(예/아니요)과 무관하게 항상 근거로 쓰이고, true/false면
     // 그 답변일 때만 근거로 쓰인다(예: 위반 시 과태료 조항은 "아니요"일 때만 의미가 있다).
-    // note에는 law_articles 원문을 대조한 근거를 남겨, 법적 효력이 있는 조항(특히 벌칙·과태료)을
-    // 팀이 나중에 리뷰할 때 근거를 추적할 수 있게 한다.
+    // note는 MatchedChecklistItem을 통해 API 응답으로 그대로 노출되는 화면 표시용 요약문이다
+    // — 조 원문을 팀이 검토해 완성된 문장으로 다듬은 것이며, LLM 요약이나 임의 재해석이 아니다.
     private record LawMapping(ArticleRef article, String clauseNo, Boolean answer, String note) {
     }
 
@@ -54,54 +54,51 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
             SelfCheckItemCode.NOTICE, List.of(
                     new LawMapping(
                             new ArticleRef("AI 기본법", "제31조"), "①", null,
-                            "\"제품 또는 서비스가 해당 인공지능에 기반하여 운용된다는 사실을 이용자에게 "
-                                    + "사전에 고지하여야 한다\" — 의무 자체라 답변과 무관하게 항상 근거"
+                            "인공지능사업자는 고영향 인공지능이나 생성형 인공지능을 이용한 제품·서비스를 "
+                                    + "제공하려는 경우, 해당 인공지능에 기반하여 운용된다는 사실을 이용자에게 "
+                                    + "사전에 고지해야 합니다."
                     ),
                     new LawMapping(
                             new ArticleRef("AI 기본법 시행령", "제23조"), "①", null,
-                            "제31조①의 구체적 고지 방법(제품 기재·화면표시·게시 등 4가지) 규정 — 답변 무관"
+                            "제품에 직접 기재하거나 화면 표시, 게시 등의 방법으로 사전에 고지해야 합니다."
                     ),
                     new LawMapping(
                             new ArticleRef("AI 기본법", "제43조"), "①1호", false,
-                            "\"제31조제1항을 위반하여 고지를 이행하지 아니한 자\"에게 과태료 — "
-                                    + "위반(아니요) 시에만 근거로서 의미 있음"
+                            "제31조① 고지 의무를 위반하면 3천만원 이하의 과태료가 부과됩니다."
                     )
             ),
             SelfCheckItemCode.OBJECTION, List.of(
                     new LawMapping(
                             new ArticleRef("AI 기본법 시행령", "제25조"), "④", null,
-                            "\"회신 결과에 이의가 있을 때에는 회신을 받은 날부터 10일 이내에... "
-                                    + "재확인 요청서를 제출해야 한다\" — 절차 존재 자체가 의무라 답변 무관"
+                            "회신 결과에 이의가 있을 때에는 회신을 받은 날부터 10일 이내에 재확인 요청서를 "
+                                    + "제출해야 합니다."
                     )
             ),
             SelfCheckItemCode.OVERSIGHT, List.of(
                     new LawMapping(
                             new ArticleRef("AI 기본법", "제34조"), "①4호", null,
-                            "\"고영향 인공지능에 대한 사람의 관리·감독\" — 원문 그대로, 답변 무관"
+                            "고영향 인공지능에 대해 사람이 관리·감독하는 조치를 이행해야 합니다."
                     )
             ),
             SelfCheckItemCode.RISK_MANAGEMENT, List.of(
                     new LawMapping(
-                            new ArticleRef("AI 기본법", "제32조"), "①", null,
-                            "위험 식별·평가·완화(1호) + 위험관리체계 구축(2호) — 조 전체가 위험관리 규정"
+                            new ArticleRef("AI 기본법", "제34조"), "①1호", null,
+                            "위험관리방안을 수립·운영해야 합니다."
                     ),
                     new LawMapping(
                             new ArticleRef("AI 기본법 시행령", "제27조"), "①1호", null,
-                            "\"위험관리정책 및 조직체계 등... 위험관리방안의 주요 내용\""
-                    ),
-                    new LawMapping(
-                            new ArticleRef("AI 기본법", "제34조"), "①1호", null,
-                            "\"위험관리방안의 수립·운영\" — 제34조가 문항마다 다른 호로 걸리는 조항 중 하나"
+                            "위험관리정책·조직체계 등 위험관리방안의 주요 내용을 게시해야 합니다."
                     )
             ),
             SelfCheckItemCode.DOCUMENTATION, List.of(
                     new LawMapping(
                             new ArticleRef("AI 기본법", "제34조"), "①5호", null,
-                            "\"안전성·신뢰성 확보를 위한 조치의 내용을 확인할 수 있는 문서의 작성과 보관\""
+                            "안전성·신뢰성 확보 조치 내용을 확인할 수 있는 문서를 작성·보관해야 합니다."
                     ),
                     new LawMapping(
                             new ArticleRef("AI 기본법 시행령", "제27조"), "②", null,
-                            "\"그 근거를 문서로 5년간 보관(전자적 방법을 통한 보관을 포함한다)해야 한다\""
+                            "고영향 인공지능에 대한 안전성·신뢰성 확보 조치를 이행하고 그 근거를 문서로 "
+                                    + "5년간 보관(전자적 방법 포함)해야 합니다."
                     )
             )
     );
@@ -183,7 +180,7 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
             for (LawMapping lawMapping : applicableMappings(answer)) {
                 matchedItemsByArticle
                         .computeIfAbsent(lawMapping.article(), key -> new ArrayList<>())
-                        .add(new MatchedChecklistItem(answer.getItemCode(), lawMapping.clauseNo()));
+                        .add(new MatchedChecklistItem(answer.getItemCode(), lawMapping.clauseNo(), lawMapping.note()));
             }
         }
 
