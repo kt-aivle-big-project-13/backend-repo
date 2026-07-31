@@ -111,6 +111,13 @@ class NotificationServiceTest {
     }
 
     @Test
+    void 전체_초기화는_리포지토리에_위임한다() {
+        notificationService.clearAll(USER_ID);
+
+        verify(notificationRepository).deleteAllByUserId(USER_ID);
+    }
+
+    @Test
     void 감사완료_알림설정이_켜져있으면_알림을_생성한다() {
         given(audit.getUser()).willReturn(user);
         given(user.isAuditCompleteAlertEnabled()).willReturn(true);

@@ -60,6 +60,11 @@ public class NotificationService {
         notificationRepository.markAllAsReadByUserId(userId);
     }
 
+    @Transactional
+    public void clearAll(Long userId) {
+        notificationRepository.deleteAllByUserId(userId);
+    }
+
     // 감사 완료 처리 시점(AuditProgressService)에서 호출되는 실제 알림 생성 지점.
     // 법령 개정/재감사 권고 알림은 이를 발생시키는 크롤러·배치가 아직 없어 생성 지점이 없다.
     @Transactional

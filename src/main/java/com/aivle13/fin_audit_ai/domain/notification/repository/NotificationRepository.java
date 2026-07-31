@@ -23,4 +23,9 @@ public interface NotificationRepository extends JpaRepository<NotificationEntity
     @Modifying(clearAutomatically = true)
     @Query("UPDATE NotificationEntity n SET n.isRead = true WHERE n.user.id = :userId AND n.isRead = false")
     void markAllAsReadByUserId(@Param("userId") Long userId);
+
+    // 알림 벨 "초기화" 처리. 마찬가지로 벌크 삭제로 처리한다.
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM NotificationEntity n WHERE n.user.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }
