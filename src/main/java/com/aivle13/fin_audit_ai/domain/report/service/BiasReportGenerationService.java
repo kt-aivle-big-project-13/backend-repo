@@ -40,8 +40,8 @@ public class BiasReportGenerationService {
 
         validateResponse(auditId, response);
 
-        // HTML·PDF를 한 트랜잭션으로 저장한다. 하나라도 실패하면 업로드된 S3 파일까지
-        // 함께 정리된다.
+        // HTML·PDF·Word를 한 트랜잭션으로 저장한다. 하나라도 실패하면 업로드된
+        // S3 파일까지 함께 정리된다.
         Map<ReportFormat, Long> reportIds =
                 reportPersistenceService.saveAll(
                         auditId,
@@ -50,7 +50,9 @@ public class BiasReportGenerationService {
                                 ReportFormat.HTML,
                                 response.reportS3Key(),
                                 ReportFormat.PDF,
-                                response.pdfReportS3Key()
+                                response.pdfReportS3Key(),
+                                ReportFormat.WORD,
+                                response.wordReportS3Key()
                         )
                 );
 
@@ -116,6 +118,8 @@ public class BiasReportGenerationService {
                 || response.reportS3Key().isBlank()
                 || response.pdfReportS3Key() == null
                 || response.pdfReportS3Key().isBlank()
+                || response.wordReportS3Key() == null
+                || response.wordReportS3Key().isBlank()
                 || response.format() == null
                 || !"html".equalsIgnoreCase(
                         response.format().trim()
