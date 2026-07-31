@@ -1,19 +1,12 @@
 package com.aivle13.fin_audit_ai.domain.law.service;
 
-import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
-import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
-import com.aivle13.fin_audit_ai.domain.law.repository.LawRevisionRepository;
 import com.aivle13.fin_audit_ai.domain.law.type.RevisionType;
 import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.law.LawApiErrorException;
-import com.aivle13.fin_audit_ai.global.exception.llm.LlmServerErrorException;
-import com.aivle13.fin_audit_ai.global.lawapi.client.LawApiClient;
-import com.aivle13.fin_audit_ai.global.lawapi.client.LawArticleRevision;
-import com.aivle13.fin_audit_ai.global.llm.ReportLlmClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,13 +14,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -40,16 +31,7 @@ class LawRevisionDetectionServiceTest {
     private static final String OFFICIAL_DECREE_NAME = "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 시행령";
 
     @Mock
-    private LawApiClient lawApiClient;
-
-    @Mock
-    private LawArticleRepository lawArticleRepository;
-
-    @Mock
-    private LawRevisionRepository lawRevisionRepository;
-
-    @Mock
-    private ReportLlmClient reportLlmClient;
+    private LawRevisionApplier lawRevisionApplier;
 
     @Mock
     private UserRepository userRepository;
@@ -61,98 +43,9 @@ class LawRevisionDetectionServiceTest {
     private LawRevisionDetectionService lawRevisionDetectionService;
 
     @Test
-    void appliesRevisionAndRegeneratesSummaryWhenApiDateIsNewer() {
-        LawArticleEntity article = LawArticleEntity.of(
-                LAW_NAME, "제31조", "옛날 조문 내용", LocalDate.of(2026, 1, 22)
-        );
-        article.updateSummary("옛날 요약");
-
-        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제31조", "새 조문 내용", LocalDate.of(2026, 7, 21))
-        ));
-        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
-                .willReturn(Optional.of(article));
-        given(reportLlmClient.generate(anyString(), eq("새 조문 내용")))
-                .willReturn("새 요약");
-        given(lawRevisionRepository.save(any(LawRevisionEntity.class)))
-                .willAnswer(invocation -> invocation.getArgument(0));
-
-        List<LawRevisionEntity> revisions =
-                lawRevisionDetectionService.detectAndApplyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
-
-        assertThat(article.getContent()).isEqualTo("새 조문 내용");
-        assertThat(article.getRevisionDate()).isEqualTo(LocalDate.of(2026, 7, 21));
-        assertThat(article.getSummary()).isEqualTo("새 요약");
-        assertThat(article.getEmbedding()).isNull();
-
-        assertThat(revisions).singleElement().satisfies(revision -> {
-            assertThat(revision.getSource()).isEqualTo("law.go.kr");
-            assertThat(revision.getRevisionType()).isEqualTo(RevisionType.AMENDMENT);
-            assertThat(revision.getRevisedAt()).isEqualTo(LocalDate.of(2026, 7, 21));
-        });
-    }
-
-    @Test
-    void doesNothingWhenApiDateIsNotAfterLastKnownDate() {
-        LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제6조", "원문", LocalDate.of(2026, 1, 22));
-
-        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 1, 22))
-        ));
-        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제6조"))
-                .willReturn(Optional.of(article));
-
-        List<LawRevisionEntity> revisions =
-                lawRevisionDetectionService.detectAndApplyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
-
-        assertThat(revisions).isEmpty();
-        verify(lawRevisionRepository, never()).save(any());
-        verify(reportLlmClient, never()).generate(anyString(), anyString());
-    }
-
-    @Test
-    void skipsArticleNotTrackedInLawArticles() {
-        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제99조", "내용", LocalDate.of(2026, 7, 21))
-        ));
-        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제99조"))
-                .willReturn(Optional.empty());
-
-        List<LawRevisionEntity> revisions =
-                lawRevisionDetectionService.detectAndApplyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
-
-        assertThat(revisions).isEmpty();
-        verify(lawRevisionRepository, never()).save(any());
-    }
-
-    @Test
-    void keepsOldSummaryWhenLlmRegenerationFails() {
-        LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제31조", "옛 내용", LocalDate.of(2026, 1, 22));
-        article.updateSummary("옛 요약");
-
-        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21))
-        ));
-        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
-                .willReturn(Optional.of(article));
-        given(reportLlmClient.generate(anyString(), anyString()))
-                .willThrow(new LlmServerErrorException());
-        given(lawRevisionRepository.save(any(LawRevisionEntity.class)))
-                .willAnswer(invocation -> invocation.getArgument(0));
-
-        List<LawRevisionEntity> revisions =
-                lawRevisionDetectionService.detectAndApplyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
-
-        // 본문·시행일자는 이미 반영됐고, summary 재생성만 실패해 기존 값을 유지한다.
-        assertThat(article.getContent()).isEqualTo("새 내용");
-        assertThat(article.getSummary()).isEqualTo("옛 요약");
-        assertThat(revisions).hasSize(1);
-    }
-
-    @Test
     void detectAndApplyContinuesWithOtherLawWhenOneLawApiCallFails() {
-        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willThrow(new LawApiErrorException());
-        given(lawApiClient.fetchArticles(OFFICIAL_DECREE_NAME)).willReturn(List.of());
+        given(lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME)).willThrow(new LawApiErrorException());
+        given(lawRevisionApplier.applyForLaw("AI 기본법 시행령", OFFICIAL_DECREE_NAME)).willReturn(List.of());
 
         List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
 
@@ -162,18 +55,13 @@ class LawRevisionDetectionServiceTest {
 
     @Test
     void notifiesAllActiveUsersForEachDetectedRevision() {
-        LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제31조", "옛 내용", LocalDate.of(2026, 1, 22));
-        article.updateSummary("옛 요약");
+        LawRevisionEntity revision = LawRevisionEntity.of(
+                "law.go.kr", "AI 기본법 제31조 개정", RevisionType.AMENDMENT,
+                LocalDate.of(2026, 7, 21), LocalDateTime.now()
+        );
 
-        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21))
-        ));
-        given(lawApiClient.fetchArticles(OFFICIAL_DECREE_NAME)).willReturn(List.of());
-        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
-                .willReturn(Optional.of(article));
-        given(reportLlmClient.generate(anyString(), anyString())).willReturn("새 요약");
-        given(lawRevisionRepository.save(any(LawRevisionEntity.class)))
-                .willAnswer(invocation -> invocation.getArgument(0));
+        given(lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME)).willReturn(List.of(revision));
+        given(lawRevisionApplier.applyForLaw("AI 기본법 시행령", OFFICIAL_DECREE_NAME)).willReturn(List.of());
 
         UserEntity activeUser1 = UserEntity.create("김철수", "핀테크뱅크", "a@test.com", "hash", UserRole.USER);
         UserEntity activeUser2 = UserEntity.create("이영희", "핀테크뱅크", "b@test.com", "hash", UserRole.USER);
@@ -182,14 +70,14 @@ class LawRevisionDetectionServiceTest {
         List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
 
         assertThat(revisions).hasSize(1);
-        verify(notificationService).notifyLawRevision(activeUser1, revisions.get(0));
-        verify(notificationService).notifyLawRevision(activeUser2, revisions.get(0));
+        verify(notificationService).notifyLawRevision(activeUser1, revision);
+        verify(notificationService).notifyLawRevision(activeUser2, revision);
     }
 
     @Test
     void doesNotLookUpUsersWhenNoRevisionsDetected() {
-        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of());
-        given(lawApiClient.fetchArticles(OFFICIAL_DECREE_NAME)).willReturn(List.of());
+        given(lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME)).willReturn(List.of());
+        given(lawRevisionApplier.applyForLaw("AI 기본법 시행령", OFFICIAL_DECREE_NAME)).willReturn(List.of());
 
         List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
 
