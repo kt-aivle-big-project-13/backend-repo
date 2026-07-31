@@ -1,0 +1,11 @@
+package com.aivle13.fin_audit_ai.domain.dashboard.dto.response;
+
+import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
+
+public record ReviewRequiredModelResponse(
+        Long modelId,
+        String modelName,
+        long issueCount,
+        AuditStatus status
+) {
+}
