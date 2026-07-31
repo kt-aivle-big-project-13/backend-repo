@@ -16,6 +16,12 @@ import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.IncompatibleDatasetSchemaException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
+import com.aivle13.fin_audit_ai.domain.diagnosis.entity.PreDiagnosisEntity;
+import com.aivle13.fin_audit_ai.domain.diagnosis.repository.PreDiagnosisRepository;
+import com.aivle13.fin_audit_ai.domain.diagnosis.type.DiagnosisResult;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
+import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
+import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +40,7 @@ public class AuditStartService {
     private final AiModelRepository aiModelRepository;
     private final DatasetRepository datasetRepository;
     private final AuditRepository auditRepository;
+    private final PreDiagnosisRepository preDiagnosisRepository;
     private final AuditService auditService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -41,8 +48,19 @@ public class AuditStartService {
     public AuditStartResponse start(Long userId, AuditStartRequest request) {
         // 소유자 스코프 + 락으로, 다른 사용자의 모델 조회 자체를 막으면서 동시에 같은 모델에 대한
         // 동시 감사 시작 요청을 직렬화해 중복 체크와 생성 사이의 race condition도 막는다.
-        AiModelEntity model = aiModelRepository.findByIdAndUser_IdForUpdate(request.modelId(), userId)
+
+        AiModelEntity model = aiModelRepository
+                .findByIdAndUser_IdForUpdate(
+                        request.modelId(),
+                        userId
+                )
                 .orElseThrow(ModelNotFoundException::new);
+
+        validateAssessment(
+                userId,
+                request.assessmentId(),
+                model
+        );
 
         DatasetEntity dataset = datasetRepository.findById(request.datasetId())
                 .orElseThrow(DatasetNotFoundException::new);
@@ -88,6 +106,44 @@ public class AuditStartService {
         );
 
         return new AuditStartResponse(audit.getId(), audit.getStatus().name(), audit.getCreatedAt());
+    }
+
+    private void validateAssessment(
+            Long userId,
+            Long assessmentId,
+            AiModelEntity model
+    ) {
+        if (assessmentId == null) {
+            return;
+        }
+
+        PreDiagnosisEntity diagnosis = preDiagnosisRepository
+                .findByIdAndUser_Id(
+                        assessmentId,
+                        userId
+                )
+                .orElseThrow(
+                        PreDiagnosisNotFoundException::new
+                );
+
+        if (diagnosis.getResult()
+                != DiagnosisResult.HIGH_IMPACT) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT_VALUE,
+                    "고영향으로 확정된 사전진단만 감사에 연결할 수 있습니다."
+            );
+        }
+
+        if (diagnosis.getModel() != null
+                && !diagnosis.getModel().getId()
+                .equals(model.getId())) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT_VALUE,
+                    "다른 모델에 연결된 사전진단입니다."
+            );
+        }
+
+        diagnosis.linkModel(model);
     }
 
     // MANUAL이면 검증 데이터셋이 필요 없다. VALIDATION_DATASET이면 사용자가 지정한 데이터셋을

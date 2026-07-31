@@ -20,6 +20,11 @@ import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.IncompatibleDatasetSchemaException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
+import com.aivle13.fin_audit_ai.domain.diagnosis.entity.PreDiagnosisEntity;
+import com.aivle13.fin_audit_ai.domain.diagnosis.repository.PreDiagnosisRepository;
+import com.aivle13.fin_audit_ai.domain.diagnosis.type.DiagnosisResult;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
+import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -47,6 +52,7 @@ class AuditStartServiceTest {
     private static final Long MODEL_ID = 100L;
     private static final Long DATASET_ID = 200L;
     private static final Long VALIDATION_DATASET_ID = 300L;
+    private static final Long ASSESSMENT_ID = 400L;
 
     @Mock
     private AiModelRepository aiModelRepository;
@@ -64,6 +70,10 @@ class AuditStartServiceTest {
     private UserEntity otherUser;
     @Mock
     private AuditEntity audit;
+    @Mock
+    private PreDiagnosisRepository preDiagnosisRepository;
+    @Mock
+    private PreDiagnosisEntity diagnosis;
 
     @InjectMocks
     private AuditStartService auditStartService;
@@ -91,6 +101,19 @@ class AuditStartServiceTest {
     private AuditStartRequest request() {
         return new AuditStartRequest(MODEL_ID, DATASET_ID, null, "audit-name", ThresholdMethod.MANUAL,
                 null, BigDecimal.valueOf(0.5), null);
+    }
+
+    private AuditStartRequest requestWithAssessment() {
+        return new AuditStartRequest(
+                MODEL_ID,
+                DATASET_ID,
+                ASSESSMENT_ID,
+                "audit-name",
+                ThresholdMethod.MANUAL,
+                null,
+                BigDecimal.valueOf(0.5),
+                null
+        );
     }
 
     private AuditStartRequest validationDatasetRequest(Long validationDatasetId) {
@@ -338,4 +361,98 @@ class AuditStartServiceTest {
         assertThatThrownBy(() -> auditStartService.start(USER_ID, request()))
                 .isInstanceOf(DatasetNotFoundException.class);
     }
+
+
+    @Test
+    void 고영향_사전진단을_감사_모델에_연결한다() {
+        AiModelEntity model = newModel(ownerUser);
+        DatasetEntity dataset = auditDataset(model);
+
+        given(ownerUser.getId()).willReturn(USER_ID);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(
+                MODEL_ID,
+                USER_ID
+        )).willReturn(Optional.of(model));
+        given(preDiagnosisRepository.findByIdAndUser_Id(
+                ASSESSMENT_ID,
+                USER_ID
+        )).willReturn(Optional.of(diagnosis));
+        given(diagnosis.getResult())
+                .willReturn(DiagnosisResult.HIGH_IMPACT);
+        given(datasetRepository.findById(DATASET_ID))
+                .willReturn(Optional.of(dataset));
+        given(auditService.create(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+        )).willReturn(audit);
+        given(audit.getId()).willReturn(1L);
+        given(audit.getStatus()).willReturn(AuditStatus.PENDING);
+
+        AuditStartResponse response = auditStartService.start(
+                USER_ID,
+                requestWithAssessment()
+        );
+
+        assertThat(response.auditId()).isEqualTo(1L);
+        verify(diagnosis).linkModel(model);
+    }
+
+    @Test
+    void 다른_사용자의_사전진단이면_거부한다() {
+        AiModelEntity model = newModel(ownerUser);
+
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(
+                MODEL_ID,
+                USER_ID
+        )).willReturn(Optional.of(model));
+        given(preDiagnosisRepository.findByIdAndUser_Id(
+                ASSESSMENT_ID,
+                USER_ID
+        )).willReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                auditStartService.start(
+                        USER_ID,
+                        requestWithAssessment()
+                )
+        ).isInstanceOf(PreDiagnosisNotFoundException.class);
+
+        verify(datasetRepository, never())
+                .findById(DATASET_ID);
+    }
+
+    @Test
+    void 고영향으로_확정되지_않은_사전진단이면_거부한다() {
+        AiModelEntity model = newModel(ownerUser);
+
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(
+                MODEL_ID,
+                USER_ID
+        )).willReturn(Optional.of(model));
+        given(preDiagnosisRepository.findByIdAndUser_Id(
+                ASSESSMENT_ID,
+                USER_ID
+        )).willReturn(Optional.of(diagnosis));
+        given(diagnosis.getResult())
+                .willReturn(DiagnosisResult.NOT_APPLICABLE);
+
+        assertThatThrownBy(() ->
+                auditStartService.start(
+                        USER_ID,
+                        requestWithAssessment()
+                )
+        ).isInstanceOf(BusinessException.class);
+
+        verify(datasetRepository, never())
+                .findById(DATASET_ID);
+    }
+
 }

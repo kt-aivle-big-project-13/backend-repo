@@ -110,7 +110,7 @@ class AuditControllerTest extends IntegrationTestSupport {
 
         mockMvc.perform(post("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson(modelId, datasetId, 5L, "1차 정기감사"))
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사"))
                         .with(authentication(asUser())))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.status").value("PENDING"))
