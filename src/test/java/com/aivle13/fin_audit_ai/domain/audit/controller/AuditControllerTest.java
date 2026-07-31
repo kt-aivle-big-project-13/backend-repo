@@ -329,6 +329,58 @@ class AuditControllerTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("수동 임계값이 0이면 400을 반환한다 (아무도 승인되지 않아 AI 서버가 거부하는 값)")
+    void start_manualThreshold_zero() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/v1/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "MANUAL", null, "0"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("VALIDATION_DATASET 방식에 수동 임계값을 함께 보내면 400을 반환한다")
+    void start_validationDatasetMethod_withManualThreshold() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/v1/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "VALIDATION_DATASET", "0.8", "0.5"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("MANUAL 방식인데 수동 임계값이 없으면 400을 반환한다")
+    void start_manualMethod_withoutManualThreshold() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/v1/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "MANUAL", null, null))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("MANUAL 방식에 목표 승인율을 함께 보내면 400을 반환한다")
+    void start_manualMethod_withTargetApprovalRate() throws Exception {
+        selectSensitiveAttributes();
+
+        mockMvc.perform(post("/api/v1/audits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson(modelId, datasetId, null, "1차 정기감사",
+                                "MANUAL", "0.8", "0.5"))
+                        .with(authentication(asUser())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("같은 모델 계열의 다른 버전에 올린 데이터셋으로도 감사를 시작할 수 있다")
     void start_reusesDatasetFromOtherVersionInSameGroup() throws Exception {
         AiModelEntity currentModel = aiModelRepository.findById(modelId).orElseThrow();
