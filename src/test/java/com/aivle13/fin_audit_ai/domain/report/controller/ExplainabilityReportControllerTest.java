@@ -25,8 +25,10 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+
 
 @ExtendWith(MockitoExtension.class)
 class ExplainabilityReportControllerTest {
@@ -85,17 +87,17 @@ class ExplainabilityReportControllerTest {
                         )
                 );
 
-        given(queryService.getLatest(USER_ID, AUDIT_ID))
+        given(queryService.getLatest(USER_ID, AUDIT_ID, ReportFormat.HTML))
                 .willReturn(expected);
 
         ResponseEntity<ExplainabilityReportMetadataResponse> response =
-                controller.getLatest(USER_ID, AUDIT_ID);
+                controller.getLatest(USER_ID, AUDIT_ID, ReportFormat.HTML);
 
         assertThat(response.getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
 
-        verify(queryService).getLatest(USER_ID, AUDIT_ID);
+        verify(queryService).getLatest(USER_ID, AUDIT_ID, ReportFormat.HTML);
     }
 
     @Test
@@ -151,6 +153,66 @@ class ExplainabilityReportControllerTest {
         verifyNoInteractions(
                 generationService,
                 queryService
+        );
+    }
+
+    @Test
+    void getsLatestPdfExplainabilityReport() {
+        ExplainabilityReportMetadataResponse metadataResponse =
+                mock(ExplainabilityReportMetadataResponse.class);
+
+        given(queryService.getLatest(
+                USER_ID,
+                AUDIT_ID,
+                ReportFormat.PDF
+        )).willReturn(metadataResponse);
+
+        ResponseEntity<ExplainabilityReportMetadataResponse> response =
+                controller.getLatest(
+                        USER_ID,
+                        AUDIT_ID,
+                        ReportFormat.PDF
+                );
+
+        assertThat(response.getStatusCode().is2xxSuccessful())
+                .isTrue();
+        assertThat(response.getBody())
+                .isSameAs(metadataResponse);
+
+        verify(queryService).getLatest(
+                USER_ID,
+                AUDIT_ID,
+                ReportFormat.PDF
+        );
+    }
+
+    @Test
+    void getsLatestWordExplainabilityReport() {
+        ExplainabilityReportMetadataResponse metadataResponse =
+                mock(ExplainabilityReportMetadataResponse.class);
+
+        given(queryService.getLatest(
+                USER_ID,
+                AUDIT_ID,
+                ReportFormat.WORD
+        )).willReturn(metadataResponse);
+
+        ResponseEntity<ExplainabilityReportMetadataResponse> response =
+                controller.getLatest(
+                        USER_ID,
+                        AUDIT_ID,
+                        ReportFormat.WORD
+                );
+
+        assertThat(response.getStatusCode().is2xxSuccessful())
+                .isTrue();
+        assertThat(response.getBody())
+                .isSameAs(metadataResponse);
+
+        verify(queryService).getLatest(
+                USER_ID,
+                AUDIT_ID,
+                ReportFormat.WORD
         );
     }
 }

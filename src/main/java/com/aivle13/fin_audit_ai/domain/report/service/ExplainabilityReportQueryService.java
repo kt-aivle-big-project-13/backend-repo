@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.report.dto.ExplainabilityReportMetadataRe
 import com.aivle13.fin_audit_ai.domain.report.entity.ReportEntity;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.global.exception.report.ReportNotFoundException;
 import com.aivle13.fin_audit_ai.global.s3.dto.DownloadedFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
@@ -23,13 +24,15 @@ public class ExplainabilityReportQueryService {
     @Transactional(readOnly = true)
     public ExplainabilityReportMetadataResponse getLatest(
             Long userId,
-            Long auditId
+            Long auditId,
+            ReportFormat format
     ) {
         ReportEntity report = reportRepository
-                .findFirstByAudit_IdAndAudit_User_IdAndReportTypeOrderByCreatedAtDescIdDesc(
+                .findFirstByAudit_IdAndAudit_User_IdAndReportTypeAndFormatOrderByCreatedAtDescIdDesc(
                         auditId,
                         userId,
-                        ReportType.XAI_REPORT
+                        ReportType.XAI_REPORT,
+                        format
                 )
                 .orElseThrow(ReportNotFoundException::new);
 
@@ -55,13 +58,39 @@ public class ExplainabilityReportQueryService {
         );
 
         return new ReportDownload(
-                "explainability-report-%d.html".formatted(
-                        auditId
-                ),
-                file.contentType(),
+                createFilename(auditId, report.getFormat()),
+                resolveContentType(report.getFormat()),
                 file.contentLength(),
                 file.content()
         );
+    }
+
+    private String createFilename(
+            Long auditId,
+            ReportFormat format
+    ) {
+        String extension = switch (format) {
+            case HTML -> "html";
+            case PDF -> "pdf";
+            case WORD -> "docx";
+        };
+
+        return "explainability-report-%d.%s".formatted(
+                auditId,
+                extension
+        );
+    }
+
+    private String resolveContentType(
+            ReportFormat format
+    ) {
+        return switch (format) {
+            case HTML -> "text/html; charset=UTF-8";
+            case PDF -> "application/pdf";
+            case WORD ->
+                    "application/vnd.openxmlformats-officedocument"
+                            + ".wordprocessingml.document";
+        };
     }
 
     public record ReportDownload(

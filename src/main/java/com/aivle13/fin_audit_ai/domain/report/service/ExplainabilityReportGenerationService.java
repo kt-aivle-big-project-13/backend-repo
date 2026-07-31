@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -42,12 +43,28 @@ public class ExplainabilityReportGenerationService {
 
         validateResponse(auditId, response);
 
-        return reportPersistenceService.save(
-                auditId,
-                ReportType.XAI_REPORT,
-                ReportFormat.HTML,
-                response.reportS3Key()
-        );
+        Map<ReportFormat, Long> reportIds =
+                reportPersistenceService.saveAll(
+                        auditId,
+                        ReportType.XAI_REPORT,
+                        Map.of(
+                                ReportFormat.HTML,
+                                response.reportS3Key(),
+                                ReportFormat.PDF,
+                                response.pdfReportS3Key(),
+                                ReportFormat.WORD,
+                                response.wordReportS3Key()
+                        )
+                );
+
+        Long htmlReportId =
+                reportIds.get(ReportFormat.HTML);
+
+        if (htmlReportId == null) {
+            throw new AuditFailedException();
+        }
+
+        return htmlReportId;
     }
 
     private ExplainabilityReportRequest createRequest(
@@ -82,6 +99,10 @@ public class ExplainabilityReportGenerationService {
                 || !auditId.equals(response.auditId())
                 || response.reportS3Key() == null
                 || response.reportS3Key().isBlank()
+                || response.pdfReportS3Key() == null
+                || response.pdfReportS3Key().isBlank()
+                || response.wordReportS3Key() == null
+                || response.wordReportS3Key().isBlank()
                 || response.format() == null
                 || !"html".equalsIgnoreCase(
                         response.format().trim()

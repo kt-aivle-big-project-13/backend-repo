@@ -59,11 +59,29 @@ public class BiasReportGenerationService {
         validateS3Key(modelS3Key);
         validateS3Key(datasetS3Key);
 
+        // 검증 데이터셋은 선택 항목이라 없으면 null로 보낸다. 다만 데이터셋이 있는데
+        // 파일 키가 비어 있으면(dataSource=DUMMY) 그대로 null이 되어 AI 서버가 감사셋
+        // 기준으로 조용히 폴백하므로, 그 경우는 감사 자체가 잘못된 것으로 보고 막는다.
+        String validationDatasetS3Key = null;
+
+        if (audit.getValidationDataset() != null) {
+            validationDatasetS3Key =
+                    audit.getValidationDataset()
+                            .getDatasetFileKey();
+
+            validateS3Key(validationDatasetS3Key);
+        }
+
+        // 임계값 설정을 넘기지 않으면 AI 서버가 기본 목표 승인율로 다시 계산해
+        // 같은 감사의 공정성 결과와 다른 기준으로 리포트가 생성된다.
         return new BiasReportRequest(
                 audit.getId(),
                 modelS3Key,
                 datasetS3Key,
+                validationDatasetS3Key,
                 audit.getAuditName(),
+                audit.getTargetApprovalRate(),
+                audit.getManualThreshold(),
                 parseSensitiveFeatures(
                         audit.getSensitiveFeatures()
                 )
