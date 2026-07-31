@@ -44,8 +44,14 @@ public class AuditProgressService {
     @Transactional
     public void markFairnessCompleted(Long auditId) {
         AuditEntity audit = findAudit(auditId);
-        audit.complete(COMPLETED_STEP, determineVerdict(auditId));
+        AuditStatus verdict = determineVerdict(auditId);
+        audit.complete(COMPLETED_STEP, verdict);
         notificationService.notifyAuditComplete(audit);
+
+        // 판정이 '주의(WARNING)' 이상(WARNING, NON_COMPLIANT)인 경우에만 재감사 권고 알림을 보낸다.
+        if (verdict != AuditStatus.COMPLIANT) {
+            notificationService.notifyReauditRecommend(audit);
+        }
     }
 
     // 저장된 공정성·설명가능성 지표 판정을 종합해 감사 준수 상태를 산출한다.
