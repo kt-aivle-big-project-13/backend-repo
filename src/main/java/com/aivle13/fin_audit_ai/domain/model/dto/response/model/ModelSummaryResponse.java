@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.dto.response.model;
 
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 
 import java.time.LocalDateTime;
 
@@ -8,6 +9,8 @@ public record ModelSummaryResponse(
         Long modelId,
         String modelName,
         String currentVersion,
+        ModelType modelType,
+        String originalFileName,
         Boolean highImpact,
         LocalDateTime uploadedAt
 ) {
@@ -16,6 +19,8 @@ public record ModelSummaryResponse(
                 model.getId(),
                 model.getModelName(),
                 model.getVersion(),
+                model.getModelType(),
+                model.getOriginalFileName(),
                 model.getHighImpact(),
                 model.getCreatedAt()
         );
