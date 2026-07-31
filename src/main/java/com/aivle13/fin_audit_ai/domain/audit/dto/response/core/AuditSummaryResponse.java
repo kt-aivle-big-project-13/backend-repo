@@ -8,6 +8,10 @@ import java.time.LocalDateTime;
 public record AuditSummaryResponse(
         Long auditId,
         String modelName,
+        String modelFileName,
+        String datasetFileName,
+        String modelGroupId,
+        String version,
         LocalDateTime completedAt,
         AuditStatus status,
         int currentStep
@@ -16,6 +20,10 @@ public record AuditSummaryResponse(
         return new AuditSummaryResponse(
                 audit.getId(),
                 audit.getModel().getModelName(),
+                audit.getModel().getOriginalFileName(),
+                audit.getDataset().getOriginalFileName(),
+                audit.getModel().getModelGroupId(),
+                audit.getModel().getVersion(),
                 audit.getCompletedAt(),
                 audit.getStatus(),
                 audit.getCurrentStep()
