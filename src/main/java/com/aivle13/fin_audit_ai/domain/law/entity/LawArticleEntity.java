@@ -61,4 +61,14 @@ public class LawArticleEntity {
     public void updateEmbedding(float[] embedding) {
         this.embedding = embedding;
     }
+
+    // 법령 개정 감지 시 조문 원문을 최신화한다. summary는 새 content를 반영하지 못하는
+    // 낡은 텍스트가 되므로 호출부에서 재요약해 updateSummary로 다시 채워야 하고, embedding은
+    // 여기서 비워 LawArticleEmbeddingService.embedMissingArticles()가 재임베딩 대상으로
+    // 자동으로 잡게 한다.
+    public void applyRevision(String content, LocalDate revisionDate) {
+        this.content = content;
+        this.revisionDate = revisionDate;
+        this.embedding = null;
+    }
 }
