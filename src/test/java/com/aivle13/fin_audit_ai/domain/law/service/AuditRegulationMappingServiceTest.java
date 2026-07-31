@@ -8,6 +8,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepositor
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.MatchedChecklistItem;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.AuditRegulationMappingRepository;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
@@ -57,29 +58,20 @@ class AuditRegulationMappingServiceTest {
     void derivesComplianceFromAnswerAndDedupesAcrossItems() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
+        // OVERSIGHT(예)와 RISK_MANAGEMENT(아니요) 둘 다 제34조를 참조한다(문항마다 다른 항으로).
+        // 같은 조항이 두 항목에 걸쳐 중복 매핑되지 않는지 검증한다.
         SelfCheckAnswerEntity oversightAnswer = answer(SelfCheckItemCode.OVERSIGHT, true);
         SelfCheckAnswerEntity riskAnswer = answer(SelfCheckItemCode.RISK_MANAGEMENT, false);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(oversightAnswer, riskAnswer));
 
-        // OVERSIGHT(예)의 첫 조항과 RISK_MANAGEMENT(아니요)의 첫 조항이 같은 article_id를
-        // 가리키도록 만들어, 두 항목에 걸쳐 같은 조항이 중복 매핑되지 않는지 검증한다.
         LawArticleEntity sharedArticle = article(1L);
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제23조"))
-                .willReturn(Optional.of(sharedArticle));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제27조"))
-                .willReturn(Optional.of(article(2L)));
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제34조"))
-                .willReturn(Optional.of(article(3L)));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제18조"))
-                .willReturn(Optional.of(article(4L)));
-
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제32조"))
                 .willReturn(Optional.of(sharedArticle));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제10조"))
-                .willReturn(Optional.of(article(5L)));
+        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제32조"))
+                .willReturn(Optional.of(article(2L)));
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제27조"))
-                .willReturn(Optional.of(article(6L)));
+                .willReturn(Optional.of(article(3L)));
 
         auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
 
@@ -88,11 +80,11 @@ class AuditRegulationMappingServiceTest {
         ArgumentCaptor<Collection<AuditRegulationMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
         verify(auditRegulationMappingRepository).saveAll(captor.capture());
 
-        // OVERSIGHT(4개) + RISK_MANAGEMENT(3개) - 중복 1개 = 6개
-        assertThat(captor.getValue()).hasSize(6);
+        // OVERSIGHT(제34조 1개) + RISK_MANAGEMENT(제32조, 시행령제27조, 제34조 3개) - 중복 1개 = 3개
+        assertThat(captor.getValue()).hasSize(3);
 
         // 먼저 처리된 항목(OVERSIGHT, 답변 '예')이 매핑을 선점하므로, 두 항목 모두에서
-        // 참조되는 sharedArticle은 COMPLIANT로 남는다.
+        // 참조되는 제34조는 COMPLIANT로 남는다.
         assertThat(captor.getValue())
                 .filteredOn(mapping -> mapping.getArticle().getId().equals(1L))
                 .singleElement()
@@ -101,7 +93,7 @@ class AuditRegulationMappingServiceTest {
                     assertThat(mapping.getEvidence()).contains("답변: 예");
                 });
         assertThat(captor.getValue())
-                .filteredOn(mapping -> mapping.getArticle().getId().equals(6L))
+                .filteredOn(mapping -> mapping.getArticle().getId().equals(3L))
                 .singleElement()
                 .satisfies(mapping -> {
                     assertThat(mapping.getCompliance()).isEqualTo(ComplianceStatus.NON_COMPLIANT);
@@ -110,31 +102,25 @@ class AuditRegulationMappingServiceTest {
     }
 
     @Test
-    void noticeAnnexesPenaltyArticleOnlyWhenNonCompliant() {
+    void noticeExcludesPenaltyArticleWhenCompliant() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
         SelfCheckAnswerEntity compliantNotice = answer(SelfCheckItemCode.NOTICE, true);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(compliantNotice));
 
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제6조"))
-                .willReturn(Optional.of(article(1L)));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제12조"))
-                .willReturn(Optional.of(article(2L)));
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제31조"))
-                .willReturn(Optional.of(article(3L)));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제40조"))
-                .willReturn(Optional.of(article(4L)));
+                .willReturn(Optional.of(article(1L)));
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제23조"))
-                .willReturn(Optional.of(article(5L)));
+                .willReturn(Optional.of(article(2L)));
 
         auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
 
         ArgumentCaptor<Collection<AuditRegulationMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
         verify(auditRegulationMappingRepository).saveAll(captor.capture());
 
-        // '예'일 때는 과태료(제43조) 조회 자체가 일어나지 않는다.
-        assertThat(captor.getValue()).hasSize(5);
+        // '예'일 때는 과태료(제43조)가 answer=false 전용이라 조회 자체가 일어나지 않는다.
+        assertThat(captor.getValue()).hasSize(2);
         assertThat(captor.getValue())
                 .noneMatch(mapping -> "제43조".equals(mapping.getArticle().getArticleNo()));
     }
@@ -147,25 +133,19 @@ class AuditRegulationMappingServiceTest {
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(nonCompliantNotice));
 
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제6조"))
-                .willReturn(Optional.of(article(1L)));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제12조"))
-                .willReturn(Optional.of(article(2L)));
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제31조"))
-                .willReturn(Optional.of(article(3L)));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제40조"))
-                .willReturn(Optional.of(article(4L)));
+                .willReturn(Optional.of(article(1L)));
+        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제23조"))
+                .willReturn(Optional.of(article(2L)));
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제43조"))
                 .willReturn(Optional.of(article(43L)));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제23조"))
-                .willReturn(Optional.of(article(5L)));
 
         auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
 
         ArgumentCaptor<Collection<AuditRegulationMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
         verify(auditRegulationMappingRepository).saveAll(captor.capture());
 
-        assertThat(captor.getValue()).hasSize(6);
+        assertThat(captor.getValue()).hasSize(3);
         assertThat(captor.getValue())
                 .anyMatch(mapping -> "제43조".equals(mapping.getArticle().getArticleNo())
                         && mapping.getCompliance() == ComplianceStatus.NON_COMPLIANT);
@@ -178,13 +158,13 @@ class AuditRegulationMappingServiceTest {
         SelfCheckAnswerEntity answer = answer(SelfCheckItemCode.DOCUMENTATION, true);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(answer));
 
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제6조"))
+        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제34조"))
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("AI 기본법 시행령")
-                .hasMessageContaining("제6조");
+                .hasMessageContaining("AI 기본법")
+                .hasMessageContaining("제34조");
     }
 
     @Test
@@ -195,9 +175,9 @@ class AuditRegulationMappingServiceTest {
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(documentationAnswer));
 
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제6조"))
+        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제34조"))
                 .willReturn(Optional.of(article(1L)));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제13조"))
+        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제27조"))
                 .willReturn(Optional.of(article(2L)));
 
         auditRegulationMappingService.mapFromSelfCheckAnswers(AUDIT_ID);
@@ -230,7 +210,75 @@ class AuditRegulationMappingServiceTest {
             assertThat(view.content()).isEqualTo("조문 원문");
             assertThat(view.compliance()).isEqualTo(ComplianceStatus.NON_COMPLIANT);
             assertThat(view.evidence()).isEqualTo("자율점검 기반 자동 매칭");
+            assertThat(view.matchedItems()).isEmpty();
         });
+    }
+
+    @Test
+    void getMappingsResolvesMatchedItemsFromSelfCheckAnswers() {
+        // 제31조는 ARTICLE_MAPPING상 NOTICE 항목의 ①항이다. audit_law_mappings에는 문항 정보가
+        // 저장돼 있지 않으므로, 자율점검 답변으로 조회 시점에 역산되는지 검증한다.
+        LawArticleEntity article = LawArticleEntity.of(
+                "AI 기본법", "제31조", "조문 원문", LocalDate.of(2026, 1, 22)
+        );
+        setId(article, 1L);
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
+                audit, article, ComplianceStatus.COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+        given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
+                .willReturn(List.of(answer(SelfCheckItemCode.NOTICE, true)));
+
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
+
+        assertThat(views).singleElement()
+                .satisfies(view -> assertThat(view.matchedItems())
+                        .containsExactly(new MatchedChecklistItem(SelfCheckItemCode.NOTICE, "①")));
+    }
+
+    @Test
+    void getMappingsReturnsDifferentClauseNoForSameArticleAcrossItems() {
+        // 제34조는 문항마다 다른 항으로 걸린다: RISK_MANAGEMENT는 ①1호, OVERSIGHT는 ①4호,
+        // DOCUMENTATION은 ①5호 — 조 하나에 라벨 하나만 붙이는 구조로는 표현 불가능했던 케이스.
+        LawArticleEntity article = LawArticleEntity.of(
+                "AI 기본법", "제34조", "조문 원문", LocalDate.of(2026, 1, 22)
+        );
+        setId(article, 1L);
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
+                audit, article, ComplianceStatus.COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+        given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(
+                answer(SelfCheckItemCode.RISK_MANAGEMENT, true),
+                answer(SelfCheckItemCode.OVERSIGHT, true),
+                answer(SelfCheckItemCode.DOCUMENTATION, true)
+        ));
+
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
+
+        assertThat(views).singleElement()
+                .satisfies(view -> assertThat(view.matchedItems()).containsExactlyInAnyOrder(
+                        new MatchedChecklistItem(SelfCheckItemCode.RISK_MANAGEMENT, "①1호"),
+                        new MatchedChecklistItem(SelfCheckItemCode.OVERSIGHT, "①4호"),
+                        new MatchedChecklistItem(SelfCheckItemCode.DOCUMENTATION, "①5호")
+                ));
+    }
+
+    @Test
+    void getMappingsLeavesMatchedItemsEmptyWhenArticleNotInAnyMapping() {
+        // 제1조는 ARTICLE_MAPPING 어디에도 없는 조항이라 자율점검 답변이 있어도 매칭이 없어야 한다.
+        LawArticleEntity article = article(1L);
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
+                audit, article, ComplianceStatus.COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+        given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
+                .willReturn(List.of(answer(SelfCheckItemCode.NOTICE, true)));
+
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
+
+        assertThat(views).singleElement()
+                .satisfies(view -> assertThat(view.matchedItems()).isEmpty());
     }
 
     @Test

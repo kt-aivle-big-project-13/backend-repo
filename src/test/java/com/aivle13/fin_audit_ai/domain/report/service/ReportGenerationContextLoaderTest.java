@@ -3,7 +3,9 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.MatchedChecklistItem;
 import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingQueryService;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
 import org.junit.jupiter.api.Test;
@@ -40,7 +42,8 @@ class ReportGenerationContextLoaderTest {
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
 
         AuditRegulationComplianceView view = new AuditRegulationComplianceView(
-                1L, "제12조", "인공지능 기본법", "조문 원문", ComplianceStatus.NON_COMPLIANT, "근거"
+                1L, "제12조", "인공지능 기본법", "조문 원문", "조문 요약", ComplianceStatus.NON_COMPLIANT, "근거",
+                List.of(new MatchedChecklistItem(SelfCheckItemCode.NOTICE, "①"))
         );
         given(auditRegulationMappingQueryService.getMappings(AUDIT_ID)).willReturn(List.of(view));
 
