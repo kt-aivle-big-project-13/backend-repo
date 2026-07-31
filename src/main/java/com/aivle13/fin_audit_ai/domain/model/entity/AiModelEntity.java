@@ -53,6 +53,10 @@ public class AiModelEntity extends BaseEntity {
     @Column(name = "artifact_path", nullable = false, length = 255)
     private String artifactPath;
 
+    // 사용자가 업로드한 원본 모델 파일명 (artifactPath는 S3 키라 화면 표시용으로 별도 보관)
+    @Column(name = "original_file_name", length = 255)
+    private String originalFileName;
+
     // 사전진단 후 확정되므로 nullable
     @Column(name = "is_high_impact")
     private Boolean highImpact;
@@ -62,18 +66,24 @@ public class AiModelEntity extends BaseEntity {
     private ModelStatus status;
 
     public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, ModelDomain domain, String artifactPath, String version) {
-        return create(user, modelName, modelType, domain, artifactPath, version, UUID.randomUUID().toString());
+        return create(user, modelName, modelType, domain, artifactPath, null, version, UUID.randomUUID().toString());
     }
 
     // 기존 모델의 새 버전으로 등록할 때, 그 모델의 modelGroupId를 그대로 이어받기 위한 생성자
     public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, ModelDomain domain,
                                         String artifactPath, String version, String modelGroupId) {
+        return create(user, modelName, modelType, domain, artifactPath, null, version, modelGroupId);
+    }
+
+    public static AiModelEntity create(UserEntity user, String modelName, ModelType modelType, ModelDomain domain,
+                                        String artifactPath, String originalFileName, String version, String modelGroupId) {
         AiModelEntity model = new AiModelEntity();
         model.user = user;
         model.modelName = modelName;
         model.modelType = modelType;
         model.domain = domain;
         model.artifactPath = artifactPath;
+        model.originalFileName = originalFileName;
         model.version = version;
         model.status = ModelStatus.ACTIVE;
         model.modelGroupId = modelGroupId;

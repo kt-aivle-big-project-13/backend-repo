@@ -35,6 +35,10 @@ public class DatasetEntity extends BaseEntity {
     @Column(name = "dataset_file_key", length = 255)
     private String datasetFileKey;
 
+    // 사용자가 업로드한 원본 파일명 (S3 키는 UUID 기반이라 화면 표시용으로 별도 보관)
+    @Column(name = "original_file_name", length = 255)
+    private String originalFileName;
+
     @Column(name = "row_count", nullable = false)
     private int rowCount;
 
@@ -60,10 +64,16 @@ public class DatasetEntity extends BaseEntity {
 
     public static DatasetEntity create(AiModelEntity model, DataSource dataSource, String datasetFileKey,
                                         int rowCount, String columns) {
+        return create(model, dataSource, datasetFileKey, null, rowCount, columns);
+    }
+
+    public static DatasetEntity create(AiModelEntity model, DataSource dataSource, String datasetFileKey,
+                                        String originalFileName, int rowCount, String columns) {
         DatasetEntity dataset = new DatasetEntity();
         dataset.model = model;
         dataset.dataSource = dataSource;
         dataset.datasetFileKey = datasetFileKey;
+        dataset.originalFileName = originalFileName;
         dataset.rowCount = rowCount;
         dataset.columns = columns;
         return dataset;

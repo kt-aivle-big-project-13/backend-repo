@@ -28,8 +28,8 @@ public class ModelUploadService {
         fileStorageService.deleteOnRollback(List.of(stored.s3Key()));
 
         AiModelEntity aiModel = aiModelService.create(
-                userId, request.modelName(), request.modelType(),
-                request.domain(), stored.s3Key(), request.version(), request.previousModelId()
+                userId, request.modelName(), request.modelType(), request.domain(),
+                stored.s3Key(), stored.originalName(), request.version(), request.previousModelId()
         );
 
         return new ModelUploadResponse(

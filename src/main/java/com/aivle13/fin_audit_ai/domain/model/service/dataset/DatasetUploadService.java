@@ -66,7 +66,8 @@ public class DatasetUploadService {
         storedKeys.add(stored.s3Key());
 
         DatasetEntity dataset = DatasetEntity.create(
-                model, dataSource, stored.s3Key(), summary.rowCount(), String.join(",", summary.columns())
+                model, dataSource, stored.s3Key(), request.datasetFile().getOriginalFilename(),
+                summary.rowCount(), String.join(",", summary.columns())
         );
         if (purpose == DatasetPurpose.VALIDATION) {
             dataset.markAsValidation();

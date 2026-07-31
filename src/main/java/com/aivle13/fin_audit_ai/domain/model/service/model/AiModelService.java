@@ -22,16 +22,19 @@ public class AiModelService {
     private final UserRepository userRepository;
 
     public AiModelEntity create(Long userId, String modelName, ModelType modelType, ModelDomain domain,
-                                 String artifactPath, String version, Long previousModelId) {
+                                 String artifactPath, String originalFileName, String version, Long previousModelId) {
         UserEntity user = userRepository.getReferenceById(userId);
 
         String resolvedVersion = StringUtils.hasText(version) ? version : DEFAULT_VERSION;
         ModelDomain resolvedDomain = domain != null ? domain : DEFAULT_DOMAIN;
+        String modelGroupId = previousModelId != null
+                ? findModelGroupId(userId, previousModelId)
+                : java.util.UUID.randomUUID().toString();
 
-        AiModelEntity aiModel = previousModelId != null
-                ? AiModelEntity.create(user, modelName, modelType, resolvedDomain, artifactPath, resolvedVersion,
-                        findModelGroupId(userId, previousModelId))
-                : AiModelEntity.create(user, modelName, modelType, resolvedDomain, artifactPath, resolvedVersion);
+        AiModelEntity aiModel = AiModelEntity.create(
+                user, modelName, modelType, resolvedDomain, artifactPath,
+                originalFileName, resolvedVersion, modelGroupId
+        );
 
         return aiModelRepository.save(aiModel);
     }

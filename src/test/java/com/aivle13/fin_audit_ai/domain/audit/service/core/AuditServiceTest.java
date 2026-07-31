@@ -130,6 +130,8 @@ class AuditServiceTest {
         assertThat(result).hasSize(1);
         AuditSummaryResponse summary = result.get(0);
         assertThat(summary.modelName()).isEqualTo("my-model");
+        assertThat(summary.modelGroupId()).isEqualTo(model.getModelGroupId());
+        assertThat(summary.version()).isEqualTo("1.0.0");
         assertThat(summary.status()).isEqualTo(AuditStatus.COMPLIANT);
         assertThat(summary.currentStep()).isEqualTo(4);
         assertThat(summary.completedAt()).isNotNull();

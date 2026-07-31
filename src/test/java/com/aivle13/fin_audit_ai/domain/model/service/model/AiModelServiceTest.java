@@ -46,7 +46,7 @@ class AiModelServiceTest {
 
         AiModelEntity saved = aiModelService.create(
                 USER_ID, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
-                "models/model.json", "1.0.0", null
+                "models/model.json", "model.json", "1.0.0", null
         );
 
         assertThatCode(() -> UUID.fromString(saved.getModelGroupId())).doesNotThrowAnyException();
@@ -66,7 +66,7 @@ class AiModelServiceTest {
 
         AiModelEntity saved = aiModelService.create(
                 USER_ID, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
-                "models/model-v2.json", "2.0.0", PREVIOUS_MODEL_ID
+                "models/model-v2.json", "model-v2.json", "2.0.0", PREVIOUS_MODEL_ID
         );
 
         assertThat(saved.getModelGroupId()).isEqualTo(previousModel.getModelGroupId());
@@ -81,7 +81,7 @@ class AiModelServiceTest {
         assertThatThrownBy(() ->
                 aiModelService.create(
                         USER_ID, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
-                        "models/model-v2.json", "2.0.0", PREVIOUS_MODEL_ID
+                        "models/model-v2.json", "model-v2.json", "2.0.0", PREVIOUS_MODEL_ID
                 )
         ).isInstanceOf(ModelNotFoundException.class);
     }
