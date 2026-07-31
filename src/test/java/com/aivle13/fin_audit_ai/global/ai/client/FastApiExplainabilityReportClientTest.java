@@ -66,6 +66,14 @@ class FastApiExplainabilityReportClientTest {
                 .isEqualTo(
                         "explainability-reports/21/run-123/report.html"
                 );
+        assertThat(response.pdfReportS3Key())
+                .isEqualTo(
+                        "explainability-reports/21/run-123/report.pdf"
+                );
+        assertThat(response.wordReportS3Key())
+                .isEqualTo(
+                        "explainability-reports/21/run-123/report.docx"
+                );
         assertThat(response.format()).isEqualTo("html");
         assertThat(response.overallStatus())
                 .isEqualTo("WARNING");
@@ -131,6 +139,8 @@ class FastApiExplainabilityReportClientTest {
                 {
                   "audit_id": 21,
                   "report_s3_key": "explainability-reports/21/run-123/report.html",
+                  "pdf_report_s3_key": "explainability-reports/21/run-123/report.pdf",
+                  "word_report_s3_key": "explainability-reports/21/run-123/report.docx",
                   "format": "html",
                   "overall_status": "WARNING",
                   "generated_at": "2026-07-29T10:00:00Z"
