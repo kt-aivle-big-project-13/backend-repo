@@ -5,7 +5,6 @@ import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawRevisionRepository;
 import com.aivle13.fin_audit_ai.domain.law.type.RevisionType;
-import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.lawapi.client.LawApiClient;
 import com.aivle13.fin_audit_ai.global.lawapi.client.LawArticleRevision;
 import com.aivle13.fin_audit_ai.global.llm.ReportLlmClient;
@@ -113,7 +112,7 @@ public class LawRevisionApplier {
         try {
             String summary = reportLlmClient.generate(SUMMARY_SYSTEM_PROMPT, article.getContent());
             article.updateSummary(summary);
-        } catch (BusinessException exception) {
+        } catch (RuntimeException exception) {
             log.warn(
                     "조문 요약 재생성 실패, 기존 summary를 유지함: lawName={}, articleNo={}",
                     article.getLawName(),

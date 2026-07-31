@@ -152,4 +152,27 @@ class LawRevisionApplierTest {
         assertThat(article.getSummary()).isEqualTo("옛 요약");
         assertThat(revisions).hasSize(1);
     }
+
+    @Test
+    void keepsOldSummaryAndSavesRevisionWhenLlmThrowsNonBusinessException() {
+        LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제31조", "옛 내용", LocalDate.of(2026, 1, 22));
+        article.updateSummary("옛 요약");
+
+        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
+                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21))
+        ));
+        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
+                .willReturn(Optional.of(article));
+        given(reportLlmClient.generate(anyString(), anyString()))
+                .willThrow(new IllegalStateException("연결이 갑자기 끊김"));
+        given(lawRevisionRepository.save(any(LawRevisionEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        // BusinessException 계열이 아닌 예외라도 조문 갱신·개정 저장은 계속 진행돼야 한다.
+        List<LawRevisionEntity> revisions = lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
+
+        assertThat(article.getContent()).isEqualTo("새 내용");
+        assertThat(article.getSummary()).isEqualTo("옛 요약");
+        assertThat(revisions).hasSize(1);
+    }
 }
