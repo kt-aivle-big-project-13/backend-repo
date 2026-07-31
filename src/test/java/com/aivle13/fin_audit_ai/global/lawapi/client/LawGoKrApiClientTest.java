@@ -104,6 +104,50 @@ class LawGoKrApiClientTest {
     }
 
     @Test
+    void skipsArticleWithBlankEffectiveDateAndKeepsOthers() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+
+        LawGoKrApiClient client = new LawGoKrApiClient(builder.baseUrl(BASE_URL).build(), properties());
+
+        server.expect(requestTo(containsString("/DRF/lawService.do")))
+                .andRespond(withSuccess("""
+                        {
+                          "법령": {
+                            "기본정보": { "법령명_한글": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법" },
+                            "조문": {
+                              "조문단위": [
+                                {
+                                  "조문번호": "1",
+                                  "조문여부": "조문",
+                                  "조문시행일자": "",
+                                  "조문변경여부": "N",
+                                  "조문내용": "제1조(목적) 이 법은 목적을 규정한다."
+                                },
+                                {
+                                  "조문번호": "2",
+                                  "조문여부": "조문",
+                                  "조문시행일자": "20260122",
+                                  "조문변경여부": "N",
+                                  "조문내용": "제2조(정의) 내용"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        List<LawArticleRevision> revisions =
+                client.fetchArticles("인공지능 발전과 신뢰 기반 조성 등에 관한 기본법");
+
+        // 시행일자가 없는 제1조는 건너뛰고, 나머지 조문은 그대로 반환한다.
+        assertThat(revisions).hasSize(1);
+        assertThat(revisions.get(0).articleNo()).isEqualTo("제2조");
+
+        server.verify();
+    }
+
+    @Test
     void throwsLawApiErrorWhenApiReturnsAuthFailurePayload() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();

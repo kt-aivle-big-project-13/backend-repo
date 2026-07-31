@@ -5,6 +5,7 @@ import com.aivle13.fin_audit_ai.global.exception.law.LawApiTimeoutException;
 import com.aivle13.fin_audit_ai.global.lawapi.config.LawApiProperties;
 import com.aivle13.fin_audit_ai.global.lawapi.dto.LawGoKrTextFlattener;
 import com.aivle13.fin_audit_ai.global.lawapi.dto.LawServiceResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -16,12 +17,14 @@ import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * law.go.kr 법령 본문 조회(target=law, type=JSON). 인증 실패 등 API 자체 오류는 HTTP
  * 200으로 {"result":..,"msg":..} 형태만 내려오고 "법령" 키가 없으므로, 역직렬화된
  * law가 null이면 오류로 간주한다.
  */
+@Slf4j
 @Component
 public class LawGoKrApiClient implements LawApiClient {
 
@@ -65,6 +68,7 @@ public class LawGoKrApiClient implements LawApiClient {
             return units.stream()
                     .filter(LawServiceResponse.ArticleUnit::isActualArticle)
                     .map(this::toRevision)
+                    .filter(Objects::nonNull)
                     .toList();
         } catch (ResourceAccessException exception) {
             if (hasTimeoutCause(exception)) {
@@ -79,6 +83,12 @@ public class LawGoKrApiClient implements LawApiClient {
 
     private LawArticleRevision toRevision(LawServiceResponse.ArticleUnit unit) {
         String articleNo = normalizeArticleNo(unit.articleNo(), unit.articleSubNo());
+
+        if (unit.effectiveDate() == null || unit.effectiveDate().isBlank()) {
+            log.warn("시행일자가 없는 조문이라 건너뜀: articleNo={}", articleNo);
+            return null;
+        }
+
         String content = LawGoKrTextFlattener.flatten(unit.content(), unit.paragraphs());
         LocalDate effectiveDate = LocalDate.parse(unit.effectiveDate(), EFFECTIVE_DATE_FORMAT);
 
