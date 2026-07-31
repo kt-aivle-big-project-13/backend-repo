@@ -18,6 +18,8 @@ import java.util.List;
 public class ShapAnalysisService {
 
     private static final String DEFAULT_TARGET_COLUMN = "TARGET";
+    // 대시보드 "예측 영향 변수 TOP5" 카드에 쓸 전역 피처 중요도 개수
+    private static final int FEATURE_IMPORTANCE_TOP_N = 5;
 
     private final AuditRepository auditRepository;
     private final ShapAnalysisClient shapAnalysisClient;
@@ -58,7 +60,9 @@ public class ShapAnalysisService {
                 DEFAULT_TARGET_COLUMN,
                 parseSensitiveFeatures(
                         audit.getSensitiveFeatures()
-                )
+                ),
+                true,
+                FEATURE_IMPORTANCE_TOP_N
         );
     }
 

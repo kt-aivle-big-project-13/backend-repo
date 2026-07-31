@@ -54,6 +54,10 @@ class ExplainabilityServiceTest {
     private XaiResultRepository xaiResultRepository;
 
     @Mock
+    private com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRepository
+            shapFeatureImportanceRepository;
+
+    @Mock
     private AuditEntity audit;
 
     @Mock
@@ -346,7 +350,8 @@ class ExplainabilityServiceTest {
                                 metric("0.0647", "0.2000", "PASS"),
                                 metric("0.9996", "0.7000", "PASS"),
                                 metric("0.4843", "0.5000", "WARNING")
-                        )
+                        ),
+                        null
                 );
 
         explainabilityService.saveExplainabilityResult(AUDIT_ID, request);
