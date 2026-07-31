@@ -83,7 +83,11 @@ public class LawRevisionApplier {
                 ? article.getRevisionDate()
                 : article.getEffectiveDate();
 
-        if (!apiArticle.effectiveDate().isAfter(lastKnownDate)) {
+        boolean isNewerRevision = apiArticle.effectiveDate().isAfter(lastKnownDate);
+        boolean isSameDateContentFix = apiArticle.effectiveDate().isEqual(lastKnownDate)
+                && !apiArticle.content().equals(article.getContent());
+
+        if (!isNewerRevision && !isSameDateContentFix) {
             return Optional.empty();
         }
 

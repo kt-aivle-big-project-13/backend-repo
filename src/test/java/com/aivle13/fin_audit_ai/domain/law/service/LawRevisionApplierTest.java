@@ -97,6 +97,26 @@ class LawRevisionApplierTest {
     }
 
     @Test
+    void appliesRevisionWhenEffectiveDateIsSameButContentDiffers() {
+        LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제6조", "원문", LocalDate.of(2026, 1, 22));
+
+        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
+                new LawArticleRevision("제6조", "정정된 조문", LocalDate.of(2026, 1, 22))
+        ));
+        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제6조"))
+                .willReturn(Optional.of(article));
+        given(reportLlmClient.generate(anyString(), eq("정정된 조문")))
+                .willReturn("정정된 요약");
+        given(lawRevisionRepository.save(any(LawRevisionEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        List<LawRevisionEntity> revisions = lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
+
+        assertThat(article.getContent()).isEqualTo("정정된 조문");
+        assertThat(revisions).hasSize(1);
+    }
+
+    @Test
     void skipsArticleNotTrackedInLawArticles() {
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
                 new LawArticleRevision("제99조", "내용", LocalDate.of(2026, 7, 21))
