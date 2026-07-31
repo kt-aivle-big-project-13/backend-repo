@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.report.dto.BiasReportGenerationResponse;
 import com.aivle13.fin_audit_ai.domain.report.dto.BiasReportMetadataResponse;
 import com.aivle13.fin_audit_ai.domain.report.service.BiasReportGenerationService;
 import com.aivle13.fin_audit_ai.domain.report.service.BiasReportQueryService;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URLEncoder;
@@ -97,25 +99,29 @@ public class BiasReportController {
 
     @Operation(
             summary = "최신 편향 진단 리포트 조회",
-            description = "감사에서 가장 최근에 생성된 편향 진단 리포트 메타데이터를 조회합니다."
+            description = "감사에서 가장 최근에 생성된 편향 진단 리포트 메타데이터를 "
+                    + "포맷별로 조회합니다. 기본값은 HTML입니다."
     )
     @GetMapping("/{auditId}/reports/bias")
     public ResponseEntity<BiasReportMetadataResponse> getLatest(
             @AuthenticationPrincipal Long userId,
-            @PathVariable Long auditId
+            @PathVariable Long auditId,
+            @RequestParam(defaultValue = "HTML")
+            ReportFormat format
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
         return ResponseEntity.ok(
-                queryService.getLatest(userId, auditId)
+                queryService.getLatest(userId, auditId, format)
         );
     }
 
     @Operation(
-            summary = "편향 진단 HTML 리포트 다운로드",
-            description = "생성된 편향 진단 HTML 리포트를 다운로드합니다."
+            summary = "편향 진단 리포트 다운로드",
+            description = "생성된 편향 진단 리포트를 다운로드합니다. "
+                    + "저장된 포맷(HTML·PDF)에 따라 파일명과 Content-Type이 정해집니다."
     )
     @GetMapping(
             "/{auditId}/reports/bias/{reportId}/download"

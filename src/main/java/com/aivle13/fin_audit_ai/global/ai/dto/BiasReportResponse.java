@@ -10,6 +10,9 @@ public record BiasReportResponse(
         @JsonProperty("report_s3_key")
         String reportS3Key,
 
+        @JsonProperty("pdf_report_s3_key")
+        String pdfReportS3Key,
+
         String format,
 
         @JsonProperty("generated_at")
