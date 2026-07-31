@@ -234,6 +234,27 @@ class AuditRegulationMappingServiceTest {
     }
 
     @Test
+    void getMappingsResolvesItemCodesFromSelfCheckAnswers() {
+        // 제6조는 ARTICLE_MAPPING상 NOTICE(예) 항목에서 나오는 조항이다. audit_law_mappings에는
+        // 문항 정보가 저장돼 있지 않으므로, 자율점검 답변으로 조회 시점에 역산되는지 검증한다.
+        LawArticleEntity article = LawArticleEntity.of(
+                "AI 기본법", "제6조", "조문 원문", LocalDate.of(2026, 1, 22)
+        );
+        setId(article, 1L);
+        AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(
+                audit, article, ComplianceStatus.COMPLIANT, "자율점검 기반 자동 매칭"
+        );
+        given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
+        given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
+                .willReturn(List.of(answer(SelfCheckItemCode.NOTICE, true)));
+
+        List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
+
+        assertThat(views).singleElement()
+                .satisfies(view -> assertThat(view.itemCodes()).containsExactly(SelfCheckItemCode.NOTICE));
+    }
+
+    @Test
     void getMappingsForUserReturnsMappingsWhenAuditOwnedByUser() {
         LawArticleEntity article = article(1L);
         AuditRegulationMappingEntity mapping = AuditRegulationMappingEntity.of(

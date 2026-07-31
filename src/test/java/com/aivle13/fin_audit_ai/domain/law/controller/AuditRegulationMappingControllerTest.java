@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.law.controller;
 
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.dto.response.RegulationMappingResponse;
 import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
@@ -35,7 +36,8 @@ class AuditRegulationMappingControllerTest {
     @Test
     void returnsRegulationMappings() {
         AuditRegulationComplianceView view = new AuditRegulationComplianceView(
-                1L, "제12조", "인공지능 기본법", "조문 원문", ComplianceStatus.NON_COMPLIANT, "근거"
+                1L, "제12조", "인공지능 기본법", "조문 원문", "조문 요약", ComplianceStatus.NON_COMPLIANT, "근거",
+                List.of(SelfCheckItemCode.NOTICE), null
         );
         given(auditRegulationMappingService.getMappings(USER_ID, AUDIT_ID)).willReturn(List.of(view));
 

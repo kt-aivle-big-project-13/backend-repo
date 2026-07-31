@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,13 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
             ))
     );
 
+    // 조 전체가 아니라 특정 항만 실제로 해당 문항과 관련 있는 경우의 표시용 라벨.
+    // ArticleRef의 equals/hashCode(법령명+조번호)에는 영향을 주지 않도록 별도 맵으로 분리했다
+    // — ArticleRef에 항 필드를 직접 추가하면 resolveItemCodesByArticle()에서 LawArticleEntity로
+    // 새로 만드는 조회용 키(항 정보 없음)와 안 맞아 조회가 깨진다.
+    // 매칭 로직과 무관한 순수 표시용이라, 조 단위 조문 검토 후 해당 항만 사람이 채워 넣는다.
+    private static final Map<ArticleRef, String> PARAGRAPH_LABELS = Map.of();
+
     private final AuditRepository auditRepository;
     private final SelfCheckAnswerRepository selfCheckAnswerRepository;
     private final AuditRegulationMappingRepository auditRegulationMappingRepository;
@@ -136,9 +144,40 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
     @Override
     @Transactional(readOnly = true)
     public List<AuditRegulationComplianceView> getMappings(Long auditId) {
-        return auditRegulationMappingRepository.findAllByAudit_Id(auditId).stream()
-                .map(AuditRegulationComplianceView::from)
+        List<AuditRegulationMappingEntity> mappings = auditRegulationMappingRepository.findAllByAudit_Id(auditId);
+        Map<ArticleRef, List<SelfCheckItemCode>> itemCodesByArticle = resolveItemCodesByArticle(auditId);
+
+        return mappings.stream()
+                .map(mapping -> {
+                    ArticleRef ref = new ArticleRef(
+                            mapping.getArticle().getLawName(), mapping.getArticle().getArticleNo());
+
+                    return AuditRegulationComplianceView.from(
+                            mapping,
+                            itemCodesByArticle.getOrDefault(ref, List.of()),
+                            PARAGRAPH_LABELS.get(ref));
+                })
                 .toList();
+    }
+
+    // audit_law_mappings에는 어느 문항에서 나온 매칭인지 저장하지 않는다(조문 하나가 여러 문항에
+    // 걸치면 audit_law_mappings의 (audit_id, article_id) 유니크 제약상 한쪽 문항 정보가 사라지기
+    // 때문). 대신 자율점검 답변을 ARTICLE_MAPPING에 그대로 다시 대입해 조회할 때마다 역산한다.
+    private Map<ArticleRef, List<SelfCheckItemCode>> resolveItemCodesByArticle(Long auditId) {
+        List<SelfCheckAnswerEntity> answers = selfCheckAnswerRepository.findAllByAudit_Id(auditId);
+        Map<ArticleRef, List<SelfCheckItemCode>> itemCodesByArticle = new LinkedHashMap<>();
+
+        for (SelfCheckAnswerEntity answer : answers) {
+            List<ArticleRef> refs = ARTICLE_MAPPING
+                    .getOrDefault(answer.getItemCode(), Map.of())
+                    .getOrDefault(answer.isAnswer(), List.of());
+
+            for (ArticleRef ref : refs) {
+                itemCodesByArticle.computeIfAbsent(ref, key -> new ArrayList<>()).add(answer.getItemCode());
+            }
+        }
+
+        return itemCodesByArticle;
     }
 
     @Transactional(readOnly = true)
