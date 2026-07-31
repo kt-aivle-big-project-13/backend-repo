@@ -36,11 +36,14 @@ class BiasReportGenerationServiceTest {
     private static final Long AUDIT_ID = 21L;
     private static final Long REPORT_ID = 31L;
     private static final Long PDF_REPORT_ID = 32L;
+    private static final Long WORD_REPORT_ID = 33L;
 
     private static final String HTML_S3_KEY =
             "bias-reports/21/run-123/report.html";
     private static final String PDF_S3_KEY =
             "bias-reports/21/run-123/report.pdf";
+    private static final String WORD_S3_KEY =
+            "bias-reports/21/run-123/report.docx";
 
     private static final BigDecimal TARGET_APPROVAL_RATE =
             new BigDecimal("0.8500");
@@ -100,7 +103,7 @@ class BiasReportGenerationServiceTest {
     }
 
     @Test
-    void savesHtmlAndPdfInOneTransaction() {
+    void savesHtmlPdfAndWordInOneTransaction() {
         givenAudit();
         givenValidationDatasetThreshold();
         givenSuccessfulReportGeneration();
@@ -112,7 +115,8 @@ class BiasReportGenerationServiceTest {
                 ReportType.BIAS_REPORT,
                 Map.of(
                         ReportFormat.HTML, HTML_S3_KEY,
-                        ReportFormat.PDF, PDF_S3_KEY
+                        ReportFormat.PDF, PDF_S3_KEY,
+                        ReportFormat.WORD, WORD_S3_KEY
                 )
         );
     }
@@ -127,6 +131,7 @@ class BiasReportGenerationServiceTest {
                         AUDIT_ID,
                         HTML_S3_KEY,
                         "",
+                        WORD_S3_KEY,
                         "html",
                         "2026-07-30T10:00:00Z"
                 );
@@ -134,6 +139,33 @@ class BiasReportGenerationServiceTest {
         given(reportClient.generate(
                 any(BiasReportRequest.class)
         )).willReturn(missingPdf);
+
+        assertThatThrownBy(() ->
+                service.generateAndSave(USER_ID, AUDIT_ID)
+        ).isInstanceOf(AuditFailedException.class);
+
+        verify(reportPersistenceService, never())
+                .saveAll(any(), any(), any());
+    }
+
+    @Test
+    void rejectsResponseWithoutWordKey() {
+        givenAudit();
+        givenValidationDatasetThreshold();
+
+        BiasReportResponse missingWord =
+                new BiasReportResponse(
+                        AUDIT_ID,
+                        HTML_S3_KEY,
+                        PDF_S3_KEY,
+                        "",
+                        "html",
+                        "2026-07-30T10:00:00Z"
+                );
+
+        given(reportClient.generate(
+                any(BiasReportRequest.class)
+        )).willReturn(missingWord);
 
         assertThatThrownBy(() ->
                 service.generateAndSave(USER_ID, AUDIT_ID)
@@ -223,6 +255,7 @@ class BiasReportGenerationServiceTest {
                         AUDIT_ID,
                         "",
                         PDF_S3_KEY,
+                        WORD_S3_KEY,
                         "html",
                         "2026-07-30T10:00:00Z"
                 );
@@ -257,6 +290,7 @@ class BiasReportGenerationServiceTest {
                         AUDIT_ID,
                         HTML_S3_KEY,
                         PDF_S3_KEY,
+                        WORD_S3_KEY,
                         "html",
                         "2026-07-30T10:00:00Z"
                 );
@@ -270,7 +304,8 @@ class BiasReportGenerationServiceTest {
                 ReportType.BIAS_REPORT,
                 Map.of(
                         ReportFormat.HTML, HTML_S3_KEY,
-                        ReportFormat.PDF, PDF_S3_KEY
+                        ReportFormat.PDF, PDF_S3_KEY,
+                        ReportFormat.WORD, WORD_S3_KEY
                 )
         )).willReturn(
                 Map.of(
