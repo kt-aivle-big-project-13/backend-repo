@@ -43,7 +43,7 @@ class ReportGenerationContextLoaderTest {
 
         AuditRegulationComplianceView view = new AuditRegulationComplianceView(
                 1L, "제12조", "인공지능 기본법", "조문 원문", "조문 요약", ComplianceStatus.NON_COMPLIANT, "근거",
-                List.of(new MatchedChecklistItem(SelfCheckItemCode.NOTICE, "①"))
+                List.of(new MatchedChecklistItem(SelfCheckItemCode.NOTICE, "①", "테스트 근거"))
         );
         given(auditRegulationMappingQueryService.getMappings(AUDIT_ID)).willReturn(List.of(view));
 

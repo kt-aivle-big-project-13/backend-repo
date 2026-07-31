@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -68,8 +69,6 @@ class AuditRegulationMappingServiceTest {
         LawArticleEntity sharedArticle = article(1L);
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제34조"))
                 .willReturn(Optional.of(sharedArticle));
-        given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제32조"))
-                .willReturn(Optional.of(article(2L)));
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법 시행령", "제27조"))
                 .willReturn(Optional.of(article(3L)));
 
@@ -80,8 +79,8 @@ class AuditRegulationMappingServiceTest {
         ArgumentCaptor<Collection<AuditRegulationMappingEntity>> captor = ArgumentCaptor.forClass(Collection.class);
         verify(auditRegulationMappingRepository).saveAll(captor.capture());
 
-        // OVERSIGHT(제34조 1개) + RISK_MANAGEMENT(제32조, 시행령제27조, 제34조 3개) - 중복 1개 = 3개
-        assertThat(captor.getValue()).hasSize(3);
+        // OVERSIGHT(제34조 1개) + RISK_MANAGEMENT(시행령제27조, 제34조 2개) - 중복 1개 = 2개
+        assertThat(captor.getValue()).hasSize(2);
 
         // 먼저 처리된 항목(OVERSIGHT, 답변 '예')이 매핑을 선점하므로, 두 항목 모두에서
         // 참조되는 제34조는 COMPLIANT로 남는다.
@@ -231,9 +230,15 @@ class AuditRegulationMappingServiceTest {
 
         List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
 
-        assertThat(views).singleElement()
-                .satisfies(view -> assertThat(view.matchedItems())
-                        .containsExactly(new MatchedChecklistItem(SelfCheckItemCode.NOTICE, "①")));
+        // note 문구는 검토·수정 대상이라 정확한 텍스트에는 고정하지 않고, itemCode·clauseNo만
+        // 검증하고 note는 비어있지 않은지만 확인한다.
+        assertThat(views).singleElement().satisfies(view -> {
+            assertThat(view.matchedItems())
+                    .extracting(MatchedChecklistItem::itemCode, MatchedChecklistItem::clauseNo)
+                    .containsExactly(tuple(SelfCheckItemCode.NOTICE, "①"));
+            assertThat(view.matchedItems())
+                    .allSatisfy(item -> assertThat(item.note()).isNotBlank());
+        });
     }
 
     @Test
@@ -256,12 +261,17 @@ class AuditRegulationMappingServiceTest {
 
         List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
 
-        assertThat(views).singleElement()
-                .satisfies(view -> assertThat(view.matchedItems()).containsExactlyInAnyOrder(
-                        new MatchedChecklistItem(SelfCheckItemCode.RISK_MANAGEMENT, "①1호"),
-                        new MatchedChecklistItem(SelfCheckItemCode.OVERSIGHT, "①4호"),
-                        new MatchedChecklistItem(SelfCheckItemCode.DOCUMENTATION, "①5호")
-                ));
+        assertThat(views).singleElement().satisfies(view -> {
+            assertThat(view.matchedItems())
+                    .extracting(MatchedChecklistItem::itemCode, MatchedChecklistItem::clauseNo)
+                    .containsExactlyInAnyOrder(
+                            tuple(SelfCheckItemCode.RISK_MANAGEMENT, "①1호"),
+                            tuple(SelfCheckItemCode.OVERSIGHT, "①4호"),
+                            tuple(SelfCheckItemCode.DOCUMENTATION, "①5호")
+                    );
+            assertThat(view.matchedItems())
+                    .allSatisfy(item -> assertThat(item.note()).isNotBlank());
+        });
     }
 
     @Test
