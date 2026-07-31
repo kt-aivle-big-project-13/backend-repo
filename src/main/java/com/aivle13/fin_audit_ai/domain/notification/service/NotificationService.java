@@ -66,7 +66,7 @@ public class NotificationService {
     }
 
     // 감사 완료 처리 시점(AuditProgressService)에서 호출되는 실제 알림 생성 지점.
-    // 법령 개정/재감사 권고 알림은 이를 발생시키는 크롤러·배치가 아직 없어 생성 지점이 없다.
+    // 법령 개정 알림은 이를 발생시키는 크롤러·배치가 아직 없어 생성 지점이 없다.
     @Transactional
     public void notifyAuditComplete(AuditEntity audit) {
         UserEntity user = audit.getUser();
@@ -76,6 +76,22 @@ public class NotificationService {
         }
 
         NotificationEntity notification = NotificationEntity.ofAuditComplete(
+                user, audit, NotifChannel.IN_APP, NotifStatus.SENT, LocalDateTime.now());
+
+        notificationRepository.save(notification);
+    }
+
+    // 감사 완료 처리 시점(AuditProgressService)에서, 판정 결과가 '주의(WARNING)' 이상
+    // (WARNING 또는 NON_COMPLIANT)일 때만 호출되는 재감사 권고 알림 생성 지점.
+    @Transactional
+    public void notifyReauditRecommend(AuditEntity audit) {
+        UserEntity user = audit.getUser();
+
+        if (!user.isReauditAlertEnabled()) {
+            return;
+        }
+
+        NotificationEntity notification = NotificationEntity.ofReauditRecommend(
                 user, audit, NotifChannel.IN_APP, NotifStatus.SENT, LocalDateTime.now());
 
         notificationRepository.save(notification);

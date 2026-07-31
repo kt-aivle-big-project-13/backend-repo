@@ -25,7 +25,7 @@ public record NotificationResponse(
             case LAW_REVISION ->
                     notification.getRevision().getTitle() + " 관련 법령·고시가 개정되었습니다.";
             case REAUDIT_RECOMMEND ->
-                    "'" + notification.getAudit().getAuditName() + "' 모델은 법령 개정으로 재감사가 필요합니다.";
+                    "'" + notification.getAudit().getAuditName() + "' 모델은 감사 결과 재감사가 필요합니다.";
             case AUDIT_COMPLETE ->
                     "'" + notification.getAudit().getAuditName() + "' 감사가 완료되었습니다.";
         };

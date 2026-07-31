@@ -141,6 +141,29 @@ class NotificationServiceTest {
     }
 
     @Test
+    void 재감사권고_알림설정이_켜져있으면_알림을_생성한다() {
+        given(audit.getUser()).willReturn(user);
+        given(user.isReauditAlertEnabled()).willReturn(true);
+
+        notificationService.notifyReauditRecommend(audit);
+
+        ArgumentCaptor<NotificationEntity> captor = ArgumentCaptor.forClass(NotificationEntity.class);
+        verify(notificationRepository).save(captor.capture());
+        assertThat(captor.getValue().getNotifType()).isEqualTo(NotifType.REAUDIT_RECOMMEND);
+        assertThat(captor.getValue().getChannel()).isEqualTo(NotifChannel.IN_APP);
+    }
+
+    @Test
+    void 재감사권고_알림설정이_꺼져있으면_알림을_생성하지_않는다() {
+        given(audit.getUser()).willReturn(user);
+        given(user.isReauditAlertEnabled()).willReturn(false);
+
+        notificationService.notifyReauditRecommend(audit);
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
     void 법령개정_이메일_알림설정이_켜져있으면_실제로_메일을_보내고_SENT로_기록한다() {
         given(user.isLawEmailEnabled()).willReturn(true);
         given(user.getEmail()).willReturn("user@example.com");

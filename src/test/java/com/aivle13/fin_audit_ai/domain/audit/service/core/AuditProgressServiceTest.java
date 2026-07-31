@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,6 +92,7 @@ class AuditProgressServiceTest {
 
         verify(audit).complete(4, AuditStatus.COMPLIANT);
         verify(notificationService).notifyAuditComplete(audit);
+        verify(notificationService, never()).notifyReauditRecommend(audit);
     }
 
     @Test
@@ -104,6 +106,7 @@ class AuditProgressServiceTest {
         auditProgressService.markFairnessCompleted(AUDIT_ID);
 
         verify(audit).complete(4, AuditStatus.NON_COMPLIANT);
+        verify(notificationService).notifyReauditRecommend(audit);
     }
 
     @Test
@@ -118,6 +121,7 @@ class AuditProgressServiceTest {
         auditProgressService.markFairnessCompleted(AUDIT_ID);
 
         verify(audit).complete(4, AuditStatus.WARNING);
+        verify(notificationService).notifyReauditRecommend(audit);
     }
 
     @Test
