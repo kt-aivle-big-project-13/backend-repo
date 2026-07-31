@@ -59,11 +59,23 @@ public class BiasReportGenerationService {
         validateS3Key(modelS3Key);
         validateS3Key(datasetS3Key);
 
+        // 검증 데이터셋은 선택 항목이라 없으면 null로 보낸다.
+        String validationDatasetS3Key =
+                audit.getValidationDataset() != null
+                        ? audit.getValidationDataset()
+                                .getDatasetFileKey()
+                        : null;
+
+        // 임계값 설정을 넘기지 않으면 AI 서버가 기본 목표 승인율로 다시 계산해
+        // 같은 감사의 공정성 결과와 다른 기준으로 리포트가 생성된다.
         return new BiasReportRequest(
                 audit.getId(),
                 modelS3Key,
                 datasetS3Key,
+                validationDatasetS3Key,
                 audit.getAuditName(),
+                audit.getTargetApprovalRate(),
+                audit.getManualThreshold(),
                 parseSensitiveFeatures(
                         audit.getSensitiveFeatures()
                 )
