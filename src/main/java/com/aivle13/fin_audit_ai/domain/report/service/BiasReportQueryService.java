@@ -3,6 +3,7 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 import com.aivle13.fin_audit_ai.domain.report.dto.BiasReportMetadataResponse;
 import com.aivle13.fin_audit_ai.domain.report.entity.ReportEntity;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.exception.report.ReportNotFoundException;
 import com.aivle13.fin_audit_ai.global.s3.dto.DownloadedFile;
@@ -25,11 +26,13 @@ public class BiasReportQueryService {
             Long userId,
             Long auditId
     ) {
+        // 편향 리포트는 아직 HTML만 저장한다. PDF 저장·조회는 #162에서 다룬다.
         ReportEntity report = reportRepository
-                .findFirstByAudit_IdAndAudit_User_IdAndReportTypeOrderByCreatedAtDescIdDesc(
+                .findFirstByAudit_IdAndAudit_User_IdAndReportTypeAndFormatOrderByCreatedAtDescIdDesc(
                         auditId,
                         userId,
-                        ReportType.BIAS_REPORT
+                        ReportType.BIAS_REPORT,
+                        ReportFormat.HTML
                 )
                 .orElseThrow(ReportNotFoundException::new);
 
