@@ -53,7 +53,8 @@ class AuditExplainabilityControllerTest {
                                         new BigDecimal("0.5000"),
                                         XaiStatus.REVIEW
                                 )
-                        )
+                        ),
+                        List.of()
                 );
 
         given(explainabilityService.getExplainability(USER_ID, AUDIT_ID))

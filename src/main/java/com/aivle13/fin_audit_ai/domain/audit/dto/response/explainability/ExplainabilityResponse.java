@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.audit.dto.response.explainability;
 
+import com.aivle13.fin_audit_ai.domain.audit.entity.ShapFeatureImportanceEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
 
@@ -9,12 +10,14 @@ import java.util.List;
 public record ExplainabilityResponse(
         Long auditId,
         String method,
-        List<XaiMetricResponse> metrics
+        List<XaiMetricResponse> metrics,
+        List<FeatureImportanceResponse> topFeatures
 ) {
 
     public static ExplainabilityResponse of(
             Long auditId,
-            List<XaiResultEntity> results
+            List<XaiResultEntity> results,
+            List<ShapFeatureImportanceEntity> topFeatures
     ) {
         List<XaiMetricResponse> metrics = results.stream()
                 .sorted(Comparator.comparingInt(
@@ -26,7 +29,10 @@ public record ExplainabilityResponse(
         return new ExplainabilityResponse(
                 auditId,
                 "SHAP",
-                metrics
+                metrics,
+                topFeatures.stream()
+                        .map(FeatureImportanceResponse::from)
+                        .toList()
         );
     }
 

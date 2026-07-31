@@ -19,6 +19,12 @@ public record ShapAnalysisRequest(
         String targetColumn,
 
         @JsonProperty("sensitive_features")
-        List<String> sensitiveFeatures
+        List<String> sensitiveFeatures,
+
+        @JsonProperty("include_report")
+        Boolean includeReport,
+
+        @JsonProperty("report_top_n")
+        Integer reportTopN
 ) {
 }

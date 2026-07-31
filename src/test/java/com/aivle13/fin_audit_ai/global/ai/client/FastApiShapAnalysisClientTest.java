@@ -117,7 +117,9 @@ class FastApiShapAnalysisClientTest {
                 "models/model.json",
                 "datasets/audit.csv",
                 "TARGET",
-                List.of("CODE_GENDER", "AGE_GROUP")
+                List.of("CODE_GENDER", "AGE_GROUP"),
+                true,
+                5
         );
     }
 

@@ -3,8 +3,10 @@ package com.aivle13.fin_audit_ai.domain.audit.service.explainability;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.explainability.ExplainabilityResponse;
 import com.aivle13.fin_audit_ai.domain.audit.dto.request.explainability.ExplainabilityResultRequest;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.audit.entity.ShapFeatureImportanceEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
@@ -39,6 +41,7 @@ public class ExplainabilityService {
 
     private final AuditRepository auditRepository;
     private final XaiResultRepository xaiResultRepository;
+    private final ShapFeatureImportanceRepository shapFeatureImportanceRepository;
     private final CacheManager cacheManager;
 
     @Cacheable(cacheNames = CacheConfig.EXPLAINABILITY_CACHE, key = "#userId + ':' + #auditId")
@@ -76,7 +79,10 @@ public class ExplainabilityService {
             throw new ExplainabilityResultNotFoundException();
         }
 
-        return ExplainabilityResponse.of(auditId, results);
+        List<ShapFeatureImportanceEntity> topFeatures =
+                shapFeatureImportanceRepository.findAllByAudit_IdOrderByRankAsc(auditId);
+
+        return ExplainabilityResponse.of(auditId, results, topFeatures);
     }
 
     @Transactional
@@ -119,7 +125,39 @@ public class ExplainabilityService {
 
         xaiResultRepository.saveAll(results);
 
+        saveFeatureImportances(audit, auditId, request.report());
+
         evictCache(audit.getUser().getId(), auditId);
+    }
+
+    // report는 ShapAnalysisRequest.includeReport=true로 요청했을 때만 채워진다(예외 상황이면 null일 수 있음).
+    private void saveFeatureImportances(
+            AuditEntity audit,
+            Long auditId,
+            ExplainabilityResultRequest.ShapReport report
+    ) {
+        shapFeatureImportanceRepository.deleteAllByAudit_Id(auditId);
+        shapFeatureImportanceRepository.flush();
+
+        if (report == null || report.globalImportanceTop() == null) {
+            return;
+        }
+
+        List<ShapFeatureImportanceEntity> importances = report.globalImportanceTop().stream()
+                .map(item -> ShapFeatureImportanceEntity.of(
+                        audit,
+                        item.rank(),
+                        item.feature(),
+                        item.meanAbsShap(),
+                        item.meanSignedShap(),
+                        item.contributionRatio(),
+                        item.direction(),
+                        Boolean.TRUE.equals(item.isSensitive()),
+                        item.sensitiveGroup()
+                ))
+                .toList();
+
+        shapFeatureImportanceRepository.saveAll(importances);
     }
 
     private void evictCache(Long userId, Long auditId) {

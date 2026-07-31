@@ -103,6 +103,8 @@ class ShapAnalysisServiceTest {
                         "CODE_GENDER",
                         "AGE_GROUP"
                 );
+        assertThat(request.includeReport()).isTrue();
+        assertThat(request.reportTopN()).isEqualTo(5);
 
         verify(explainabilityService)
                 .saveExplainabilityResult(
