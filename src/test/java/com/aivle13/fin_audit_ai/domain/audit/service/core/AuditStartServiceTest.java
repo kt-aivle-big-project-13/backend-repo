@@ -373,7 +373,7 @@ class AuditStartServiceTest {
                 MODEL_ID,
                 USER_ID
         )).willReturn(Optional.of(model));
-        given(preDiagnosisRepository.findByIdAndUser_Id(
+        given(preDiagnosisRepository.findByIdAndUser_IdForUpdate(
                 ASSESSMENT_ID,
                 USER_ID
         )).willReturn(Optional.of(diagnosis));
@@ -413,7 +413,7 @@ class AuditStartServiceTest {
                 MODEL_ID,
                 USER_ID
         )).willReturn(Optional.of(model));
-        given(preDiagnosisRepository.findByIdAndUser_Id(
+        given(preDiagnosisRepository.findByIdAndUser_IdForUpdate(
                 ASSESSMENT_ID,
                 USER_ID
         )).willReturn(Optional.empty());
@@ -437,7 +437,7 @@ class AuditStartServiceTest {
                 MODEL_ID,
                 USER_ID
         )).willReturn(Optional.of(model));
-        given(preDiagnosisRepository.findByIdAndUser_Id(
+        given(preDiagnosisRepository.findByIdAndUser_IdForUpdate(
                 ASSESSMENT_ID,
                 USER_ID
         )).willReturn(Optional.of(diagnosis));

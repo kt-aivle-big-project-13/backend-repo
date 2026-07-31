@@ -63,8 +63,16 @@ public class HighImpactReportController {
                     description = "인증되지 않은 사용자"
             ),
             @ApiResponse(
+                    responseCode = "400",
+                    description = "고영향으로 확정되지 않은 사전진단"
+            ),
+            @ApiResponse(
                     responseCode = "404",
-                    description = "감사 또는 사전진단을 찾을 수 없음"
+                    description = "감사 또는 연결된 사전진단을 찾을 수 없음"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "저장된 사전진단 데이터 또는 AI 응답이 올바르지 않음"
             ),
             @ApiResponse(
                     responseCode = "502",

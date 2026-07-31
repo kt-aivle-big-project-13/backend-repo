@@ -15,6 +15,9 @@ import com.aivle13.fin_audit_ai.global.ai.dto.HighImpactReportRequest;
 import com.aivle13.fin_audit_ai.global.ai.dto.HighImpactReportResponse;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
+import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
+import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +60,7 @@ public class HighImpactReportGenerationService {
         Long assessmentId = audit.getAssessmentId();
 
         if (assessmentId == null) {
-            throw new AuditFailedException();
+            throw new PreDiagnosisNotFoundException();
         }
 
         PreDiagnosisEntity diagnosis = preDiagnosisRepository
@@ -64,11 +68,17 @@ public class HighImpactReportGenerationService {
                         assessmentId,
                         userId
                 )
-                .orElseThrow(AuditFailedException::new);
+                .orElseThrow(
+                        PreDiagnosisNotFoundException::new
+                );
 
         if (diagnosis.getResult()
                 != DiagnosisResult.HIGH_IMPACT) {
-            throw new AuditFailedException();
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT_VALUE,
+                    "고영향으로 확정된 사전진단만 "
+                            + "보고서를 생성할 수 있습니다."
+            );
         }
 
         List<DiagnosisAnswerEntity> answers =
@@ -123,6 +133,12 @@ public class HighImpactReportGenerationService {
             throw new AuditFailedException();
         }
 
+        LocalDateTime assessedAt = diagnosis.getUpdatedAt();
+
+        if (assessedAt == null) {
+            throw new AuditFailedException();
+        }
+
         List<HighImpactReportRequest.Answer> reportAnswers =
                 answers.stream()
                         .map(this::toReportAnswer)
@@ -142,7 +158,7 @@ public class HighImpactReportGenerationService {
                 audit.getAuditName(),
                 audit.getModel().getModelName(),
                 audit.getModel().getVersion(),
-                diagnosis.getUpdatedAt()
+                assessedAt
                         .atZone(REPORT_TIME_ZONE)
                         .format(ASSESSED_AT_FORMATTER),
                 diagnosis.isConditionMet(),

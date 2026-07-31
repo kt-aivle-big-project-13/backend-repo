@@ -118,7 +118,7 @@ public class AuditStartService {
         }
 
         PreDiagnosisEntity diagnosis = preDiagnosisRepository
-                .findByIdAndUser_Id(
+                .findByIdAndUser_IdForUpdate(
                         assessmentId,
                         userId
                 )

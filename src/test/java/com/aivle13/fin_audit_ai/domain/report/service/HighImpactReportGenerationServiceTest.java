@@ -14,6 +14,8 @@ import com.aivle13.fin_audit_ai.global.ai.client.HighImpactReportClient;
 import com.aivle13.fin_audit_ai.global.ai.dto.HighImpactReportRequest;
 import com.aivle13.fin_audit_ai.global.ai.dto.HighImpactReportResponse;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
+import com.aivle13.fin_audit_ai.global.exception.BusinessException;
+import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -178,7 +180,7 @@ class HighImpactReportGenerationServiceTest {
                         USER_ID,
                         AUDIT_ID
                 )
-        ).isInstanceOf(AuditFailedException.class);
+        ).isInstanceOf(PreDiagnosisNotFoundException.class);
 
         verify(preDiagnosisRepository, never())
                 .findByIdAndUser_Id(any(), any());
@@ -200,7 +202,7 @@ class HighImpactReportGenerationServiceTest {
                         USER_ID,
                         AUDIT_ID
                 )
-        ).isInstanceOf(AuditFailedException.class);
+        ).isInstanceOf(PreDiagnosisNotFoundException.class);
 
         verify(reportClient, never()).generate(any());
     }
@@ -222,7 +224,7 @@ class HighImpactReportGenerationServiceTest {
                         USER_ID,
                         AUDIT_ID
                 )
-        ).isInstanceOf(AuditFailedException.class);
+        ).isInstanceOf(BusinessException.class);
 
         verify(reportClient, never()).generate(any());
     }
@@ -288,6 +290,46 @@ class HighImpactReportGenerationServiceTest {
         ).isInstanceOf(AuditFailedException.class);
 
         verify(reportClient, never()).generate(any());
+    }
+
+    @Test
+    void rejectsDiagnosisWithoutUpdatedAt() {
+        givenOwnedAudit();
+
+        given(audit.getAssessmentId())
+                .willReturn(ASSESSMENT_ID);
+
+        given(preDiagnosisRepository.findByIdAndUser_Id(
+                ASSESSMENT_ID,
+                USER_ID
+        )).willReturn(Optional.of(diagnosis));
+
+        given(diagnosis.getResult())
+                .willReturn(DiagnosisResult.HIGH_IMPACT);
+
+        given(diagnosisAnswerRepository
+                .findAllByDiagnosis_IdOrderByIdAsc(
+                        ASSESSMENT_ID
+                ))
+                .willReturn(
+                        List.of(
+                                answer(
+                                        "GATE_01",
+                                        true,
+                                        0
+                                )
+                        )
+                );
+
+        assertThatThrownBy(() ->
+                service.generateAndSave(
+                        USER_ID,
+                        AUDIT_ID
+                )
+        ).isInstanceOf(AuditFailedException.class);
+
+        verify(reportClient, never())
+                .generate(any());
     }
 
     private void givenHighImpactAssessment() {
