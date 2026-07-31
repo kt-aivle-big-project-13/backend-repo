@@ -56,11 +56,14 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
             @Param("auditId") Long auditId
     );
 
+    // 리포트 생성은 트랜잭션 밖에서 validationDataset을 읽으므로(open-in-view=false)
+    // 여기서 함께 가져온다. nullable이라 left join fetch를 쓴다.
     @Query("""
             select audit
             from AuditEntity audit
             join fetch audit.model
             join fetch audit.dataset
+            left join fetch audit.validationDataset
             where audit.id = :auditId
               and audit.user.id = :userId
             """)
