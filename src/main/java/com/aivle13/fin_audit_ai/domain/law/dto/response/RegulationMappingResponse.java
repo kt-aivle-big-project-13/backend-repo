@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.law.dto.response;
 
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.MatchedChecklistItem;
 
 import java.util.List;
 
@@ -26,8 +26,7 @@ public record RegulationMappingResponse(
             String summary,
             ComplianceStatus compliance,
             String evidence,
-            List<SelfCheckItemCode> itemCodes,
-            String paragraphLabel
+            List<MatchedChecklistItem> matchedItems
     ) {
         public static RegulationMapping from(AuditRegulationComplianceView view) {
             return new RegulationMapping(
@@ -38,8 +37,7 @@ public record RegulationMappingResponse(
                     view.summary(),
                     view.compliance(),
                     view.evidence(),
-                    view.itemCodes(),
-                    view.paragraphLabel()
+                    view.matchedItems()
             );
         }
     }

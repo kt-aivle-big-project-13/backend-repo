@@ -2,7 +2,6 @@ package com.aivle13.fin_audit_ai.domain.law.dto;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditRegulationMappingEntity;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 
 import java.util.List;
 
@@ -15,17 +14,13 @@ public record AuditRegulationComplianceView(
         String summary,
         ComplianceStatus compliance,
         String evidence,
-        List<SelfCheckItemCode> itemCodes,
-        String paragraphLabel
+        List<MatchedChecklistItem> matchedItems
 ) {
-    // itemCodes는 DB에 저장된 값이 아니라, 자율점검 답변을 ARTICLE_MAPPING에 대입해
-    // 조회 시점에 역산한 값이다(AuditRegulationMappingService.resolveItemCodesByArticle).
-    // paragraphLabel은 조 전체가 아니라 특정 항만 해당할 때만 채워지는 표시용 값으로,
-    // 없으면 null이다(AuditRegulationMappingService.PARAGRAPH_LABELS).
+    // matchedItems는 DB에 저장된 값이 아니라, 자율점검 답변을 ARTICLE_MAPPING에 대입해
+    // 조회 시점에 역산한 값이다(AuditRegulationMappingService.resolveMatchedItemsByArticle).
     public static AuditRegulationComplianceView from(
             AuditRegulationMappingEntity mapping,
-            List<SelfCheckItemCode> itemCodes,
-            String paragraphLabel
+            List<MatchedChecklistItem> matchedItems
     ) {
         return new AuditRegulationComplianceView(
                 mapping.getId(),
@@ -35,8 +30,7 @@ public record AuditRegulationComplianceView(
                 mapping.getArticle().getSummary(),
                 mapping.getCompliance(),
                 mapping.getEvidence(),
-                itemCodes,
-                paragraphLabel
+                matchedItems
         );
     }
 }

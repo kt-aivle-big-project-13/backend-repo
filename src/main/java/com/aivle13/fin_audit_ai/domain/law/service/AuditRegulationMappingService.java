@@ -8,6 +8,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepositor
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
+import com.aivle13.fin_audit_ai.domain.law.dto.MatchedChecklistItem;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.AuditRegulationMappingRepository;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
@@ -30,6 +31,10 @@ import java.util.Map;
  * +시행령)로 닫혀 있어, 매핑 결과 자체가 상수다. 예전엔 이걸 임베딩 유사도 검색(RAG)으로 매번
  * 다시 계산했었는데, 결과가 안 바뀌는 걸 매번 재계산하는 낭비였고 사람이 검수하지 않은 유사도
  * 결과를 법적 근거로 쓰는 것도 리스크였다 — 그래서 사람이 검수한 이 표로 대체했다.
+ * 자율점검 문항은 법 문언을 그대로 옮긴 게 아니라 실무 체크리스트로 재구성한 것이라, 조 하나가
+ * 여러 문항에 걸리는 경우가 있다(예: 제34조는 위험관리·관리감독·문서화 세 문항에 서로 다른
+ * 호로 걸림). 원문에 직접 대응되는 항을 찾지 못한 조항은 억지로 끼워맞추지 않고 매핑에서
+ * 제외한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,73 +43,67 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
     private record ArticleRef(String lawName, String articleNo) {
     }
 
-    private static Map<Boolean, List<ArticleRef>> sameForBothAnswers(List<ArticleRef> refs) {
-        return Map.of(true, refs, false, refs);
+    // answer가 null이면 자율점검 답변(예/아니요)과 무관하게 항상 근거로 쓰이고, true/false면
+    // 그 답변일 때만 근거로 쓰인다(예: 위반 시 과태료 조항은 "아니요"일 때만 의미가 있다).
+    // note에는 law_articles 원문을 대조한 근거를 남겨, 법적 효력이 있는 조항(특히 벌칙·과태료)을
+    // 팀이 나중에 리뷰할 때 근거를 추적할 수 있게 한다.
+    private record LawMapping(ArticleRef article, String clauseNo, Boolean answer, String note) {
     }
 
-    private static final Map<SelfCheckItemCode, Map<Boolean, List<ArticleRef>>> ARTICLE_MAPPING = Map.of(
-            SelfCheckItemCode.NOTICE, Map.of(
-                    true, List.of(
-                            new ArticleRef("AI 기본법", "제6조"),
-                            new ArticleRef("AI 기본법", "제12조"),
-                            new ArticleRef("AI 기본법", "제31조"),
-                            new ArticleRef("AI 기본법", "제40조"),
-                            new ArticleRef("AI 기본법 시행령", "제23조")
+    private static final Map<SelfCheckItemCode, List<LawMapping>> ARTICLE_MAPPING = Map.of(
+            SelfCheckItemCode.NOTICE, List.of(
+                    new LawMapping(
+                            new ArticleRef("AI 기본법", "제31조"), "①", null,
+                            "\"제품 또는 서비스가 해당 인공지능에 기반하여 운용된다는 사실을 이용자에게 "
+                                    + "사전에 고지하여야 한다\" — 의무 자체라 답변과 무관하게 항상 근거"
                     ),
-                    false, List.of(
-                            new ArticleRef("AI 기본법", "제6조"),
-                            new ArticleRef("AI 기본법", "제12조"),
-                            new ArticleRef("AI 기본법", "제31조"),
-                            new ArticleRef("AI 기본법", "제40조"),
-                            new ArticleRef("AI 기본법", "제43조"),
-                            new ArticleRef("AI 기본법 시행령", "제23조")
+                    new LawMapping(
+                            new ArticleRef("AI 기본법 시행령", "제23조"), "①", null,
+                            "제31조①의 구체적 고지 방법(제품 기재·화면표시·게시 등 4가지) 규정 — 답변 무관"
+                    ),
+                    new LawMapping(
+                            new ArticleRef("AI 기본법", "제43조"), "①1호", false,
+                            "\"제31조제1항을 위반하여 고지를 이행하지 아니한 자\"에게 과태료 — "
+                                    + "위반(아니요) 시에만 근거로서 의미 있음"
                     )
             ),
-            SelfCheckItemCode.OBJECTION, sameForBothAnswers(List.of(
-                    new ArticleRef("AI 기본법", "제20조"),
-                    new ArticleRef("AI 기본법 시행령", "제3조"),
-                    new ArticleRef("AI 기본법 시행령", "제25조")
-            )),
-            SelfCheckItemCode.OVERSIGHT, sameForBothAnswers(List.of(
-                    new ArticleRef("AI 기본법", "제23조"),
-                    new ArticleRef("AI 기본법", "제27조"),
-                    new ArticleRef("AI 기본법", "제34조"),
-                    new ArticleRef("AI 기본법 시행령", "제18조")
-            )),
-            SelfCheckItemCode.RISK_MANAGEMENT, sameForBothAnswers(List.of(
-                    new ArticleRef("AI 기본법", "제32조"),
-                    new ArticleRef("AI 기본법 시행령", "제10조"),
-                    new ArticleRef("AI 기본법 시행령", "제27조")
-            )),
-            SelfCheckItemCode.DOCUMENTATION, sameForBothAnswers(List.of(
-                    new ArticleRef("AI 기본법 시행령", "제6조"),
-                    new ArticleRef("AI 기본법 시행령", "제13조")
-            ))
-    );
-
-    // 조 전체가 아니라 특정 항만 실제로 해당 문항과 관련 있는 경우의 표시용 라벨.
-    // ArticleRef의 equals/hashCode(법령명+조번호)에는 영향을 주지 않도록 별도 맵으로 분리했다
-    // — ArticleRef에 항 필드를 직접 추가하면 resolveItemCodesByArticle()에서 LawArticleEntity로
-    // 새로 만드는 조회용 키(항 정보 없음)와 안 맞아 조회가 깨진다.
-    // 매칭 로직과 무관한 순수 표시용이며, law_articles 시드 원문을 대조해 채운 초안이다
-    // — 병합 전 사람 검토가 필요하다. 아래는 원문을 대조했지만 해당 문항과 직접 대응하는
-    // 항을 찾지 못해 라벨을 비워둔 조항이다(조 전체가 배경/근거 조항으로만 참조된 것으로 보임):
-    //  - NOTICE: 제6조(기본계획 수립), 제12조(안전연구소 운영), 제40조(사실조사 권한)
-    //  - OBJECTION: 제20조(제도개선), 시행령 제3조(기본계획 경미변경) — "이의제기"와 무관해 보임
-    //  - OVERSIGHT: 제23조(집적단지 지정), 제27조(윤리원칙), 시행령 제18조(집적단지 전담기관)
-    //  - RISK_MANAGEMENT: 시행령 제10조(안전연구소 운영)
-    //  - DOCUMENTATION: 시행령 제6조(위원회 지원단), 제13조(학습데이터 통합제공시스템) — 문서화·
-    //    보관과 무관해 보임. 오히려 시행령 제27조②("근거를 문서로 5년간 보관")이 내용상 더
-    //    적합해 보이는데, 그 조항은 RISK_MANAGEMENT 매핑에만 들어가 있다 — ARTICLE_MAPPING
-    //    자체를 재검토하는 게 좋겠다.
-    private static final Map<ArticleRef, String> PARAGRAPH_LABELS = Map.of(
-            new ArticleRef("AI 기본법", "제31조"), "①",
-            new ArticleRef("AI 기본법 시행령", "제23조"), "①",
-            new ArticleRef("AI 기본법", "제43조"), "①1호",
-            new ArticleRef("AI 기본법 시행령", "제25조"), "④",
-            new ArticleRef("AI 기본법", "제34조"), "①4호",
-            new ArticleRef("AI 기본법", "제32조"), "①",
-            new ArticleRef("AI 기본법 시행령", "제27조"), "①1호"
+            SelfCheckItemCode.OBJECTION, List.of(
+                    new LawMapping(
+                            new ArticleRef("AI 기본법 시행령", "제25조"), "④", null,
+                            "\"회신 결과에 이의가 있을 때에는 회신을 받은 날부터 10일 이내에... "
+                                    + "재확인 요청서를 제출해야 한다\" — 절차 존재 자체가 의무라 답변 무관"
+                    )
+            ),
+            SelfCheckItemCode.OVERSIGHT, List.of(
+                    new LawMapping(
+                            new ArticleRef("AI 기본법", "제34조"), "①4호", null,
+                            "\"고영향 인공지능에 대한 사람의 관리·감독\" — 원문 그대로, 답변 무관"
+                    )
+            ),
+            SelfCheckItemCode.RISK_MANAGEMENT, List.of(
+                    new LawMapping(
+                            new ArticleRef("AI 기본법", "제32조"), "①", null,
+                            "위험 식별·평가·완화(1호) + 위험관리체계 구축(2호) — 조 전체가 위험관리 규정"
+                    ),
+                    new LawMapping(
+                            new ArticleRef("AI 기본법 시행령", "제27조"), "①1호", null,
+                            "\"위험관리정책 및 조직체계 등... 위험관리방안의 주요 내용\""
+                    ),
+                    new LawMapping(
+                            new ArticleRef("AI 기본법", "제34조"), "①1호", null,
+                            "\"위험관리방안의 수립·운영\" — 제34조가 문항마다 다른 호로 걸리는 조항 중 하나"
+                    )
+            ),
+            SelfCheckItemCode.DOCUMENTATION, List.of(
+                    new LawMapping(
+                            new ArticleRef("AI 기본법", "제34조"), "①5호", null,
+                            "\"안전성·신뢰성 확보를 위한 조치의 내용을 확인할 수 있는 문서의 작성과 보관\""
+                    ),
+                    new LawMapping(
+                            new ArticleRef("AI 기본법 시행령", "제27조"), "②", null,
+                            "\"그 근거를 문서로 5년간 보관(전자적 방법을 통한 보관을 포함한다)해야 한다\""
+                    )
+            )
     );
 
     private final AuditRepository auditRepository;
@@ -127,20 +126,16 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
         Map<Long, AuditRegulationMappingEntity> mappings = new LinkedHashMap<>();
 
         for (SelfCheckAnswerEntity answer : answers) {
-            List<ArticleRef> refs = ARTICLE_MAPPING
-                    .getOrDefault(answer.getItemCode(), Map.of())
-                    .getOrDefault(answer.isAnswer(), List.of());
-
             ComplianceStatus compliance = answer.isAnswer()
                     ? ComplianceStatus.COMPLIANT
                     : ComplianceStatus.NON_COMPLIANT;
 
-            for (ArticleRef ref : refs) {
+            for (LawMapping lawMapping : applicableMappings(answer)) {
                 LawArticleEntity article = lawArticleRepository
-                        .findByLawNameAndArticleNo(ref.lawName(), ref.articleNo())
+                        .findByLawNameAndArticleNo(lawMapping.article().lawName(), lawMapping.article().articleNo())
                         .orElseThrow(() -> new IllegalStateException(
                                 "정적 매핑표에 정의된 조항을 law_articles에서 찾을 수 없습니다: "
-                                        + ref.lawName() + " " + ref.articleNo()));
+                                        + lawMapping.article().lawName() + " " + lawMapping.article().articleNo()));
 
                 if (mappings.containsKey(article.getId())) {
                     continue;
@@ -163,7 +158,7 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
     @Transactional(readOnly = true)
     public List<AuditRegulationComplianceView> getMappings(Long auditId) {
         List<AuditRegulationMappingEntity> mappings = auditRegulationMappingRepository.findAllByAudit_Id(auditId);
-        Map<ArticleRef, List<SelfCheckItemCode>> itemCodesByArticle = resolveItemCodesByArticle(auditId);
+        Map<ArticleRef, List<MatchedChecklistItem>> matchedItemsByArticle = resolveMatchedItemsByArticle(auditId);
 
         return mappings.stream()
                 .map(mapping -> {
@@ -171,31 +166,36 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
                             mapping.getArticle().getLawName(), mapping.getArticle().getArticleNo());
 
                     return AuditRegulationComplianceView.from(
-                            mapping,
-                            itemCodesByArticle.getOrDefault(ref, List.of()),
-                            PARAGRAPH_LABELS.get(ref));
+                            mapping, matchedItemsByArticle.getOrDefault(ref, List.of()));
                 })
                 .toList();
     }
 
-    // audit_law_mappings에는 어느 문항에서 나온 매칭인지 저장하지 않는다(조문 하나가 여러 문항에
-    // 걸치면 audit_law_mappings의 (audit_id, article_id) 유니크 제약상 한쪽 문항 정보가 사라지기
-    // 때문). 대신 자율점검 답변을 ARTICLE_MAPPING에 그대로 다시 대입해 조회할 때마다 역산한다.
-    private Map<ArticleRef, List<SelfCheckItemCode>> resolveItemCodesByArticle(Long auditId) {
+    // audit_law_mappings에는 어느 문항·항에서 나온 매칭인지 저장하지 않는다(조문 하나가 여러
+    // 문항에, 문항마다 다른 항으로 걸릴 수 있어 — 예: 제34조 — (audit_id, article_id) 유니크
+    // 제약을 둔 이 테이블 구조로는 전부 담을 수 없다). 대신 자율점검 답변을 ARTICLE_MAPPING에
+    // 그대로 다시 대입해 조회할 때마다 역산한다.
+    private Map<ArticleRef, List<MatchedChecklistItem>> resolveMatchedItemsByArticle(Long auditId) {
         List<SelfCheckAnswerEntity> answers = selfCheckAnswerRepository.findAllByAudit_Id(auditId);
-        Map<ArticleRef, List<SelfCheckItemCode>> itemCodesByArticle = new LinkedHashMap<>();
+        Map<ArticleRef, List<MatchedChecklistItem>> matchedItemsByArticle = new LinkedHashMap<>();
 
         for (SelfCheckAnswerEntity answer : answers) {
-            List<ArticleRef> refs = ARTICLE_MAPPING
-                    .getOrDefault(answer.getItemCode(), Map.of())
-                    .getOrDefault(answer.isAnswer(), List.of());
-
-            for (ArticleRef ref : refs) {
-                itemCodesByArticle.computeIfAbsent(ref, key -> new ArrayList<>()).add(answer.getItemCode());
+            for (LawMapping lawMapping : applicableMappings(answer)) {
+                matchedItemsByArticle
+                        .computeIfAbsent(lawMapping.article(), key -> new ArrayList<>())
+                        .add(new MatchedChecklistItem(answer.getItemCode(), lawMapping.clauseNo()));
             }
         }
 
-        return itemCodesByArticle;
+        return matchedItemsByArticle;
+    }
+
+    // answer가 null인 매핑은 자율점검 답변과 무관하게 항상 적용되고, true/false인 매핑은 그
+    // 답변일 때만 적용된다.
+    private List<LawMapping> applicableMappings(SelfCheckAnswerEntity answer) {
+        return ARTICLE_MAPPING.getOrDefault(answer.getItemCode(), List.of()).stream()
+                .filter(lawMapping -> lawMapping.answer() == null || lawMapping.answer() == answer.isAnswer())
+                .toList();
     }
 
     @Transactional(readOnly = true)
