@@ -14,7 +14,8 @@ public record DatasetSummaryResponse(
         String purpose,
         List<String> columns,
         boolean audited,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        List<String> sensitiveAttributes
 ) {
     public static DatasetSummaryResponse from(DatasetEntity dataset) {
         return new DatasetSummaryResponse(
@@ -24,7 +25,8 @@ public record DatasetSummaryResponse(
                 dataset.getPurpose().name(),
                 splitToArrayList(dataset.getColumns()),
                 dataset.isAudited(),
-                dataset.getCreatedAt()
+                dataset.getCreatedAt(),
+                splitToArrayList(dataset.getSensitiveAttributes())
         );
     }
 

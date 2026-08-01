@@ -89,6 +89,21 @@ class DatasetQueryServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).datasetId()).isEqualTo(dataset.getId());
+        assertThat(result.get(0).sensitiveAttributes()).isEmpty();
+    }
+
+    @Test
+    void 민감변수가_지정된_데이터셋은_콤마로_분리해서_반환한다() {
+        AiModelEntity model = model();
+        DatasetEntity dataset = dataset(model);
+        dataset.updateSensitiveAttributes("age, gender");
+        given(datasetRepository.findByModel_User_IdAndModel_ModelGroupIdOrderByCreatedAtDesc(
+                USER_ID, model.getModelGroupId())).willReturn(List.of(dataset));
+
+        List<DatasetSummaryResponse> result =
+                datasetQueryService.listByModelGroup(USER_ID, model.getModelGroupId(), null);
+
+        assertThat(result.get(0).sensitiveAttributes()).containsExactly("age", "gender");
     }
 
     @Test
