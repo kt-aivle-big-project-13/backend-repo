@@ -54,6 +54,7 @@ public enum ErrorCode {
     INCOMPATIBLE_DATASET_SCHEMA(HttpStatus.BAD_REQUEST, "EM015", "재사용하려는 데이터셋의 컬럼 구성이 이 모델 계열의 최근 데이터셋과 다릅니다."),
     INVALID_SELF_CHECK_ANSWERS(HttpStatus.BAD_REQUEST, "EM016", "자율점검 응답은 5개 항목을 모두, 중복 없이 제출해야 합니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM017", "설명가능성 리포트를 찾을 수 없습니다."),
+    CHAT_CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "EM018", "질의 대화를 찾을 수 없습니다."),
 
     // ===== Diagnosis (EP) =====
     PRE_DIAGNOSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "EP001", "사전진단을 찾을 수 없습니다."),
