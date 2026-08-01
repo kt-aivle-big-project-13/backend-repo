@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.ShapFeatureImportanceEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -19,20 +20,22 @@ public record ExplainabilityResponse(
             List<XaiResultEntity> results,
             List<ShapFeatureImportanceEntity> topFeatures
     ) {
-        List<XaiMetricResponse> metrics = results.stream()
+        // 이 응답은 Redis에 캐시된다. Stream.toList()가 돌려주는 JDK 내부 불변 리스트는
+        // 캐시 조회(역직렬화) 시 실패하므로 평범한 ArrayList로 감싸 캐시-안전하게 유지한다.
+        List<XaiMetricResponse> metrics = new ArrayList<>(results.stream()
                 .sorted(Comparator.comparingInt(
                         result -> metricOrder(result.getMetricCode())
                 ))
                 .map(XaiMetricResponse::from)
-                .toList();
+                .toList());
 
         return new ExplainabilityResponse(
                 auditId,
                 "SHAP",
                 metrics,
-                topFeatures.stream()
+                new ArrayList<>(topFeatures.stream()
                         .map(FeatureImportanceResponse::from)
-                        .toList()
+                        .toList())
         );
     }
 

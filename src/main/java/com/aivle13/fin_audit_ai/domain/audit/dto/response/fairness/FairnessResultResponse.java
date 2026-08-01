@@ -5,6 +5,7 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessGroupStatEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public record FairnessResultResponse(
             Long auditId,
             List<FairnessResultEntity> results
     ) {
-        return of(auditId, results, List.of(), null);
+        return of(auditId, results, new ArrayList<>(), null);
     }
 
     public static FairnessResultResponse of(
@@ -30,19 +31,21 @@ public record FairnessResultResponse(
             List<FairnessGroupStatEntity> groupStats,
             AuditEntity audit
     ) {
-        List<FairnessMetricResponse> sortedResults = results.stream()
+        // 이 응답은 Redis에 캐시된다. Stream.toList()가 돌려주는 JDK 내부 불변 리스트는
+        // 캐시 조회(역직렬화) 시 실패하므로 평범한 ArrayList로 감싸 캐시-안전하게 유지한다.
+        List<FairnessMetricResponse> sortedResults = new ArrayList<>(results.stream()
                 .sorted(Comparator
                         .comparing(FairnessResultEntity::getAttribute)
                         .thenComparingInt(result -> metricOrder(result.getMetricCode())))
                 .map(FairnessMetricResponse::from)
-                .toList();
+                .toList());
 
-        List<FairnessGroupStatResponse> sortedStats = groupStats.stream()
+        List<FairnessGroupStatResponse> sortedStats = new ArrayList<>(groupStats.stream()
                 .sorted(Comparator
                         .comparing(FairnessGroupStatEntity::getAttribute)
                         .thenComparing(FairnessGroupStatEntity::getGroupName))
                 .map(FairnessGroupStatResponse::from)
-                .toList();
+                .toList());
 
         return new FairnessResultResponse(
                 auditId, "FAIRLEARN", sortedResults, PerformanceResponse.from(audit), sortedStats);

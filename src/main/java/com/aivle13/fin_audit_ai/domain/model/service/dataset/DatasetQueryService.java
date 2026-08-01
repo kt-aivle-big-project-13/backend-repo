@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -54,6 +55,9 @@ public class DatasetQueryService {
                 : datasetRepository.findByModel_User_IdAndModel_ModelGroupIdOrderByCreatedAtDesc(
                         userId, modelGroupId);
 
-        return datasets.stream().map(DatasetSummaryResponse::from).toList();
+        // 이 반환값 자체가 Redis에 캐시된다. Stream.toList()가 돌려주는 JDK 내부 불변 리스트는
+        // 최상위 캐시 값으로 직렬화될 때 타입 정보가 깨져 캐시 조회(역직렬화) 시 500이 나므로,
+        // 반드시 평범한 ArrayList로 감싸 캐시-안전하게 유지한다.
+        return new ArrayList<>(datasets.stream().map(DatasetSummaryResponse::from).toList());
     }
 }
