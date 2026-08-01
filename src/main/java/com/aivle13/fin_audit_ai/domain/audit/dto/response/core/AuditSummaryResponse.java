@@ -12,6 +12,7 @@ public record AuditSummaryResponse(
         String datasetFileName,
         String modelGroupId,
         String version,
+        LocalDateTime createdAt,
         LocalDateTime completedAt,
         AuditStatus status,
         int currentStep
@@ -24,6 +25,7 @@ public record AuditSummaryResponse(
                 audit.getDataset().getOriginalFileName(),
                 audit.getModel().getModelGroupId(),
                 audit.getModel().getVersion(),
+                audit.getCreatedAt(),
                 audit.getCompletedAt(),
                 audit.getStatus(),
                 audit.getCurrentStep()
