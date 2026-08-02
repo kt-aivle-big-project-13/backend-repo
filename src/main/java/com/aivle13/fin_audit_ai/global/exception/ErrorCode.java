@@ -80,7 +80,13 @@ public enum ErrorCode {
     ATTACHMENT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EB004", "첨부파일은 게시글당 최대 5개까지 첨부할 수 있습니다."),
 
     // ===== Notification (EN) =====
-    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "EN001", "알림을 찾을 수 없습니다.");
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "EN001", "알림을 찾을 수 없습니다."),
+
+    // ===== Objection (EJ) =====
+    INVALID_OBJECTION_FILE(HttpStatus.BAD_REQUEST, "EJ001", "이의제기 파일의 내용이 올바르지 않습니다."),
+    DUPLICATE_OBJECTION_NO(HttpStatus.CONFLICT, "EJ002", "이미 등록된 이의제기 번호입니다."),
+    OBJECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "EJ003", "이의제기를 찾을 수 없습니다."),
+    OBJECTION_ALREADY_PROCESSED(HttpStatus.CONFLICT, "EJ004", "이미 처리(발송)된 이의제기입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
