@@ -4,6 +4,8 @@ import com.aivle13.fin_audit_ai.domain.chat.dto.response.ChatMessageResponse;
 import com.aivle13.fin_audit_ai.domain.chat.entity.ChatConversationEntity;
 import com.aivle13.fin_audit_ai.domain.chat.repository.ChatConversationRepository;
 import com.aivle13.fin_audit_ai.domain.chat.repository.ChatMessageRepository;
+import com.aivle13.fin_audit_ai.domain.chat.type.CitationType;
+import com.aivle13.fin_audit_ai.domain.chat.type.GroundingStatus;
 import com.aivle13.fin_audit_ai.global.ai.client.ChatAnswerClient;
 import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerRequest;
 import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerResponse;
@@ -89,11 +91,31 @@ public class ChatMessageService {
                 .orElseThrow(ChatConversationNotFoundException::new);
     }
 
+    /**
+     * AI 서버 응답이 계약을 지켰는지 저장 전에 확인한다.
+     *
+     * <p>근거 판정과 인용 타입은 그대로 enum 으로 바뀌어 저장되므로, 계약에 없는 값이 오면
+     * 저장 단계에서 터져 500 이 나간다. 외부 서버의 계약 위반은 502 로 분류해야 하고
+     * 컨트롤러가 문서화한 응답 코드와도 맞으므로, 여기서 먼저 걸러 낸다.
+     */
     private void validateAnswer(ChatAnswerResponse answer) {
         if (answer == null
                 || answer.answer() == null
                 || answer.answer().isBlank()
-                || answer.groundingStatus() == null) {
+                || GroundingStatus.from(answer.groundingStatus()).isEmpty()) {
+            throw new AiServerErrorException();
+        }
+
+        if (answer.citations() == null) {
+            return;
+        }
+
+        boolean hasUnknownCitationType = answer.citations().stream()
+                .anyMatch(citation ->
+                        CitationType.from(citation.type()).isEmpty()
+                );
+
+        if (hasUnknownCitationType) {
             throw new AiServerErrorException();
         }
     }
