@@ -4,12 +4,10 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.request.selfcheck.SelfCheckAnsw
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.selfcheck.SelfCheckAnswerResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
-import com.aivle13.fin_audit_ai.domain.audit.event.SelfCheckAnswersSubmittedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
-import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
+import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.InvalidSelfCheckAnswersException;
 import org.junit.jupiter.api.Test;
@@ -18,7 +16,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +41,7 @@ class SelfCheckAnswerServiceTest {
     private SelfCheckAnswerRepository selfCheckAnswerRepository;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private AuditRegulationMappingService auditRegulationMappingService;
 
     @Mock
     private AuditEntity audit;
@@ -56,7 +53,6 @@ class SelfCheckAnswerServiceTest {
     void savesAllFiveAnswersAndReturnsResponse() {
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
-        given(audit.getStatus()).willReturn(AuditStatus.COMPLIANT);
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
                 new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
@@ -80,7 +76,7 @@ class SelfCheckAnswerServiceTest {
         assertThat(response.auditId()).isEqualTo(AUDIT_ID);
         assertThat(response.answers()).hasSize(5);
 
-        verify(eventPublisher).publishEvent(new SelfCheckAnswersSubmittedEvent(AUDIT_ID));
+        verify(auditRegulationMappingService).mapFromSelfCheckAnswers(AUDIT_ID);
     }
 
     @Test
@@ -100,7 +96,7 @@ class SelfCheckAnswerServiceTest {
 
         verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(selfCheckAnswerRepository, never()).saveAll(anyList());
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(auditRegulationMappingService, never()).mapFromSelfCheckAnswers(any());
     }
 
     @Test
@@ -120,28 +116,6 @@ class SelfCheckAnswerServiceTest {
                 .isInstanceOf(InvalidSelfCheckAnswersException.class);
 
         verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-    }
-
-    @Test
-    void throwsWhenAuditAnalysisNotCompleted() {
-        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
-                .willReturn(Optional.of(audit));
-        given(audit.getStatus()).willReturn(AuditStatus.IN_PROGRESS);
-
-        SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OBJECTION, false),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOCUMENTATION, false)
-        ));
-
-        assertThatThrownBy(() -> selfCheckAnswerService.save(USER_ID, AUDIT_ID, request))
-                .isInstanceOf(AuditNotCompletedException.class);
-
-        verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(selfCheckAnswerRepository, never()).saveAll(anyList());
-        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test

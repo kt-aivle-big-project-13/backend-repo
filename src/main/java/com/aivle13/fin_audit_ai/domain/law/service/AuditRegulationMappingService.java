@@ -118,7 +118,13 @@ public class AuditRegulationMappingService implements AuditRegulationMappingQuer
 
         List<SelfCheckAnswerEntity> answers = selfCheckAnswerRepository.findAllByAudit_Id(auditId);
 
+        // deleteAllByAudit_Id는 @Modifying이 없는 파생 delete라 영속성 컨텍스트에 삭제만
+        // 큐잉되고, Hibernate는 flush 시 삭제보다 삽입을 먼저 내보낸다. flush 없이 바로
+        // saveAll을 호출하면 재생성 시(기존 매핑이 이미 있는 상태) INSERT가 아직 지워지지 않은
+        // 기존 행과 uk_audit_law_mappings_audit_article 유니크 제약에서 충돌한다 — 그래서
+        // delete를 먼저 DB에 반영시킨 뒤 insert한다.
         auditRegulationMappingRepository.deleteAllByAudit_Id(auditId);
+        auditRegulationMappingRepository.flush();
 
         Map<Long, AuditRegulationMappingEntity> mappings = new LinkedHashMap<>();
 
