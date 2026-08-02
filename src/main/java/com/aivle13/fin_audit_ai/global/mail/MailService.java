@@ -278,4 +278,90 @@ public class MailService {
             throw new EmailSendFailedException(e);
         }
     }
+
+    // 이의제기 대응문서(고객 안내문) 발송
+    public void sendObjectionResponseMail(
+            String receiverEmail,
+            String customerName,
+            String letterTitle,
+            String letterBody
+    ) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(
+                            message,
+                            false,
+                            "UTF-8"
+                    );
+
+            helper.setFrom(senderEmail);
+            helper.setTo(receiverEmail);
+            helper.setSubject(
+                    "[FinAuditAI] " + letterTitle
+            );
+
+            // 담당자가 직접입력으로 수정 가능한 값들이라 이스케이프 후 줄바꿈만 <br>로 변환한다.
+            String escapedBody = HtmlUtils.htmlEscape(letterBody)
+                    .replace("\n", "<br>");
+
+            String html = """
+                    <div style="
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 32px;
+                        font-family: Arial, sans-serif;
+                        color: #202939;
+                    ">
+                        <h1 style="
+                            margin-bottom: 24px;
+                            font-size: 28px;
+                        ">
+                            %s
+                        </h1>
+
+                        <p style="
+                            margin-bottom: 20px;
+                            line-height: 1.7;
+                            font-size: 15px;
+                        ">
+                            %s님, 안녕하세요.
+                        </p>
+
+                        <div style="
+                            margin-top: 16px;
+                            padding: 20px;
+                            border-radius: 8px;
+                            background-color: #f2f4f7;
+                            line-height: 1.8;
+                            font-size: 14px;
+                        ">
+                            %s
+                        </div>
+
+                        <p style="
+                            margin-top: 28px;
+                            color: #667085;
+                            font-size: 13px;
+                            line-height: 1.6;
+                        ">
+                            본 메일은 신용정보법 제36조의2에 따른 이의제기 처리 결과 안내입니다.<br>
+                            문의사항은 이의제기 접수 화면을 통해 남겨주시기 바랍니다.
+                        </p>
+                    </div>
+                    """.formatted(
+                    HtmlUtils.htmlEscape(letterTitle),
+                    HtmlUtils.htmlEscape(customerName),
+                    escapedBody
+            );
+
+            helper.setText(html, true);
+
+            mailSender.send(message);
+
+        } catch (MessagingException | MailException e) {
+            throw new EmailSendFailedException(e);
+        }
+    }
 }
