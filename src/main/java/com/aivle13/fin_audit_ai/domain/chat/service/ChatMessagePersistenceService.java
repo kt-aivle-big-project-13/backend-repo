@@ -8,12 +8,11 @@ import com.aivle13.fin_audit_ai.domain.chat.repository.ChatMessageRepository;
 import com.aivle13.fin_audit_ai.domain.chat.type.CitationType;
 import com.aivle13.fin_audit_ai.domain.chat.type.GroundingStatus;
 import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerResponse;
+import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;
 import com.aivle13.fin_audit_ai.global.exception.chat.ChatConversationNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Locale;
 
 /**
  * 질문·답변·인용 저장.
@@ -47,9 +46,8 @@ public class ChatMessagePersistenceService {
         ChatMessageEntity answerMessage = ChatMessageEntity.answer(
                 conversation,
                 answer.answer(),
-                GroundingStatus.valueOf(
-                        answer.groundingStatus().toUpperCase(Locale.ROOT)
-                )
+                GroundingStatus.from(answer.groundingStatus())
+                        .orElseThrow(AiServerErrorException::new)
         );
 
         if (answer.citations() != null) {
@@ -65,9 +63,8 @@ public class ChatMessagePersistenceService {
             ChatAnswerResponse.Citation citation
     ) {
         return ChatMessageCitationEntity.of(
-                CitationType.valueOf(
-                        citation.type().toUpperCase(Locale.ROOT)
-                ),
+                CitationType.from(citation.type())
+                        .orElseThrow(AiServerErrorException::new),
                 citation.reference(),
                 citation.value(),
                 citation.similarity(),
