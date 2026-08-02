@@ -31,4 +31,28 @@ public interface LawArticleRepository extends JpaRepository<LawArticleEntity, Lo
             @Param("queryEmbedding") String queryEmbedding,
             @Param("limit") int limit
     );
+
+    /**
+     * 위와 같은 top-K 검색이되 유사도 점수를 함께 반환한다.
+     * 코사인 거리(0~2)를 1에서 빼 유사도로 바꾼다.
+     *
+     * <p>인용 증적에 "얼마나 비슷해서 인용됐는지"를 남겨야 하는 질의 응답에서 쓴다.
+     */
+    @Query(value = """
+            SELECT article_id AS articleId,
+                   law_name AS lawName,
+                   article_no AS articleNo,
+                   summary AS summary,
+                   content AS content,
+                   revision_date AS revisionDate,
+                   (1 - (embedding <=> CAST(:queryEmbedding AS vector))) AS similarity
+            FROM law_articles
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> CAST(:queryEmbedding AS vector)
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<LawArticleSimilarityProjection> findTopKWithSimilarity(
+            @Param("queryEmbedding") String queryEmbedding,
+            @Param("limit") int limit
+    );
 }

@@ -55,6 +55,9 @@ class ChatMessageServiceTest {
     private ChatFactAssembler factAssembler;
 
     @Mock
+    private ChatLawSearchService lawSearchService;
+
+    @Mock
     private ChatMessagePersistenceService persistenceService;
 
     @Mock
@@ -85,7 +88,20 @@ class ChatMessageServiceTest {
                 )
         );
 
+        List<ChatAnswerRequest.LawArticle> lawArticles = List.of(
+                new ChatAnswerRequest.LawArticle(
+                        "신용정보법",
+                        "제36조의2",
+                        "자동화 평가 결과 설명·이의제기 보장",
+                        "조항 본문",
+                        new java.math.BigDecimal("0.8300"),
+                        null,
+                        false
+                )
+        );
+
         given(factAssembler.assemble(AUDIT_ID)).willReturn(facts);
+        given(lawSearchService.search(QUESTION)).willReturn(lawArticles);
         givenAnswer(groundedAnswer());
         givenSavedMessage();
 
@@ -102,8 +118,9 @@ class ChatMessageServiceTest {
         assertThat(request.question()).isEqualTo(QUESTION);
         assertThat(request.auditFacts()).isEqualTo(facts);
 
-        // 2단계는 감사 수치만 근거로 쓴다. 법령·리포트는 후속 단계에서 채운다.
-        assertThat(request.lawArticles()).isEmpty();
+        assertThat(request.lawArticles()).isEqualTo(lawArticles);
+
+        // 리포트 서술은 5단계에서 채운다.
         assertThat(request.reportSections()).isEmpty();
     }
 
@@ -111,6 +128,7 @@ class ChatMessageServiceTest {
     void returnsAnswerWithCitations() {
         givenConversation();
         given(factAssembler.assemble(AUDIT_ID)).willReturn(List.of());
+        given(lawSearchService.search(QUESTION)).willReturn(List.of());
         givenAnswer(groundedAnswer());
         givenSavedMessage();
 
@@ -166,6 +184,7 @@ class ChatMessageServiceTest {
     void rejectsBlankAnswerFromAiServer() {
         givenConversation();
         given(factAssembler.assemble(AUDIT_ID)).willReturn(List.of());
+        given(lawSearchService.search(QUESTION)).willReturn(List.of());
 
         givenAnswer(new ChatAnswerResponse(
                 AUDIT_ID,

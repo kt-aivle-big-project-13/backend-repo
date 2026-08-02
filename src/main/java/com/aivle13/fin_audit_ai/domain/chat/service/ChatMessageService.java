@@ -30,6 +30,7 @@ public class ChatMessageService {
     private final ChatConversationRepository conversationRepository;
     private final ChatMessageRepository messageRepository;
     private final ChatFactAssembler factAssembler;
+    private final ChatLawSearchService lawSearchService;
     private final ChatMessagePersistenceService persistenceService;
     private final ChatAnswerClient chatAnswerClient;
     private final ChatRateLimiter rateLimiter;
@@ -49,13 +50,13 @@ public class ChatMessageService {
         // 질문 한 건마다 LLM 을 호출하므로 저장·호출 전에 먼저 막는다.
         rateLimiter.checkAndIncrease(userId, auditId);
 
-        // 법령 RAG 는 3단계, 리포트 서술은 5단계에서 채운다.
+        // 리포트 서술은 5단계에서 채운다.
         ChatAnswerResponse answer = chatAnswerClient.generate(
                 new ChatAnswerRequest(
                         auditId,
                         question,
                         factAssembler.assemble(auditId),
-                        List.of(),
+                        lawSearchService.search(question),
                         List.of()
                 )
         );
