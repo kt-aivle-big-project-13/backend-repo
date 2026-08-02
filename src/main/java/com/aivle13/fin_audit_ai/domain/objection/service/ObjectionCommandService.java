@@ -46,6 +46,12 @@ public class ObjectionCommandService {
             "고객_이름", "이의제기_번호", "거절_금융기준", "제목", "내용", "주요_판단_근거_변수", "담당자_판단_근거", "작성일시"
     );
 
+    // ObjectionEntity 컬럼 길이 제약과 맞춘 값. CSV 값이 이 길이를 넘으면 DB 예외 대신 명확한 400으로 응답한다.
+    private static final int OBJECTION_NO_MAX_LENGTH = 20;
+    private static final int CUSTOMER_NAME_MAX_LENGTH = 50;
+    private static final int CASE_TYPE_MAX_LENGTH = 100;
+    private static final int TITLE_MAX_LENGTH = 200;
+
     private final ObjectionRepository objectionRepository;
     private final UserRepository userRepository;
     private final AuditFileValidator fileValidator;
@@ -65,7 +71,9 @@ public class ObjectionCommandService {
     }
 
     public ObjectionDetailResponse dispatch(Long userId, Long objectionId, ObjectionDispatchRequest request) {
-        ObjectionEntity objection = objectionRepository.findById(objectionId)
+        // 같은 이의제기에 대한 동시 발송 요청이 상태 체크를 동시에 통과해 메일이 중복 발송되지 않도록,
+        // 확인 전에 행을 잠가 요청을 직렬화한다.
+        ObjectionEntity objection = objectionRepository.findByIdForUpdate(objectionId)
                 .orElseThrow(ObjectionNotFoundException::new);
 
         if (objection.getStatus() == ObjectionStatus.DELIVERED) {
@@ -132,10 +140,10 @@ public class ObjectionCommandService {
     }
 
     private ObjectionEntity toEntity(CSVRecord record, long rowNumber, Set<String> objectionNosInFile) {
-        String objectionNo = requireText(record, "이의제기_번호", rowNumber);
-        String customerName = requireText(record, "고객_이름", rowNumber);
-        String caseType = requireText(record, "거절_금융기준", rowNumber);
-        String title = requireText(record, "제목", rowNumber);
+        String objectionNo = requireText(record, "이의제기_번호", rowNumber, OBJECTION_NO_MAX_LENGTH);
+        String customerName = requireText(record, "고객_이름", rowNumber, CUSTOMER_NAME_MAX_LENGTH);
+        String caseType = requireText(record, "거절_금융기준", rowNumber, CASE_TYPE_MAX_LENGTH);
+        String title = requireText(record, "제목", rowNumber, TITLE_MAX_LENGTH);
         String content = requireText(record, "내용", rowNumber);
         String shapEvidence = record.get("주요_판단_근거_변수").trim();
         String staffNote = record.get("담당자_판단_근거").trim();
@@ -162,10 +170,21 @@ public class ObjectionCommandService {
     }
 
     private String requireText(CSVRecord record, String column, long rowNumber) {
+        return requireText(record, column, rowNumber, Integer.MAX_VALUE);
+    }
+
+    private String requireText(CSVRecord record, String column, long rowNumber, int maxLength) {
         String value = record.get(column);
         if (value == null || value.isBlank()) {
             throw new InvalidObjectionFileException(rowNumber + "번째 행: '" + column + "' 값이 비어 있습니다.");
         }
-        return value.trim();
+
+        String trimmed = value.trim();
+        if (trimmed.length() > maxLength) {
+            throw new InvalidObjectionFileException(
+                    rowNumber + "번째 행: '" + column + "' 값이 최대 길이(" + maxLength + "자)를 초과했습니다.");
+        }
+
+        return trimmed;
     }
 }

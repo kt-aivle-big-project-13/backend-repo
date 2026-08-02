@@ -298,8 +298,13 @@ public class MailService {
 
             helper.setFrom(senderEmail);
             helper.setTo(receiverEmail);
+
+            // letterTitle은 담당자가 직접 입력할 수 있는 값이라, 개행 문자가 섞여 있으면
+            // Subject 헤더 인젝션으로 이어질 수 있어 헤더에 넣기 전에 개행을 제거한다.
+            String sanitizedTitle = sanitizeHeaderValue(letterTitle);
+
             helper.setSubject(
-                    "[FinAuditAI] " + letterTitle
+                    "[FinAuditAI] " + sanitizedTitle
             );
 
             // 담당자가 직접입력으로 수정 가능한 값들이라 이스케이프 후 줄바꿈만 <br>로 변환한다.
@@ -351,7 +356,7 @@ public class MailService {
                         </p>
                     </div>
                     """.formatted(
-                    HtmlUtils.htmlEscape(letterTitle),
+                    HtmlUtils.htmlEscape(sanitizedTitle),
                     HtmlUtils.htmlEscape(customerName),
                     escapedBody
             );
@@ -363,5 +368,10 @@ public class MailService {
         } catch (MessagingException | MailException e) {
             throw new EmailSendFailedException(e);
         }
+    }
+
+    // 이메일 헤더(Subject 등)에 CRLF가 섞여 헤더 인젝션이 발생하지 않도록 개행 문자를 제거한다.
+    private String sanitizeHeaderValue(String value) {
+        return value.replaceAll("[\r\n]+", " ").trim();
     }
 }
