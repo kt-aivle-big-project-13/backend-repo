@@ -1,8 +1,7 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: create
-    show-sql: true
+      ddl-auto: update
 
   flyway:
     enabled: false

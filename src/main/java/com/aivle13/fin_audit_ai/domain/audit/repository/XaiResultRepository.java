@@ -12,6 +12,8 @@ public interface XaiResultRepository
 
     List<XaiResultEntity> findAllByAudit_Id(Long auditId);
 
+    void deleteAllByAudit_Id(Long auditId);
+
     List<XaiResultEntity> findAllByAudit_IdAndMetricCodeIn(
             Long auditId,
             Collection<XaiMetricCode> metricCodes

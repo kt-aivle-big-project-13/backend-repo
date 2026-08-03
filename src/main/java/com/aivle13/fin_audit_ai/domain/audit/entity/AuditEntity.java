@@ -143,6 +143,19 @@ public class AuditEntity extends BaseEntity {
     public void cancel() {
         this.status = AuditStatus.CANCELLED;
     }
+    // 실패했거나 취소된 감사만 재시도할 수 있다 (진행 중·완료된 감사는 재시도 대상이 아님)
+    public boolean isRetryable() {
+        return status == AuditStatus.FAILED || status == AuditStatus.CANCELLED;
+    }
+    // 모델·데이터셋 등 참조는 그대로 두고, 분석 산출물(진행 단계·완료 시각·성능 지표)만 초기화해
+    // 처음부터 다시 분석하도록 되돌린다.
+    public void retry() {
+        this.status = AuditStatus.PENDING;
+        this.currentStep = 1;
+        this.completedAt = null;
+        this.modelAuc = null;
+        this.modelAccuracy = null;
+    }
     // 공정성 단계에서 AI가 준 모델 성능(AUC·정확도)을 기록. 값이 없으면 null 로 남는다.
     public void applyPerformance(BigDecimal modelAuc, BigDecimal modelAccuracy) {
         this.modelAuc = modelAuc;
