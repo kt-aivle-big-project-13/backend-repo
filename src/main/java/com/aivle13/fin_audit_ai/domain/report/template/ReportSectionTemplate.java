@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.report.template;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class ReportSectionTemplate {
 
@@ -20,7 +21,15 @@ public final class ReportSectionTemplate {
         return SECTIONS;
     }
 
+    /**
+     * 프롬프트에 넣을 섹션 구조.
+     *
+     * <p>제목 문법(`##`)을 붙여 그대로 따라 쓰게 한다. 규칙만 글로 설명하면 LLM 이 다른 문법을
+     * 섞어 쓰고, 그 기호가 PDF·Word 에 그대로 인쇄된다.
+     */
     public static String asText() {
-        return String.join("\n", SECTIONS);
+        return SECTIONS.stream()
+                .map(section -> "## " + section)
+                .collect(Collectors.joining("\n"));
     }
 }
