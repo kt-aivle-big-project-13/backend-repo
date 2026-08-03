@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.audit.controller;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
@@ -475,6 +476,78 @@ class AuditControllerTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$[0].auditId").value(secondAudit.getId()))
                 .andExpect(jsonPath("$[0].modelName").value("credit-model"))
                 .andExpect(jsonPath("$[1].auditId").value(firstAudit.getId()));
+    }
+
+    private AuditEntity saveAudit() {
+        UserEntity user = userRepository.findById(userId).orElseThrow();
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity dataset = datasetRepository.findById(datasetId).orElseThrow();
+
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "1차 정기감사", "age,gender",
+                null, ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        return auditRepository.save(audit);
+    }
+
+    @Test
+    @DisplayName("대기 중인 감사를 취소하면 204와 함께 CANCELLED 상태가 된다")
+    void cancel_success() throws Exception {
+        AuditEntity audit = saveAudit();
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/cancel")
+                        .with(authentication(asUser())))
+                .andExpect(status().isNoContent());
+
+        assertThat(auditRepository.findById(audit.getId()).orElseThrow().getStatus())
+                .isEqualTo(AuditStatus.CANCELLED);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 감사를 취소하면 404를 반환한다")
+    void cancel_notFound() throws Exception {
+        mockMvc.perform(post("/api/v1/audits/999999/cancel")
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 감사는 취소할 수 없어 404를 반환한다")
+    void cancel_otherUsersAudit() throws Exception {
+        UserEntity otherUser = userRepository.save(
+                UserEntity.create("다른기관", "김철수", "audit-cancel-other@example.com", "hash", UserRole.AUDITOR)
+        );
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity dataset = datasetRepository.findById(datasetId).orElseThrow();
+        AuditEntity audit = auditRepository.save(
+                AuditEntity.create(model, dataset, otherUser, "1차 정기감사", "age,gender",
+                        null, ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null)
+        );
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/cancel")
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("이미 완료된 감사를 취소하면 409를 반환한다")
+    void cancel_alreadyCompleted() throws Exception {
+        AuditEntity audit = saveAudit();
+        audit.markInProgress();
+        audit.moveToStep(3);
+        audit.complete(4, AuditStatus.COMPLIANT);
+        auditRepository.save(audit);
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/cancel")
+                        .with(authentication(asUser())))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자의 취소 요청은 401을 반환한다")
+    void cancel_unauthorized() throws Exception {
+        AuditEntity audit = saveAudit();
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/cancel"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

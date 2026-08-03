@@ -45,6 +45,10 @@ public class AuditAnalysisEventListener {
         try {
             auditProgressService.markInProgress(auditId);
 
+            if (auditProgressService.isCancelled(auditId)) {
+                return;
+            }
+
             shapAnalysisService.analyzeAndSave(auditId);
 
             auditProgressService.markShapCompleted(auditId);
@@ -53,6 +57,10 @@ public class AuditAnalysisEventListener {
                     "SHAP 분석 및 결과 저장 완료: auditId={}",
                     auditId
             );
+
+            if (auditProgressService.isCancelled(auditId)) {
+                return;
+            }
 
             fairnessAnalysisService.analyzeAndSave(auditId);
 

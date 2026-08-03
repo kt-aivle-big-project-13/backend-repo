@@ -12,6 +12,8 @@ import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -21,8 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -41,6 +45,7 @@ class AuditServiceTest {
     private AuditService auditService;
 
     private static final Long USER_ID = 1L;
+    private static final Long AUDIT_ID = 10L;
 
     private AiModelEntity aiModel() {
         return AiModelEntity.create(null, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/model.json", "1.0.0");
@@ -135,5 +140,59 @@ class AuditServiceTest {
         assertThat(summary.status()).isEqualTo(AuditStatus.COMPLIANT);
         assertThat(summary.currentStep()).isEqualTo(4);
         assertThat(summary.completedAt()).isNotNull();
+    }
+
+    @Test
+    void 대기_중인_감사를_취소하면_CANCELLED_상태가_된다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        auditService.cancel(AUDIT_ID, USER_ID);
+
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.CANCELLED);
+    }
+
+    @Test
+    void 진행_중인_감사도_취소할_수_있다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        audit.markInProgress();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        auditService.cancel(AUDIT_ID, USER_ID);
+
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.CANCELLED);
+    }
+
+    @Test
+    void 이미_완료된_감사는_취소할_수_없다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        audit.markInProgress();
+        audit.moveToStep(3);
+        audit.complete(4, AuditStatus.COMPLIANT);
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        assertThatThrownBy(() -> auditService.cancel(AUDIT_ID, USER_ID))
+                .isInstanceOf(AuditNotCancellableException.class);
+    }
+
+    @Test
+    void 존재하지_않는_감사를_취소하면_예외가_발생한다() {
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> auditService.cancel(AUDIT_ID, USER_ID))
+                .isInstanceOf(AuditNotFoundException.class);
     }
 }
