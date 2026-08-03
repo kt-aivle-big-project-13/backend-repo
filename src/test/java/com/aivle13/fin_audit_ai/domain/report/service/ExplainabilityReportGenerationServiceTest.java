@@ -17,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.List;
 
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +46,9 @@ class ExplainabilityReportGenerationServiceTest {
     private ReportPersistenceService reportPersistenceService;
 
     @Mock
+    private ReportNarrativePersistenceService narrativePersistenceService;
+
+    @Mock
     private AuditEntity audit;
 
     @Mock
@@ -68,7 +72,8 @@ class ExplainabilityReportGenerationServiceTest {
                         "explainability-reports/21/run-123/report.docx",
                         "html",
                         "WARNING",
-                        "2026-07-29T10:00:00Z"
+                        "2026-07-29T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(
@@ -166,7 +171,8 @@ class ExplainabilityReportGenerationServiceTest {
                         "explainability-reports/21/run-123/report.docx",
                         "html",
                         "WARNING",
-                        "2026-07-29T10:00:00Z"
+                        "2026-07-29T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(
@@ -193,7 +199,8 @@ class ExplainabilityReportGenerationServiceTest {
                         "explainability-reports/21/run-123/report.docx",
                         "html",
                         "WARNING",
-                        "2026-07-29T10:00:00Z"
+                        "2026-07-29T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(
@@ -220,7 +227,8 @@ class ExplainabilityReportGenerationServiceTest {
                         "",
                         "html",
                         "WARNING",
-                        "2026-07-29T10:00:00Z"
+                        "2026-07-29T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(

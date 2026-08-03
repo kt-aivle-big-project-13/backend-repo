@@ -58,6 +58,9 @@ class ChatMessageServiceTest {
     private ChatLawSearchService lawSearchService;
 
     @Mock
+    private ChatReportSectionLoader reportSectionLoader;
+
+    @Mock
     private ChatMessagePersistenceService persistenceService;
 
     @Mock
@@ -100,8 +103,18 @@ class ChatMessageServiceTest {
                 )
         );
 
+        List<ChatAnswerRequest.ReportSection> reportSections = List.of(
+                new ChatAnswerRequest.ReportSection(
+                        "BIAS_REPORT",
+                        "metric_results",
+                        "5. 공정성 지표 결과",
+                        "AGE_GROUP 의 Equal Opportunity Difference 는 0.1123 으로 확인됨"
+                )
+        );
+
         given(factAssembler.assemble(AUDIT_ID)).willReturn(facts);
         given(lawSearchService.search(QUESTION)).willReturn(lawArticles);
+        given(reportSectionLoader.load(AUDIT_ID)).willReturn(reportSections);
         givenAnswer(groundedAnswer());
         givenSavedMessage();
 
@@ -117,11 +130,9 @@ class ChatMessageServiceTest {
         assertThat(request.auditId()).isEqualTo(AUDIT_ID);
         assertThat(request.question()).isEqualTo(QUESTION);
         assertThat(request.auditFacts()).isEqualTo(facts);
+        assertThat(request.reportSections()).isEqualTo(reportSections);
 
         assertThat(request.lawArticles()).isEqualTo(lawArticles);
-
-        // 리포트 서술은 5단계에서 채운다.
-        assertThat(request.reportSections()).isEmpty();
     }
 
     @Test

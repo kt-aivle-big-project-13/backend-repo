@@ -50,6 +50,9 @@ class ImprovementGuideGenerationServiceTest {
     @Mock
     private ReportPersistenceService reportPersistenceService;
 
+    @Mock
+    private ReportNarrativePersistenceService narrativePersistenceService;
+
     @InjectMocks
     private ImprovementGuideGenerationService service;
 
@@ -128,7 +131,8 @@ class ImprovementGuideGenerationServiceTest {
                         1,
                         1,
                         0,
-                        "2026-07-31T10:00:00Z"
+                        "2026-07-31T10:00:00Z",
+                        List.of()
                 ));
 
         assertThatThrownBy(() ->
@@ -199,7 +203,8 @@ class ImprovementGuideGenerationServiceTest {
                 1,
                 1,
                 0,
-                "2026-07-31T10:00:00Z"
+                "2026-07-31T10:00:00Z",
+                List.of()
         );
     }
 }
