@@ -6,6 +6,7 @@ import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.DuplicateModelNameException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,13 @@ public class AiModelService {
     private final UserRepository userRepository;
 
     public AiModelEntity create(Long userId, String modelName, ModelType modelType, ModelDomain domain,
-                                 String artifactPath, String originalFileName, String version, Long previousModelId) {
+                                String artifactPath, String originalFileName, String version, Long previousModelId) {
+        // 기존 모델의 새 버전(previousModelId 있음)은 같은 모델명을 그대로 이어받는 게 정상이므로,
+        // 완전히 새로운 모델을 등록할 때만 모델명 중복을 검증한다.
+        if (previousModelId == null && aiModelRepository.existsByUser_IdAndModelName(userId, modelName)) {
+            throw new DuplicateModelNameException();
+        }
+
         UserEntity user = userRepository.getReferenceById(userId);
 
         String resolvedVersion = StringUtils.hasText(version) ? version : DEFAULT_VERSION;

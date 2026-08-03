@@ -19,6 +19,9 @@ public interface AiModelRepository extends JpaRepository<AiModelEntity, Long> {
     // createdAt이 동률인 경우까지 결정적으로 정렬되도록 id를 보조 정렬 기준으로 둔다.
     List<AiModelEntity> findByUser_IdOrderByCreatedAtDescIdDesc(Long userId);
 
+    // 신규 모델 등록 시 같은 사용자가 이미 쓰고 있는 모델명인지 확인한다.
+    boolean existsByUser_IdAndModelName(Long userId, String modelName);
+
     // 감사 시작 시 "모델당 진행 중인 감사 1건" 검증과 생성을 원자적으로 만들기 위해
     // 모델 row에 락을 걸어 같은 모델에 대한 동시 요청을 직렬화한다.
     @Lock(LockModeType.PESSIMISTIC_WRITE)

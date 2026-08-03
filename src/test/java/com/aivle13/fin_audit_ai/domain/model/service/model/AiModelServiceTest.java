@@ -6,6 +6,7 @@ import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.DuplicateModelNameException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,6 +71,39 @@ class AiModelServiceTest {
         );
 
         assertThat(saved.getModelGroupId()).isEqualTo(previousModel.getModelGroupId());
+    }
+
+    @Test
+    void 신규_등록시_같은_사용자의_모델명이_이미_있으면_예외가_발생한다() {
+        given(aiModelRepository.existsByUser_IdAndModelName(USER_ID, "credit-model"))
+                .willReturn(true);
+
+        assertThatThrownBy(() ->
+                aiModelService.create(
+                        USER_ID, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
+                        "models/model.json", "model.json", "1.0.0", null
+                )
+        ).isInstanceOf(DuplicateModelNameException.class);
+    }
+
+    @Test
+    void 버전업시에는_모델명이_같아도_예외가_발생하지_않는다() {
+        AiModelEntity previousModel = AiModelEntity.create(
+                user, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
+                "models/model-v1.json", "1.0.0"
+        );
+        given(userRepository.getReferenceById(USER_ID)).willReturn(user);
+        given(aiModelRepository.findByIdAndUser_Id(PREVIOUS_MODEL_ID, USER_ID))
+                .willReturn(Optional.of(previousModel));
+        given(aiModelRepository.save(any(AiModelEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        assertThatCode(() ->
+                aiModelService.create(
+                        USER_ID, "credit-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING,
+                        "models/model-v2.json", "model-v2.json", "2.0.0", PREVIOUS_MODEL_ID
+                )
+        ).doesNotThrowAnyException();
     }
 
     @Test
