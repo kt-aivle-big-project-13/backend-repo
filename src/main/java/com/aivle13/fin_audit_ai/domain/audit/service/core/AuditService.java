@@ -7,11 +7,13 @@ import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
+import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotRetryableException;
@@ -27,6 +29,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AuditService {
+
+    private static final List<AuditStatus> ACTIVE_STATUSES = List.of(AuditStatus.PENDING, AuditStatus.IN_PROGRESS);
 
     private final AuditRepository auditRepository;
     private final UserRepository userRepository;
@@ -75,6 +79,13 @@ public class AuditService {
 
         if (!audit.isRetryable()) {
             throw new AuditNotRetryableException();
+        }
+
+        // 이 감사가 실패·취소된 뒤 같은 모델로 새 감사를 따로 시작했을 수 있으므로,
+        // 재시도로 두 감사가 동시에 활성화되지 않도록 AuditStartService.start()와
+        // 동일한 규칙으로 막는다.
+        if (auditRepository.existsByModel_IdAndStatusIn(audit.getModel().getId(), ACTIVE_STATUSES)) {
+            throw new AuditAlreadyInProgressException();
         }
 
         xaiResultRepository.deleteAllByAudit_Id(auditId);

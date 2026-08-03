@@ -16,6 +16,7 @@ import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotRetryableException;
@@ -258,6 +259,24 @@ class AuditServiceTest {
         verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher).publishEvent(any(AuditStartedEvent.class));
+    }
+
+    @Test
+    void 같은_모델에_이미_활성_감사가_있으면_재시도할_수_없다() {
+        AuditEntity audit = failedAudit();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(auditRepository.existsByModel_IdAndStatusIn(
+                audit.getModel().getId(), List.of(AuditStatus.PENDING, AuditStatus.IN_PROGRESS)))
+                .willReturn(true);
+
+        assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
+                .isInstanceOf(AuditAlreadyInProgressException.class);
+
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.FAILED);
+        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
     }
 
     @Test

@@ -31,7 +31,7 @@ public class AuditProgressService {
 
     @Transactional
     public void markInProgress(Long auditId) {
-        AuditEntity audit = findAudit(auditId);
+        AuditEntity audit = findAuditForUpdate(auditId);
         if (audit.isCancelled()) {
             return;
         }
@@ -40,7 +40,7 @@ public class AuditProgressService {
 
     @Transactional
     public void markShapCompleted(Long auditId) {
-        AuditEntity audit = findAudit(auditId);
+        AuditEntity audit = findAuditForUpdate(auditId);
         if (audit.isCancelled()) {
             return;
         }
@@ -49,7 +49,7 @@ public class AuditProgressService {
 
     @Transactional
     public void markFairnessCompleted(Long auditId) {
-        AuditEntity audit = findAudit(auditId);
+        AuditEntity audit = findAuditForUpdate(auditId);
         if (audit.isCancelled()) {
             return;
         }
@@ -90,7 +90,7 @@ public class AuditProgressService {
 
     @Transactional
     public void markFailed(Long auditId) {
-        AuditEntity audit = findAudit(auditId);
+        AuditEntity audit = findAuditForUpdate(auditId);
         if (audit.isCancelled()) {
             return;
         }
@@ -98,7 +98,8 @@ public class AuditProgressService {
     }
 
     // 취소된 감사는 이후 단계(SHAP 완료→공정성 분석 등)를 더 진행할 필요가 없으므로,
-    // 이벤트 리스너가 다음 단계를 건너뛸지 판단하는 데 쓴다.
+    // 이벤트 리스너가 다음 단계를 건너뛸지 판단하는 데 쓴다. 어차피 각 markXxx 단계의
+    // 잠금 있는 재확인이 최종 방어선이라, 여긴 잠금 없이 가볍게 조회한다.
     @Transactional(readOnly = true)
     public boolean isCancelled(Long auditId) {
         return findAudit(auditId).isCancelled();
@@ -106,6 +107,14 @@ public class AuditProgressService {
 
     private AuditEntity findAudit(Long auditId) {
         return auditRepository.findById(auditId)
+                .orElseThrow(AuditNotFoundException::new);
+    }
+
+    // 사용자가 취소/재시도 API로 같은 감사를 동시에 건드릴 수 있으므로, 상태를 실제로
+    // 바꾸는 전이는 쓰기 잠금으로 조회해 그 사이의 경합(늦게 도착한 콜백이 취소 상태를
+    // 덮어쓰는 것 등)을 막는다.
+    private AuditEntity findAuditForUpdate(Long auditId) {
+        return auditRepository.findByIdForUpdate(auditId)
                 .orElseThrow(AuditNotFoundException::new);
     }
 }

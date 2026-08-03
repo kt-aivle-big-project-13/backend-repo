@@ -65,7 +65,7 @@ class AuditProgressServiceTest {
 
     @Test
     void marksAuditAsInProgress() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
         auditProgressService.markInProgress(AUDIT_ID);
@@ -75,7 +75,7 @@ class AuditProgressServiceTest {
 
     @Test
     void doesNotMarkInProgressWhenAlreadyCancelled() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
@@ -86,7 +86,7 @@ class AuditProgressServiceTest {
 
     @Test
     void movesAuditToFairnessStepWhenShapIsCompleted() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
         auditProgressService.markShapCompleted(AUDIT_ID);
@@ -96,7 +96,7 @@ class AuditProgressServiceTest {
 
     @Test
     void doesNotMoveToFairnessStepWhenCancelled() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
@@ -109,7 +109,7 @@ class AuditProgressServiceTest {
     void completesAsCompliantWhenAllMetricsPass() {
         List<FairnessResultEntity> fairnessResults = List.of(fairness(FairnessStatus.PASS));
         List<XaiResultEntity> xaiResults = List.of(xai(XaiStatus.PASS));
-        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(fairnessResults);
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(xaiResults);
 
@@ -124,7 +124,7 @@ class AuditProgressServiceTest {
     void completesAsNonCompliantWhenAnyFairnessFails() {
         List<FairnessResultEntity> fairnessResults =
                 List.of(fairness(FairnessStatus.PASS), fairness(FairnessStatus.FAIL));
-        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(fairnessResults);
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
 
@@ -139,7 +139,7 @@ class AuditProgressServiceTest {
         // 공정성은 모두 PASS 지만 XAI 에 REVIEW 가 있어 WARNING 으로 종합
         List<FairnessResultEntity> fairnessResults = List.of(fairness(FairnessStatus.PASS));
         List<XaiResultEntity> xaiResults = List.of(xai(XaiStatus.REVIEW));
-        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(fairnessResults);
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(xaiResults);
 
@@ -151,7 +151,7 @@ class AuditProgressServiceTest {
 
     @Test
     void doesNotCompleteWhenCancelled() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
@@ -163,7 +163,7 @@ class AuditProgressServiceTest {
 
     @Test
     void marksAuditAsFailed() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
         auditProgressService.markFailed(AUDIT_ID);
@@ -173,7 +173,7 @@ class AuditProgressServiceTest {
 
     @Test
     void doesNotMarkFailedWhenAlreadyCancelled() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
@@ -193,7 +193,7 @@ class AuditProgressServiceTest {
 
     @Test
     void throwsWhenAuditDoesNotExist() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() ->
