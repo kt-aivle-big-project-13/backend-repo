@@ -239,6 +239,26 @@ class AuditServiceTest {
         ArgumentCaptor<AuditStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuditStartedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().auditId()).isEqualTo(AUDIT_ID);
+        // 재시도 때마다 세대가 올라가야, 취소 전 실행에서 뒤늦게 도착하는 콜백을
+        // AuditProgressService가 다른 세대로 구분해 무시할 수 있다.
+        assertThat(eventCaptor.getValue().generation()).isEqualTo(audit.getGeneration());
+        assertThat(audit.getGeneration()).isEqualTo(1);
+    }
+
+    @Test
+    void 재시도할_때마다_세대가_증가한다() {
+        AuditEntity audit = failedAudit();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        auditService.retry(AUDIT_ID, USER_ID);
+        audit.markFailed();
+        auditService.retry(AUDIT_ID, USER_ID);
+
+        ArgumentCaptor<AuditStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuditStartedEvent.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getAllValues().get(0).generation()).isEqualTo(1);
+        assertThat(eventCaptor.getAllValues().get(1).generation()).isEqualTo(2);
     }
 
     @Test

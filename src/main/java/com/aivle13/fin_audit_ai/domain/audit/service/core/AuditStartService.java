@@ -102,7 +102,7 @@ public class AuditStartService {
         dataset.markAudited();
 
         eventPublisher.publishEvent(
-                new AuditStartedEvent(audit.getId())
+                new AuditStartedEvent(audit.getId(), audit.getGeneration())
         );
 
         return new AuditStartResponse(audit.getId(), audit.getStatus().name(), audit.getCreatedAt());

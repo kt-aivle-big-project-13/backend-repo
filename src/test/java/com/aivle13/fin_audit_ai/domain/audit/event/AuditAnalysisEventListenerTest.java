@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 class AuditAnalysisEventListenerTest {
 
     private static final Long AUDIT_ID = 1L;
+    private static final int GENERATION = 0;
 
     @Mock
     private ShapAnalysisService shapAnalysisService;
@@ -55,7 +56,7 @@ class AuditAnalysisEventListenerTest {
 
     @Test
     void processesShapAndFairnessAnalysisInOrder() {
-        AuditStartedEvent event = new AuditStartedEvent(AUDIT_ID);
+        AuditStartedEvent event = new AuditStartedEvent(AUDIT_ID, GENERATION);
 
         listener.handle(event);
 
@@ -66,67 +67,67 @@ class AuditAnalysisEventListenerTest {
         );
 
         inOrder.verify(auditProgressService)
-                .markInProgress(AUDIT_ID);
+                .markInProgress(AUDIT_ID, GENERATION);
         inOrder.verify(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
         inOrder.verify(auditProgressService)
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         inOrder.verify(fairnessAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
         inOrder.verify(auditProgressService)
-                .markFairnessCompleted(AUDIT_ID);
+                .markFairnessCompleted(AUDIT_ID, GENERATION);
 
         verify(auditProgressService, never())
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
     }
 
     @Test
     void skipsShapAnalysisWhenAlreadyCancelledBeforeStarting() {
-        given(auditProgressService.isCancelled(AUDIT_ID))
+        given(auditProgressService.isCancelled(AUDIT_ID, GENERATION))
                 .willReturn(true);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(auditProgressService)
-                .markInProgress(AUDIT_ID);
+                .markInProgress(AUDIT_ID, GENERATION);
         verifyNoInteractions(shapAnalysisService);
         verifyNoInteractions(fairnessAnalysisService);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markFairnessCompleted(AUDIT_ID);
+                .markFairnessCompleted(AUDIT_ID, GENERATION);
     }
 
     @Test
     void skipsFairnessAnalysisWhenCancelledDuringShapAnalysis() {
-        given(auditProgressService.isCancelled(AUDIT_ID))
+        given(auditProgressService.isCancelled(AUDIT_ID, GENERATION))
                 .willReturn(false, true);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
         verify(auditProgressService)
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         verifyNoInteractions(fairnessAnalysisService);
         verify(auditProgressService, never())
-                .markFairnessCompleted(AUDIT_ID);
+                .markFairnessCompleted(AUDIT_ID, GENERATION);
     }
 
     @Test
     void marksAuditAsFailedWhenShapAiServerReturnsErrorAndDoesNotRunFairness() {
         willThrow(new AiServerErrorException())
                 .given(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(auditProgressService)
-                .markInProgress(AUDIT_ID);
+                .markInProgress(AUDIT_ID, GENERATION);
         verify(auditProgressService)
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         verifyNoInteractions(fairnessAnalysisService);
     }
 
@@ -134,16 +135,16 @@ class AuditAnalysisEventListenerTest {
     void marksAuditAsFailedWhenShapAiServerTimesOutAndDoesNotRunFairness() {
         willThrow(new AiServerTimeoutException())
                 .given(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(auditProgressService)
-                .markInProgress(AUDIT_ID);
+                .markInProgress(AUDIT_ID, GENERATION);
         verify(auditProgressService)
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         verifyNoInteractions(fairnessAnalysisService);
     }
 
@@ -151,14 +152,14 @@ class AuditAnalysisEventListenerTest {
     void marksAuditAsFailedWhenUnexpectedErrorOccursDuringShap() {
         willThrow(new IllegalStateException("unexpected error"))
                 .given(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(auditProgressService)
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         verifyNoInteractions(fairnessAnalysisService);
     }
 
@@ -166,38 +167,38 @@ class AuditAnalysisEventListenerTest {
     void marksAuditAsFailedWhenFairnessAnalysisFails() {
         willThrow(new AiServerErrorException())
                 .given(fairnessAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
         verify(auditProgressService)
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         verify(auditProgressService)
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markFairnessCompleted(AUDIT_ID);
+                .markFairnessCompleted(AUDIT_ID, GENERATION);
     }
 
     @Test
     void doesNotPropagateExceptionWhenFailedStatusUpdateAlsoFails() {
         willThrow(new AiServerErrorException())
                 .given(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
 
         willThrow(new IllegalStateException("status update failed"))
                 .given(auditProgressService)
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
 
         assertThatCode(() ->
-                listener.handle(new AuditStartedEvent(AUDIT_ID))
+                listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION))
         ).doesNotThrowAnyException();
 
         verify(auditProgressService, times(3))
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
     }
 
     @Test
@@ -205,14 +206,14 @@ class AuditAnalysisEventListenerTest {
         given(aiServerProperties.enabled())
                 .willReturn(false);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(auditProgressService)
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markInProgress(AUDIT_ID);
+                .markInProgress(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
         verifyNoInteractions(shapAnalysisService);
         verifyNoInteractions(fairnessAnalysisService);
     }
@@ -221,18 +222,18 @@ class AuditAnalysisEventListenerTest {
     void retriesFailedStatusUpdateAndStopsWhenRetrySucceeds() {
         willThrow(new AiServerErrorException())
                 .given(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID);
+                .analyzeAndSave(AUDIT_ID, GENERATION);
 
         willThrow(new IllegalStateException("temporary failure"))
                 .willDoNothing()
                 .given(auditProgressService)
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
 
-        listener.handle(new AuditStartedEvent(AUDIT_ID));
+        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
         verify(auditProgressService, times(2))
-                .markFailed(AUDIT_ID);
+                .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID);
+                .markShapCompleted(AUDIT_ID, GENERATION);
     }
 }

@@ -30,27 +30,27 @@ public class AuditProgressService {
     private final NotificationService notificationService;
 
     @Transactional
-    public void markInProgress(Long auditId) {
+    public void markInProgress(Long auditId, int generation) {
         AuditEntity audit = findAuditForUpdate(auditId);
-        if (audit.isCancelled()) {
+        if (isStaleOrCancelled(audit, generation)) {
             return;
         }
         audit.markInProgress();
     }
 
     @Transactional
-    public void markShapCompleted(Long auditId) {
+    public void markShapCompleted(Long auditId, int generation) {
         AuditEntity audit = findAuditForUpdate(auditId);
-        if (audit.isCancelled()) {
+        if (isStaleOrCancelled(audit, generation)) {
             return;
         }
         audit.moveToStep(FAIRNESS_STEP);
     }
 
     @Transactional
-    public void markFairnessCompleted(Long auditId) {
+    public void markFairnessCompleted(Long auditId, int generation) {
         AuditEntity audit = findAuditForUpdate(auditId);
-        if (audit.isCancelled()) {
+        if (isStaleOrCancelled(audit, generation)) {
             return;
         }
         AuditStatus verdict = determineVerdict(auditId);
@@ -89,6 +89,17 @@ public class AuditProgressService {
     }
 
     @Transactional
+    public void markFailed(Long auditId, int generation) {
+        AuditEntity audit = findAuditForUpdate(auditId);
+        if (isStaleOrCancelled(audit, generation)) {
+            return;
+        }
+        audit.markFailed();
+    }
+
+    // SHAP·Fairlearn 재시도 콜백과 무관하게(자율점검 법령 매핑 실패, 서버 재시작 복구 등)
+    // 특정 실행 세대를 알 수 없는 호출부용. 세대는 안 보고 취소 여부만 확인한다.
+    @Transactional
     public void markFailed(Long auditId) {
         AuditEntity audit = findAuditForUpdate(auditId);
         if (audit.isCancelled()) {
@@ -97,12 +108,19 @@ public class AuditProgressService {
         audit.markFailed();
     }
 
-    // 취소된 감사는 이후 단계(SHAP 완료→공정성 분석 등)를 더 진행할 필요가 없으므로,
+    // 취소됐거나(같은 실행이 중간에 취소됨), 이 콜백이 이미 재시도로 지나가버린 실행
+    // 세대의 것이면(늦게 도착한 이전 실행의 응답) 이후 단계를 더 진행할 필요가 없으므로,
     // 이벤트 리스너가 다음 단계를 건너뛸지 판단하는 데 쓴다. 어차피 각 markXxx 단계의
     // 잠금 있는 재확인이 최종 방어선이라, 여긴 잠금 없이 가볍게 조회한다.
     @Transactional(readOnly = true)
-    public boolean isCancelled(Long auditId) {
-        return findAudit(auditId).isCancelled();
+    public boolean isCancelled(Long auditId, int generation) {
+        AuditEntity audit = findAudit(auditId);
+        return audit.isCancelled() || audit.getGeneration() != generation;
+    }
+
+    // 취소됐거나 이미 재시도로 지나가버린 실행 세대의 콜백이면 상태 변경을 무시한다.
+    private boolean isStaleOrCancelled(AuditEntity audit, int generation) {
+        return audit.isCancelled() || audit.getGeneration() != generation;
     }
 
     private AuditEntity findAudit(Long auditId) {

@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 class AuditProgressServiceTest {
 
     private static final Long AUDIT_ID = 1L;
+    private static final int GENERATION = 0;
 
     @Mock
     private AuditRepository auditRepository;
@@ -68,7 +69,7 @@ class AuditProgressServiceTest {
         given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
-        auditProgressService.markInProgress(AUDIT_ID);
+        auditProgressService.markInProgress(AUDIT_ID, GENERATION);
 
         verify(audit).markInProgress();
     }
@@ -79,7 +80,18 @@ class AuditProgressServiceTest {
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
-        auditProgressService.markInProgress(AUDIT_ID);
+        auditProgressService.markInProgress(AUDIT_ID, GENERATION);
+
+        verify(audit, never()).markInProgress();
+    }
+
+    @Test
+    void doesNotMarkInProgressWhenGenerationIsStale() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getGeneration()).willReturn(1);
+
+        auditProgressService.markInProgress(AUDIT_ID, GENERATION);
 
         verify(audit, never()).markInProgress();
     }
@@ -89,7 +101,7 @@ class AuditProgressServiceTest {
         given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
-        auditProgressService.markShapCompleted(AUDIT_ID);
+        auditProgressService.markShapCompleted(AUDIT_ID, GENERATION);
 
         verify(audit).moveToStep(3);
     }
@@ -100,7 +112,18 @@ class AuditProgressServiceTest {
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
-        auditProgressService.markShapCompleted(AUDIT_ID);
+        auditProgressService.markShapCompleted(AUDIT_ID, GENERATION);
+
+        verify(audit, never()).moveToStep(anyInt());
+    }
+
+    @Test
+    void doesNotMoveToFairnessStepWhenGenerationIsStale() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getGeneration()).willReturn(1);
+
+        auditProgressService.markShapCompleted(AUDIT_ID, GENERATION);
 
         verify(audit, never()).moveToStep(anyInt());
     }
@@ -113,7 +136,7 @@ class AuditProgressServiceTest {
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(fairnessResults);
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(xaiResults);
 
-        auditProgressService.markFairnessCompleted(AUDIT_ID);
+        auditProgressService.markFairnessCompleted(AUDIT_ID, GENERATION);
 
         verify(audit).complete(4, AuditStatus.COMPLIANT);
         verify(notificationService).notifyAuditComplete(audit);
@@ -128,7 +151,7 @@ class AuditProgressServiceTest {
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(fairnessResults);
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of());
 
-        auditProgressService.markFairnessCompleted(AUDIT_ID);
+        auditProgressService.markFairnessCompleted(AUDIT_ID, GENERATION);
 
         verify(audit).complete(4, AuditStatus.NON_COMPLIANT);
         verify(notificationService).notifyReauditRecommend(audit);
@@ -143,7 +166,7 @@ class AuditProgressServiceTest {
         given(fairnessResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(fairnessResults);
         given(xaiResultRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(xaiResults);
 
-        auditProgressService.markFairnessCompleted(AUDIT_ID);
+        auditProgressService.markFairnessCompleted(AUDIT_ID, GENERATION);
 
         verify(audit).complete(4, AuditStatus.WARNING);
         verify(notificationService).notifyReauditRecommend(audit);
@@ -155,7 +178,19 @@ class AuditProgressServiceTest {
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
-        auditProgressService.markFairnessCompleted(AUDIT_ID);
+        auditProgressService.markFairnessCompleted(AUDIT_ID, GENERATION);
+
+        verify(audit, never()).complete(anyInt(), any());
+        verify(notificationService, never()).notifyAuditComplete(audit);
+    }
+
+    @Test
+    void doesNotCompleteWhenGenerationIsStale() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getGeneration()).willReturn(1);
+
+        auditProgressService.markFairnessCompleted(AUDIT_ID, GENERATION);
 
         verify(audit, never()).complete(anyInt(), any());
         verify(notificationService, never()).notifyAuditComplete(audit);
@@ -166,13 +201,37 @@ class AuditProgressServiceTest {
         given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
-        auditProgressService.markFailed(AUDIT_ID);
+        auditProgressService.markFailed(AUDIT_ID, GENERATION);
 
         verify(audit).markFailed();
     }
 
     @Test
     void doesNotMarkFailedWhenAlreadyCancelled() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        auditProgressService.markFailed(AUDIT_ID, GENERATION);
+
+        verify(audit, never()).markFailed();
+    }
+
+    @Test
+    void doesNotMarkFailedWhenGenerationIsStale() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getGeneration()).willReturn(1);
+
+        auditProgressService.markFailed(AUDIT_ID, GENERATION);
+
+        verify(audit, never()).markFailed();
+    }
+
+    @Test
+    void markFailedWithoutGenerationIgnoresGenerationButRespectsCancelled() {
+        // 자율점검 법령 매핑 실패·서버 재시작 복구처럼 특정 실행 세대를 모르는 호출부용
+        // 오버로드. 세대는 안 보지만 취소된 감사는 여전히 건드리지 않는다.
         given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
@@ -188,7 +247,16 @@ class AuditProgressServiceTest {
                 .willReturn(Optional.of(audit));
         given(audit.isCancelled()).willReturn(true);
 
-        assertThat(auditProgressService.isCancelled(AUDIT_ID)).isTrue();
+        assertThat(auditProgressService.isCancelled(AUDIT_ID, GENERATION)).isTrue();
+    }
+
+    @Test
+    void isCancelledReturnsTrueWhenGenerationIsStale() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getGeneration()).willReturn(1);
+
+        assertThat(auditProgressService.isCancelled(AUDIT_ID, GENERATION)).isTrue();
     }
 
     @Test
@@ -197,7 +265,7 @@ class AuditProgressServiceTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                auditProgressService.markInProgress(AUDIT_ID)
+                auditProgressService.markInProgress(AUDIT_ID, GENERATION)
         ).isInstanceOf(AuditNotFoundException.class);
     }
 }

@@ -21,7 +21,7 @@ public class FairnessAnalysisService {
     private final FairnessAnalysisClient fairnessAnalysisClient;
     private final FairnessResultService fairnessResultService;
 
-    public void analyzeAndSave(Long auditId) {
+    public void analyzeAndSave(Long auditId, int generation) {
         AuditEntity audit = auditRepository
                 .findByIdWithModelAndDataset(auditId)
                 .orElseThrow(AuditNotFoundException::new);
@@ -31,7 +31,7 @@ public class FairnessAnalysisService {
         FairnessRunResponse response =
                 fairnessAnalysisClient.analyze(request);
 
-        fairnessResultService.saveFairnessResult(auditId, response);
+        fairnessResultService.saveFairnessResult(auditId, generation, response);
     }
 
     private FairnessRunRequest createRequest(AuditEntity audit) {

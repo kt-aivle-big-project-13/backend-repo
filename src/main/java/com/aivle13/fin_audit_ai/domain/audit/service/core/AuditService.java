@@ -92,7 +92,7 @@ public class AuditService {
         fairnessResultRepository.deleteAllByAudit_Id(auditId);
         audit.retry();
 
-        eventPublisher.publishEvent(new AuditStartedEvent(auditId));
+        eventPublisher.publishEvent(new AuditStartedEvent(auditId, audit.getGeneration()));
 
         return AuditRetryResponse.from(audit, LocalDateTime.now());
     }
