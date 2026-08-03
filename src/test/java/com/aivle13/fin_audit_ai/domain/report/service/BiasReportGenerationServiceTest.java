@@ -9,6 +9,7 @@ import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.ai.client.BiasReportClient;
 import com.aivle13.fin_audit_ai.global.ai.dto.BiasReportRequest;
 import com.aivle13.fin_audit_ai.global.ai.dto.BiasReportResponse;
+import com.aivle13.fin_audit_ai.global.ai.dto.ReportNarrativeResponse;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.List;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -61,6 +63,9 @@ class BiasReportGenerationServiceTest {
     private ReportPersistenceService reportPersistenceService;
 
     @Mock
+    private ReportNarrativeRecorder narrativeRecorder;
+
+    @Mock
     private AuditEntity audit;
 
     @Mock
@@ -74,6 +79,42 @@ class BiasReportGenerationServiceTest {
 
     @InjectMocks
     private BiasReportGenerationService service;
+
+    @Test
+    void savesReportNarrativesForChatbot() {
+        givenAudit();
+        givenValidationDatasetThreshold();
+
+        List<ReportNarrativeResponse> narratives = List.of(
+                new ReportNarrativeResponse(
+                        "metric_results",
+                        "5. 공정성 지표 결과",
+                        "AGE_GROUP 의 Equal Opportunity Difference 는 0.1123 으로 확인됨"
+                )
+        );
+
+        given(reportClient.generate(any(BiasReportRequest.class)))
+                .willReturn(new BiasReportResponse(
+                        AUDIT_ID,
+                        HTML_S3_KEY,
+                        PDF_S3_KEY,
+                        WORD_S3_KEY,
+                        "html",
+                        "2026-07-30T10:00:00Z",
+                        narratives
+                ));
+
+        given(reportPersistenceService.saveAll(any(), any(), any()))
+                .willReturn(Map.of(ReportFormat.HTML, REPORT_ID));
+
+        service.generateAndSave(USER_ID, AUDIT_ID);
+
+        verify(narrativeRecorder).record(
+                AUDIT_ID,
+                ReportType.BIAS_REPORT,
+                narratives
+        );
+    }
 
     @Test
     void generatesAndSavesBiasReport() {
@@ -133,7 +174,8 @@ class BiasReportGenerationServiceTest {
                         "",
                         WORD_S3_KEY,
                         "html",
-                        "2026-07-30T10:00:00Z"
+                        "2026-07-30T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(
@@ -160,7 +202,8 @@ class BiasReportGenerationServiceTest {
                         PDF_S3_KEY,
                         "",
                         "html",
-                        "2026-07-30T10:00:00Z"
+                        "2026-07-30T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(
@@ -257,7 +300,8 @@ class BiasReportGenerationServiceTest {
                         PDF_S3_KEY,
                         WORD_S3_KEY,
                         "html",
-                        "2026-07-30T10:00:00Z"
+                        "2026-07-30T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(
@@ -292,7 +336,8 @@ class BiasReportGenerationServiceTest {
                         PDF_S3_KEY,
                         WORD_S3_KEY,
                         "html",
-                        "2026-07-30T10:00:00Z"
+                        "2026-07-30T10:00:00Z",
+                        List.of()
                 );
 
         given(reportClient.generate(

@@ -23,6 +23,7 @@ public class BiasReportGenerationService {
     private final AuditRepository auditRepository;
     private final BiasReportClient reportClient;
     private final ReportPersistenceService reportPersistenceService;
+    private final ReportNarrativeRecorder narrativeRecorder;
 
     public Long generateAndSave(
             Long userId,
@@ -63,6 +64,14 @@ public class BiasReportGenerationService {
         if (htmlReportId == null) {
             throw new AuditFailedException();
         }
+
+        // 리포트 저장이 끝난 뒤에 서술을 남긴다. 먼저 저장하면 리포트 저장이 실패했을 때
+        // 존재하지 않는 리포트의 서술을 챗봇이 근거로 인용하게 된다.
+        narrativeRecorder.record(
+                auditId,
+                ReportType.BIAS_REPORT,
+                response.narratives()
+        );
 
         return htmlReportId;
     }

@@ -31,6 +31,7 @@ public class ChatMessageService {
     private final ChatMessageRepository messageRepository;
     private final ChatFactAssembler factAssembler;
     private final ChatLawSearchService lawSearchService;
+    private final ChatReportSectionLoader reportSectionLoader;
     private final ChatMessagePersistenceService persistenceService;
     private final ChatAnswerClient chatAnswerClient;
     private final ChatRateLimiter rateLimiter;
@@ -50,14 +51,15 @@ public class ChatMessageService {
         // 질문 한 건마다 LLM 을 호출하므로 저장·호출 전에 먼저 막는다.
         rateLimiter.checkAndIncrease(userId, auditId);
 
-        // 리포트 서술은 5단계에서 채운다.
         ChatAnswerResponse answer = chatAnswerClient.generate(
                 new ChatAnswerRequest(
                         auditId,
                         question,
                         factAssembler.assemble(auditId),
                         lawSearchService.search(question),
-                        List.of()
+                        // 리포트를 아직 만들지 않은 감사면 비어 있다. 그때는 감사 수치와
+                        // 법령만으로 답하며, 리포트 인용만 빠진다.
+                        reportSectionLoader.load(auditId)
                 )
         );
 
