@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.io.UncheckedIOException;
 
 @Service
 @RequiredArgsConstructor
@@ -110,33 +111,73 @@ public class ObjectionCommandService {
         List<ObjectionEntity> objections = new ArrayList<>();
         Set<String> objectionNosInFile = new HashSet<>();
 
-        try (CSVParser parser = format.parse(new StringReader(readAsUtf8WithoutBom(file)))) {
+        CSVParser parser;
+
+        try {
+            // 빈 헤더 등 헤더 초기화 과정에서 발생한 오류만 헤더 오류로 처리한다.
+            parser = format.parse(new StringReader(readAsUtf8WithoutBom(file)));
+        } catch (IllegalArgumentException e) {
+            throw new InvalidObjectionFileException("CSV 헤더가 올바르지 않습니다.");
+        } catch (IOException e) {
+            throw new InvalidObjectionFileException(
+                    "CSV 파일을 읽을 수 없습니다: " + file.getOriginalFilename()
+            );
+        }
+
+        try (parser) {
             List<String> actualHeaders = parser.getHeaderNames();
 
-            if (actualHeaders.size() != REQUIRED_HEADERS.size() || !actualHeaders.containsAll(REQUIRED_HEADERS)) {
+            if (actualHeaders.size() != REQUIRED_HEADERS.size()
+                    || !actualHeaders.containsAll(REQUIRED_HEADERS)) {
                 throw new InvalidObjectionFileException(
-                        "CSV 헤더가 올바르지 않습니다. 필요한 컬럼: " + String.join(", ", REQUIRED_HEADERS)
-                                + " / 실제 헤더: " + actualHeaders);
+                        "CSV 헤더가 올바르지 않습니다. 필요한 컬럼: "
+                                + String.join(", ", REQUIRED_HEADERS)
+                                + " / 실제 헤더: "
+                                + actualHeaders
+                );
             }
 
             long rowNumber = 1; // 1행은 헤더
-            for (CSVRecord record : parser) {
-                rowNumber++;
-                objections.add(toEntity(record, rowNumber, objectionNosInFile));
+
+            try {
+                for (CSVRecord record : parser) {
+                    rowNumber++;
+
+                    try {
+                        objections.add(
+                                toEntity(record, rowNumber, objectionNosInFile)
+                        );
+                    } catch (InvalidObjectionFileException e) {
+                        // 필수값 누락, 길이 초과 등 직접 검증한 오류는 그대로 전달한다.
+                        throw e;
+                    } catch (IllegalArgumentException e) {
+                        // 헤더는 정상이지만 특정 행의 컬럼 구조가 잘못된 경우
+                        throw new InvalidObjectionFileException(
+                                rowNumber + "번째 행: CSV 데이터 형식이 올바르지 않습니다."
+                        );
+                    }
+                }
+            } catch (UncheckedIOException e) {
+                // CSV 행을 읽는 도중 발생한 파싱 오류를 400 오류로 변환한다.
+                throw new InvalidObjectionFileException(
+                        "CSV 데이터 형식이 올바르지 않습니다."
+                );
             }
+
         } catch (InvalidObjectionFileException e) {
-            // 필수값 누락, 길이 초과, 헤더 불일치처럼 직접 검증한 CSV 오류는 메시지를 유지한 채 그대로 전달한다.
+            // 직접 검증한 CSV 오류는 메시지를 유지한 채 그대로 전달한다.
             throw e;
-        } catch (IllegalArgumentException e) {
-            // 헤더 이름이 비어 있어 CSV 컬럼을 식별할 수 없는 경우 400 오류로 변환한다.
-            throw new InvalidObjectionFileException("CSV 헤더가 올바르지 않습니다.");
         } catch (IOException e) {
-            // 파일 자체를 읽는 과정에서 발생한 오류는 CSV 파일 읽기 실패로 변환한다.
-            throw new InvalidObjectionFileException("CSV 파일을 읽을 수 없습니다: " + file.getOriginalFilename());
+            // parser 종료 과정에서 발생한 파일 읽기 오류를 변환한다.
+            throw new InvalidObjectionFileException(
+                    "CSV 파일을 읽을 수 없습니다: " + file.getOriginalFilename()
+            );
         }
 
         if (objections.isEmpty()) {
-            throw new InvalidObjectionFileException("등록할 이의제기 데이터가 없습니다.");
+            throw new InvalidObjectionFileException(
+                    "등록할 이의제기 데이터가 없습니다."
+            );
         }
 
         return objections;
