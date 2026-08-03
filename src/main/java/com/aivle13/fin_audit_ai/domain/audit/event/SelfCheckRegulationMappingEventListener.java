@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditProgressService;
 import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
+import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -21,6 +22,7 @@ public class SelfCheckRegulationMappingEventListener {
 
     private final AuditRegulationMappingService auditRegulationMappingService;
     private final AuditProgressService auditProgressService;
+    private final ReportPreGenerationService reportPreGenerationService;
 
     @Async("auditTaskExecutor")
     @TransactionalEventListener(
@@ -34,6 +36,10 @@ public class SelfCheckRegulationMappingEventListener {
                     "자율점검 기반 법령 매핑 완료: auditId={}",
                     event.auditId()
             );
+
+            // 규제준수 판정서와 개선 권고 가이드는 자율점검 응답과 법령 매핑이 있어야 만들 수
+            // 있다. 재료가 갖춰진 지금 미리 만들어 두면 다운로드가 즉시 끝난다.
+            reportPreGenerationService.preGenerateAfterSelfCheck(event.auditId());
         } catch (RuntimeException exception) {
             log.error(
                     "자율점검 기반 법령 매핑 실패, 감사를 실패 처리함: auditId={}",

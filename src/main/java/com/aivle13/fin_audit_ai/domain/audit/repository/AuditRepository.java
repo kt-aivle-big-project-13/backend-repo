@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.repository;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.audit.repository.projection.ReportPreGenerationTargetProjection;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +15,18 @@ import java.util.Optional;
 public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
 
     Optional<AuditEntity> findByIdAndUser_Id(Long auditId, Long userId);
+
+    // 보고서 선생성은 소유자 id 와 사전진단 연결 여부만 필요하다. 엔티티를 읽으면 지연로딩된
+    // 사용자를 트랜잭션 밖에서 건드리게 되므로 스칼라 두 개만 가져온다.
+    @Query("""
+            select audit.user.id as userId,
+                   audit.assessmentId as assessmentId
+            from AuditEntity audit
+            where audit.id = :auditId
+            """)
+    Optional<ReportPreGenerationTargetProjection> findReportPreGenerationTargetById(
+            @Param("auditId") Long auditId
+    );
 
     // 동일 감사에 대한 동시 쓰기(예: 자율점검 응답 동시 저장)를 직렬화하기 위한 비관적 쓰기 잠금 조회.
     // 잠금은 호출한 트랜잭션이 끝날 때까지 유지된다.
