@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -85,5 +86,21 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
     Optional<AuditEntity> findByIdAndUser_IdWithModelAndDataset(
             @Param("auditId") Long auditId,
             @Param("userId") Long userId
+    );
+
+    @Query("""
+        select audit
+        from AuditEntity audit
+        where audit.model.id = :modelId
+          and audit.status in :statuses
+        order by
+          case when audit.completedAt is null then 1 else 0 end,
+          audit.completedAt desc,
+          audit.id desc
+        """)
+    List<AuditEntity> findLatestByModelIdAndStatuses(
+            @Param("modelId") Long modelId,
+            @Param("statuses") List<AuditStatus> statuses,
+            Pageable pageable
     );
 }

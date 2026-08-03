@@ -33,8 +33,8 @@ public class ObjectionEntity extends BaseEntity {
     private String objectionNo;
 
     // 이의제기가 어떤 AI 모델에 대한 것인지. CSV에는 모델 정보가 없어 optional로 둔다.
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "model_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "model_id", nullable = false)
     private AiModelEntity model;
 
     @Column(name = "customer_name", nullable = false, length = 50)
@@ -102,7 +102,7 @@ public class ObjectionEntity extends BaseEntity {
     ) {
         ObjectionEntity objection = new ObjectionEntity();
         objection.objectionNo = objectionNo;
-        objection.model = model;
+        objection.model = Objects.requireNonNull(model, "model must not be null");
         objection.customerName = customerName;
         objection.caseType = caseType;
         objection.title = title;
