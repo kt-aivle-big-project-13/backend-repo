@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.willThrow;
@@ -23,6 +24,9 @@ class SelfCheckRegulationMappingEventListenerTest {
 
     @Mock
     private AuditProgressService auditProgressService;
+
+    @Mock
+    private ReportPreGenerationService reportPreGenerationService;
 
     @InjectMocks
     private SelfCheckRegulationMappingEventListener listener;

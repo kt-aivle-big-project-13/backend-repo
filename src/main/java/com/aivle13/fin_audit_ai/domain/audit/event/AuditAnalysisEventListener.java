@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditProgressService;
+import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
 import com.aivle13.fin_audit_ai.domain.audit.service.fairness.FairnessAnalysisService;
 import com.aivle13.fin_audit_ai.domain.audit.service.explainability.ShapAnalysisService;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
@@ -24,6 +25,7 @@ public class AuditAnalysisEventListener {
     private final FairnessAnalysisService fairnessAnalysisService;
     private final AuditProgressService auditProgressService;
     private final AiServerProperties aiServerProperties;
+    private final ReportPreGenerationService reportPreGenerationService;
 
     @Async("auditTaskExecutor")
     @TransactionalEventListener(
@@ -70,6 +72,10 @@ public class AuditAnalysisEventListener {
                     "공정성(Fairlearn) 분석 및 결과 저장 완료: auditId={}",
                     auditId
             );
+
+            // 결과 화면에서 다운로드를 누른 뒤에 만들면 사용자가 생성 시간을 그대로 기다린다.
+            // 재료가 갖춰진 지금 미리 만들어 둔다. 실패해도 감사는 성공으로 남는다.
+            reportPreGenerationService.preGenerateAfterAnalysis(auditId);
         } catch (BusinessException exception) {
             markFailedSafely(auditId);
 
