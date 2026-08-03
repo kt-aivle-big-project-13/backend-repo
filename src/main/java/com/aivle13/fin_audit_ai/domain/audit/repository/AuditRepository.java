@@ -32,6 +32,8 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
 
     boolean existsByModel_IdAndStatusIn(Long modelId, List<AuditStatus> statuses);
 
+    List<AuditEntity> findAllByStatus(AuditStatus status);
+
     // 목록에서 모델명을 같이 보여줘야 해서 N+1을 피하기 위해 model을 fetch join 한다.
     @Query("""
             select audit
