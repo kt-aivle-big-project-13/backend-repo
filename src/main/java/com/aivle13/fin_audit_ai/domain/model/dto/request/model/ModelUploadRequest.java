@@ -4,12 +4,14 @@ import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
 
 public record ModelUploadRequest(
         MultipartFile file,
 
-        @NotBlank String modelName,
+        // ai_models.model_name 컬럼 길이(varchar(100))와 맞춘다 — 초과 시 DB 예외 대신 400으로 응답한다.
+        @NotBlank @Size(max = 100, message = "모델명은 100자를 초과할 수 없습니다.") String modelName,
         @NotNull ModelType modelType,
 
         // 미전달 시 "1.0.0"으로 대체
