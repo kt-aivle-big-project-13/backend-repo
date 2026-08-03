@@ -116,6 +116,26 @@ class ObjectionLetterGenerationServiceTest {
     }
 
     @Test
+    void rejectsNullDecisionBeforeCallingLlm() {
+        ObjectionEntity objection = mock(ObjectionEntity.class);
+
+        assertThatThrownBy(() ->
+                objectionLetterGenerationService.generate(
+                        objection,
+                        null,
+                        List.of(),
+                        false
+                )
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(
+                        "고객 안내문 생성에는 담당자 결정이 필요합니다."
+                );
+
+        verifyNoInteractions(reportLlmClient);
+    }
+
+    @Test
     void rejectsBlankLlmResponse() {
         ObjectionEntity objection = objection();
 

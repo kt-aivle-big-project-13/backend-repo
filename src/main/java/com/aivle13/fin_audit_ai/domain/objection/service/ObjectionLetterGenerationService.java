@@ -40,6 +40,13 @@ public class ObjectionLetterGenerationService {
             List<ObjectionModelEvidenceResponse> globalModelEvidence,
             boolean regeneration
     ) {
+
+        if (decision == null) {
+            throw new IllegalArgumentException(
+                    "고객 안내문 생성에는 담당자 결정이 필요합니다."
+            );
+        }
+
         String generated = reportLlmClient.generate(
                 SYSTEM_PROMPT,
                 buildUserPrompt(
