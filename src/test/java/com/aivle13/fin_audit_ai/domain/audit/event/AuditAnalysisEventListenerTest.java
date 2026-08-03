@@ -77,6 +77,39 @@ class AuditAnalysisEventListenerTest {
     }
 
     @Test
+    void skipsShapAnalysisWhenAlreadyCancelledBeforeStarting() {
+        given(auditProgressService.isCancelled(AUDIT_ID))
+                .willReturn(true);
+
+        listener.handle(new AuditStartedEvent(AUDIT_ID));
+
+        verify(auditProgressService)
+                .markInProgress(AUDIT_ID);
+        verifyNoInteractions(shapAnalysisService);
+        verifyNoInteractions(fairnessAnalysisService);
+        verify(auditProgressService, never())
+                .markShapCompleted(AUDIT_ID);
+        verify(auditProgressService, never())
+                .markFairnessCompleted(AUDIT_ID);
+    }
+
+    @Test
+    void skipsFairnessAnalysisWhenCancelledDuringShapAnalysis() {
+        given(auditProgressService.isCancelled(AUDIT_ID))
+                .willReturn(false, true);
+
+        listener.handle(new AuditStartedEvent(AUDIT_ID));
+
+        verify(shapAnalysisService)
+                .analyzeAndSave(AUDIT_ID);
+        verify(auditProgressService)
+                .markShapCompleted(AUDIT_ID);
+        verifyNoInteractions(fairnessAnalysisService);
+        verify(auditProgressService, never())
+                .markFairnessCompleted(AUDIT_ID);
+    }
+
+    @Test
     void marksAuditAsFailedWhenShapAiServerReturnsErrorAndDoesNotRunFairness() {
         willThrow(new AiServerErrorException())
                 .given(shapAnalysisService)

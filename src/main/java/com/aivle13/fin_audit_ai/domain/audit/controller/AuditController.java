@@ -106,4 +106,31 @@ public class AuditController {
 
         return ResponseEntity.ok(auditService.list(userId));
     }
+
+    @Operation(
+            summary = "감사 취소",
+            description = """
+                    대기 중이거나 진행 중인 감사를 취소합니다.
+                    AI 서버로 이미 나간 분석 요청 자체를 끊지는 않지만(soft cancel),
+                    그 결과는 무시되고 감사는 CANCELLED 상태로 유지됩니다.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "감사 취소 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+            @ApiResponse(responseCode = "404", description = "감사를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "취소할 수 없는 감사 상태")
+    })
+    @PostMapping("/{auditId}/cancel")
+    public ResponseEntity<Void> cancel(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long auditId
+    ) {
+        if (userId == null) {
+            throw new UnauthorizedException();
+        }
+
+        auditService.cancel(auditId, userId);
+        return ResponseEntity.noContent().build();
+    }
 }

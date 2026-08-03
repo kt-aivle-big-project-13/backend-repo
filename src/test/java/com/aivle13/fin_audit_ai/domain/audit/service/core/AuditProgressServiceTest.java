@@ -20,7 +20,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -71,6 +74,17 @@ class AuditProgressServiceTest {
     }
 
     @Test
+    void doesNotMarkInProgressWhenAlreadyCancelled() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        auditProgressService.markInProgress(AUDIT_ID);
+
+        verify(audit, never()).markInProgress();
+    }
+
+    @Test
     void movesAuditToFairnessStepWhenShapIsCompleted() {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
@@ -78,6 +92,17 @@ class AuditProgressServiceTest {
         auditProgressService.markShapCompleted(AUDIT_ID);
 
         verify(audit).moveToStep(3);
+    }
+
+    @Test
+    void doesNotMoveToFairnessStepWhenCancelled() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        auditProgressService.markShapCompleted(AUDIT_ID);
+
+        verify(audit, never()).moveToStep(anyInt());
     }
 
     @Test
@@ -125,6 +150,18 @@ class AuditProgressServiceTest {
     }
 
     @Test
+    void doesNotCompleteWhenCancelled() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        auditProgressService.markFairnessCompleted(AUDIT_ID);
+
+        verify(audit, never()).complete(anyInt(), any());
+        verify(notificationService, never()).notifyAuditComplete(audit);
+    }
+
+    @Test
     void marksAuditAsFailed() {
         given(auditRepository.findById(AUDIT_ID))
                 .willReturn(Optional.of(audit));
@@ -132,6 +169,26 @@ class AuditProgressServiceTest {
         auditProgressService.markFailed(AUDIT_ID);
 
         verify(audit).markFailed();
+    }
+
+    @Test
+    void doesNotMarkFailedWhenAlreadyCancelled() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        auditProgressService.markFailed(AUDIT_ID);
+
+        verify(audit, never()).markFailed();
+    }
+
+    @Test
+    void isCancelledReflectsAuditState() {
+        given(auditRepository.findById(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        assertThat(auditProgressService.isCancelled(AUDIT_ID)).isTrue();
     }
 
     @Test
