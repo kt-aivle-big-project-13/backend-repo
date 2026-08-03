@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.aivle13.fin_audit_ai.global.ai.config.AiServerProperties;
 import org.junit.jupiter.api.BeforeEach;
+import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.willThrow;
@@ -39,6 +40,9 @@ class AuditAnalysisEventListenerTest {
 
     @Mock
     private AiServerProperties aiServerProperties;
+
+    @Mock
+    private ReportPreGenerationService reportPreGenerationService;
 
     @BeforeEach
     void setUp() {
