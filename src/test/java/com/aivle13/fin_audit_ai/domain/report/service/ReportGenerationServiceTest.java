@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 class ReportGenerationServiceTest {
 
     private static final Long AUDIT_ID = 21L;
+    private static final Long USER_ID = 2L;
     private static final Long REPORT_ID = 99L;
 
     @Mock
@@ -76,7 +77,7 @@ class ReportGenerationServiceTest {
         )).willReturn(Map.of(ReportFormat.PDF, REPORT_ID));
 
         List<GeneratedReportResponse> responses =
-                reportGenerationService.generate(AUDIT_ID, List.of(ReportFormat.PDF));
+                reportGenerationService.generate(USER_ID, AUDIT_ID, List.of(ReportFormat.PDF));
 
         assertThat(responses).hasSize(1);
 

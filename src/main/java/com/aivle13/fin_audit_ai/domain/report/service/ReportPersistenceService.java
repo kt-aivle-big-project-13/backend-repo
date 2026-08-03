@@ -31,6 +31,20 @@ public class ReportPersistenceService {
         findAudit(auditId);
     }
 
+    /**
+     * LLM 호출 전에 요청자가 그 감사의 소유자인지 확인한다.
+     *
+     * <p>확인하지 않으면 남의 감사로 보고서를 만들어 낼 수 있다. 없는 감사와 남의 감사를 같은
+     * 응답으로 처리해 존재 여부가 드러나지 않게 한다.
+     */
+    @Transactional(readOnly = true)
+    public void validateAuditOwnedBy(Long userId, Long auditId) {
+        auditRepository.findByIdAndUser_Id(auditId, userId)
+                .orElseThrow(() ->
+                        new BusinessException(ErrorCode.AUDIT_NOT_FOUND)
+                );
+    }
+
     // 감사 조회와 ReportEntity 저장에 필요한 DB 작업만 짧은 트랜잭션으로 처리한다.
     // 저장 실패로 트랜잭션이 롤백되면 업로드된 S3 파일도 함께 삭제한다.
     @Transactional
