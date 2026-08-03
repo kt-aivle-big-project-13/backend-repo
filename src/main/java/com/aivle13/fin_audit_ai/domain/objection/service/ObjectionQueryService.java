@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.util.List;
 
@@ -83,6 +84,7 @@ public class ObjectionQueryService {
 
     // 처리 결과(decision)에 따른 판단 근거 설명 + 고객 안내문 초안을 생성해 반환한다.
     // 이미 발송된 건은 발송 당시 확정된 내용을 그대로 돌려준다.
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ObjectionDocumentResponse getDocument(
             Long userId,
             Long objectionId,
@@ -131,6 +133,7 @@ public class ObjectionQueryService {
         );
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public LetterBodyResponse regenerateLetter(
             Long userId,
             Long objectionId,

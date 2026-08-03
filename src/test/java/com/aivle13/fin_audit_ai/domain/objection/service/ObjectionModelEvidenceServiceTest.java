@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -56,11 +57,12 @@ class ObjectionModelEvidenceServiceTest {
         when(model.getId()).thenReturn(7L);
         when(audit.getId()).thenReturn(12L);
         when(auditRepository
-                .findFirstByModel_IdAndStatusInOrderByCompletedAtDescIdDesc(
+                .findLatestByModelIdAndStatuses(
                         eq(7L),
-                        anyList()
+                        anyList(),
+                        eq(PageRequest.of(0, 1))
                 ))
-                .thenReturn(Optional.of(audit));
+                .thenReturn(List.of(audit));
         when(shapFeatureImportanceRepository
                 .findTop5ByAudit_IdAndSensitiveFalseOrderByRankAsc(12L))
                 .thenReturn(List.of(first, second));
@@ -87,7 +89,7 @@ class ObjectionModelEvidenceServiceTest {
                 .isEqualTo("RISK_INCREASE");
 
         verify(auditRepository)
-                .findFirstByModel_IdAndStatusInOrderByCompletedAtDescIdDesc(
+                .findLatestByModelIdAndStatuses(
                         eq(7L),
                         argThat(statuses ->
                                 statuses.containsAll(List.of(
@@ -96,7 +98,8 @@ class ObjectionModelEvidenceServiceTest {
                                         AuditStatus.NON_COMPLIANT,
                                         AuditStatus.UNCONFIRMED
                                 ))
-                        )
+                        ),
+                        eq(PageRequest.of(0, 1))
                 );
     }
 
@@ -106,11 +109,12 @@ class ObjectionModelEvidenceServiceTest {
 
         when(model.getId()).thenReturn(7L);
         when(auditRepository
-                .findFirstByModel_IdAndStatusInOrderByCompletedAtDescIdDesc(
+                .findLatestByModelIdAndStatuses(
                         eq(7L),
-                        anyList()
+                        anyList(),
+                        eq(PageRequest.of(0, 1))
                 ))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of());
 
         List<ObjectionModelEvidenceResponse> result =
                 objectionModelEvidenceService.findLatestTopEvidence(model);

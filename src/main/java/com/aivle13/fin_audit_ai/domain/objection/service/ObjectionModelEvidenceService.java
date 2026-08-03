@@ -9,6 +9,7 @@ import com.aivle13.fin_audit_ai.domain.objection.dto.response.ObjectionModelEvid
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -36,10 +37,13 @@ public class ObjectionModelEvidenceService {
         }
 
         return auditRepository
-                .findFirstByModel_IdAndStatusInOrderByCompletedAtDescIdDesc(
+                .findLatestByModelIdAndStatuses(
                         model.getId(),
-                        COMPLETED_STATUSES
+                        COMPLETED_STATUSES,
+                        PageRequest.of(0, 1)
                 )
+                .stream()
+                .findFirst()
                 .map(this::findTopEvidence)
                 .orElseGet(List::of);
     }
