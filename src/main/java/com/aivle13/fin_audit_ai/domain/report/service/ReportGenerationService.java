@@ -36,6 +36,7 @@ public class ReportGenerationService {
     // 선택된 포맷별로 최종 감사 보고서를 생성한다.
     // 여러 포맷을 선택해도 LLM 본문은 한 번만 생성한다.
     public List<GeneratedReportResponse> generate(
+            Long userId,
             Long auditId,
             List<ReportFormat> formats
     ) {
@@ -43,8 +44,8 @@ public class ReportGenerationService {
             return List.of();
         }
 
-        // LLM 호출 및 S3 업로드 전에 감사 존재 여부를 검증한다.
-        reportPersistenceService.validateAuditExists(auditId);
+        // LLM 호출 및 S3 업로드 전에 요청자가 그 감사의 소유자인지 검증한다.
+        reportPersistenceService.validateAuditOwnedBy(userId, auditId);
 
         List<ReportFormat> distinctFormats = formats.stream().distinct().toList();
 
