@@ -46,7 +46,7 @@ class ExplainabilityReportGenerationServiceTest {
     private ReportPersistenceService reportPersistenceService;
 
     @Mock
-    private ReportNarrativePersistenceService narrativePersistenceService;
+    private ReportNarrativeRecorder narrativeRecorder;
 
     @Mock
     private AuditEntity audit;

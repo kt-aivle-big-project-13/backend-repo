@@ -104,14 +104,18 @@ class ReportNarrativePersistenceServiceTest {
     }
 
     @Test
-    @DisplayName("서술 저장이 실패해도 리포트 생성 흐름을 막지 않는다")
-    void swallowsFailureWhenSavedQuietly() {
-        willThrow(new RuntimeException("DB 장애"))
-                .given(auditRepository).findById(AUDIT_ID);
-
-        service.saveQuietly(AUDIT_ID, ReportType.BIAS_REPORT, List.of(
-                new ReportNarrativeResponse("overview_purpose", "1. 감사 개요", "개요 서술")
+    @DisplayName("받은 서술이 전부 쓸 수 없으면 기존 서술을 지우지 않는다")
+    void keepsPreviousNarrativesWhenAllReceivedAreUnusable() {
+        service.replaceAll(AUDIT_ID, ReportType.BIAS_REPORT, List.of(
+                new ReportNarrativeResponse("overview_purpose", "1. 감사 개요", "   "),
+                new ReportNarrativeResponse(null, "5. 공정성 지표 결과", "지표 서술"),
+                new ReportNarrativeResponse("tradeoff", "", "트레이드오프 서술")
         ));
+
+        // 지우기만 하면 대체할 내용도 없이 챗봇 근거만 사라진다.
+        verify(narrativeRepository, never())
+                .deleteByAudit_IdAndReportType(anyLong(), any());
+        verify(narrativeRepository, never()).saveAll(any());
     }
 
     @SuppressWarnings("unchecked")

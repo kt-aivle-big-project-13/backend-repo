@@ -51,7 +51,7 @@ class ImprovementGuideGenerationServiceTest {
     private ReportPersistenceService reportPersistenceService;
 
     @Mock
-    private ReportNarrativePersistenceService narrativePersistenceService;
+    private ReportNarrativeRecorder narrativeRecorder;
 
     @InjectMocks
     private ImprovementGuideGenerationService service;

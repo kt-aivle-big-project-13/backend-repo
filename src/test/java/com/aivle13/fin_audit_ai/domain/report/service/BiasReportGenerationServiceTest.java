@@ -63,7 +63,7 @@ class BiasReportGenerationServiceTest {
     private ReportPersistenceService reportPersistenceService;
 
     @Mock
-    private ReportNarrativePersistenceService narrativePersistenceService;
+    private ReportNarrativeRecorder narrativeRecorder;
 
     @Mock
     private AuditEntity audit;
@@ -109,7 +109,7 @@ class BiasReportGenerationServiceTest {
 
         service.generateAndSave(USER_ID, AUDIT_ID);
 
-        verify(narrativePersistenceService).saveQuietly(
+        verify(narrativeRecorder).record(
                 AUDIT_ID,
                 ReportType.BIAS_REPORT,
                 narratives

@@ -26,7 +26,7 @@ public class ExplainabilityReportGenerationService {
     private final AuditRepository auditRepository;
     private final ExplainabilityReportClient reportClient;
     private final ReportPersistenceService reportPersistenceService;
-    private final ReportNarrativePersistenceService narrativePersistenceService;
+    private final ReportNarrativeRecorder narrativeRecorder;
 
     public Long generateAndSave(
             Long userId,
@@ -43,14 +43,6 @@ public class ExplainabilityReportGenerationService {
                 reportClient.generate(createRequest(audit));
 
         validateResponse(auditId, response);
-
-        // 챗봇이 리포트 내용을 근거로 답할 수 있도록 섹션별 서술을 저장한다.
-        // 저장 실패가 리포트 생성 자체를 막지 않도록 예외는 삼킨다.
-        narrativePersistenceService.saveQuietly(
-                auditId,
-                ReportType.XAI_REPORT,
-                response.narratives()
-        );
 
         Map<ReportFormat, Long> reportIds =
                 reportPersistenceService.saveAll(
@@ -72,6 +64,14 @@ public class ExplainabilityReportGenerationService {
         if (htmlReportId == null) {
             throw new AuditFailedException();
         }
+
+        // 리포트 저장이 끝난 뒤에 서술을 남긴다. 먼저 저장하면 리포트 저장이 실패했을 때
+        // 존재하지 않는 리포트의 서술을 챗봇이 근거로 인용하게 된다.
+        narrativeRecorder.record(
+                auditId,
+                ReportType.XAI_REPORT,
+                response.narratives()
+        );
 
         return htmlReportId;
     }

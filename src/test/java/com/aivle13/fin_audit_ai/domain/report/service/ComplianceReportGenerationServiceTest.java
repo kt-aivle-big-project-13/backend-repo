@@ -50,7 +50,7 @@ class ComplianceReportGenerationServiceTest {
     private ReportPersistenceService reportPersistenceService;
 
     @Mock
-    private ReportNarrativePersistenceService narrativePersistenceService;
+    private ReportNarrativeRecorder narrativeRecorder;
 
     @InjectMocks
     private ComplianceReportGenerationService service;
