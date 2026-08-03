@@ -5,6 +5,7 @@ import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationRequest;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationResponse;
 import com.aivle13.fin_audit_ai.domain.report.service.ReportDownloadResult;
 import com.aivle13.fin_audit_ai.domain.report.service.ReportDownloadService;
+import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import com.aivle13.fin_audit_ai.domain.report.service.ReportGenerationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -59,11 +61,17 @@ public class ReportController {
     })
     @PostMapping("/audits/{auditId}/deliverables")
     public ResponseEntity<ReportGenerationResponse> generate(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long auditId,
             @RequestBody ReportGenerationRequest request
     ) {
+        if (userId == null) {
+            throw new UnauthorizedException();
+        }
+
         List<GeneratedReportResponse> reports =
                 reportGenerationService.generate(
+                        userId,
                         auditId,
                         request.formats()
                 );
@@ -95,10 +103,15 @@ public class ReportController {
     })
     @GetMapping("/deliverables/{reportId}/download")
     public ResponseEntity<InputStreamResource> download(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long reportId
     ) {
+        if (userId == null) {
+            throw new UnauthorizedException();
+        }
+
         ReportDownloadResult result =
-                reportDownloadService.download(reportId);
+                reportDownloadService.download(userId, reportId);
 
         ContentDisposition contentDisposition =
                 ContentDisposition.attachment()
