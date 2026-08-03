@@ -9,6 +9,9 @@ import com.aivle13.fin_audit_ai.domain.objection.repository.ObjectionRepository;
 import com.aivle13.fin_audit_ai.domain.objection.type.ObjectionStatus;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.objection.DuplicateObjectionNoException;
 import com.aivle13.fin_audit_ai.global.exception.objection.InvalidObjectionFileException;
 import com.aivle13.fin_audit_ai.global.exception.objection.ObjectionAlreadyProcessedException;
@@ -57,24 +60,40 @@ public class ObjectionCommandService {
     private final UserRepository userRepository;
     private final AuditFileValidator fileValidator;
     private final MailService mailService;
+    private final AiModelRepository aiModelRepository;
 
-    public ObjectionImportResponse importFromCsv(MultipartFile file) {
-        fileValidator.validateCsvFile(file, "이의제기 신용감사 결과");
+    public ObjectionImportResponse importFromCsv(
+            Long userId,
+            Long modelId,
+            MultipartFile file
+    ) {
+        AiModelEntity model = aiModelRepository
+                .findByIdAndUser_Id(modelId, userId)
+                .orElseThrow(ModelNotFoundException::new);
 
-        List<ObjectionEntity> parsed = parseCsv(file);
+        fileValidator.validateCsvFile(
+                file,
+                "이의제기 신용감사 결과"
+        );
+
+        List<ObjectionEntity> parsed = parseCsv(file, model);
         List<ObjectionEntity> saved = objectionRepository.saveAll(parsed);
 
         List<ObjectionSummaryResponse> summaries = saved.stream()
                 .map(ObjectionSummaryResponse::of)
                 .toList();
 
-        return new ObjectionImportResponse(summaries.size(), summaries);
+        return new ObjectionImportResponse(
+                summaries.size(),
+                summaries
+        );
     }
 
     public ObjectionDetailResponse dispatch(Long userId, Long objectionId, ObjectionDispatchRequest request) {
         // 같은 이의제기에 대한 동시 발송 요청이 상태 체크를 동시에 통과해 메일이 중복 발송되지 않도록,
         // 확인 전에 행을 잠가 요청을 직렬화한다.
-        ObjectionEntity objection = objectionRepository.findByIdForUpdate(objectionId)
+        ObjectionEntity objection = objectionRepository
+                .findByIdAndModel_User_IdForUpdate(objectionId, userId)
                 .orElseThrow(ObjectionNotFoundException::new);
 
         if (objection.getStatus() == ObjectionStatus.DELIVERED) {
@@ -102,7 +121,7 @@ public class ObjectionCommandService {
     }
 
     // 행 단위로 전부 검증한 뒤 한 번에 저장한다. 중간에 하나라도 실패하면 아무것도 저장되지 않는다.
-    private List<ObjectionEntity> parseCsv(MultipartFile file) {
+    private List<ObjectionEntity> parseCsv(MultipartFile file, AiModelEntity model) {
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader()
                 .setSkipHeaderRecord(true)
@@ -145,7 +164,12 @@ public class ObjectionCommandService {
 
                     try {
                         objections.add(
-                                toEntity(record, rowNumber, objectionNosInFile)
+                                toEntity(
+                                        record,
+                                        rowNumber,
+                                        objectionNosInFile,
+                                        model
+                                )
                         );
                     } catch (InvalidObjectionFileException e) {
                         // 필수값 누락, 길이 초과 등 직접 검증한 오류는 그대로 전달한다.
@@ -153,7 +177,8 @@ public class ObjectionCommandService {
                     } catch (IllegalArgumentException e) {
                         // 헤더는 정상이지만 특정 행의 컬럼 구조가 잘못된 경우
                         throw new InvalidObjectionFileException(
-                                rowNumber + "번째 행: CSV 데이터 형식이 올바르지 않습니다."
+                                rowNumber
+                                        + "번째 행: CSV 데이터 형식이 올바르지 않습니다."
                         );
                     }
                 }
@@ -189,7 +214,7 @@ public class ObjectionCommandService {
         return content.startsWith("\uFEFF") ? content.substring(1) : content;
     }
 
-    private ObjectionEntity toEntity(CSVRecord record, long rowNumber, Set<String> objectionNosInFile) {
+    private ObjectionEntity toEntity(CSVRecord record, long rowNumber, Set<String> objectionNosInFile, AiModelEntity model) {
         String objectionNo = requireText(record, "이의제기_번호", rowNumber, OBJECTION_NO_MAX_LENGTH);
         String customerName = requireText(record, "고객_이름", rowNumber, CUSTOMER_NAME_MAX_LENGTH);
         String caseType = requireText(record, "거절_금융기준", rowNumber, CASE_TYPE_MAX_LENGTH);
@@ -215,7 +240,7 @@ public class ObjectionCommandService {
         }
 
         return ObjectionEntity.create(
-                objectionNo, null, customerName, caseType, title, content, shapEvidence, staffNote, submittedAt
+                objectionNo, model, customerName, caseType, title, content, shapEvidence, staffNote, submittedAt
         );
     }
 

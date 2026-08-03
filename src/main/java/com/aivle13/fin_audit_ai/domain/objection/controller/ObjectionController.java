@@ -40,8 +40,9 @@ public class ObjectionController {
 
     @Operation(
             summary = "이의제기 CSV 업로드",
-            description = "고객사 담당자가 신용감사 결과 CSV(고객_이름, 이의제기_번호, 거절_금융기준, 제목, 내용, "
-                    + "주요_판단_근거_변수, 담당자_판단_근거, 작성일시)를 업로드해 이의제기 건을 일괄 등록합니다."
+            description = "대상 모델 ID와 고객 이의제기 CSV를 업로드해 이의제기 건을 일괄 등록합니다. "
+                    + "CSV 필수 컬럼은 고객_이름, 이의제기_번호, 거절_금융기준, 제목, 내용, "
+                    + "주요_판단_근거_변수, 담당자_판단_근거, 작성일시입니다."
     )
     @ApiResponses({
             @ApiResponse(
@@ -56,13 +57,13 @@ public class ObjectionController {
     @PostMapping(path = "/import", consumes = "multipart/form-data")
     public ResponseEntity<ObjectionImportResponse> importCsv(
             @AuthenticationPrincipal Long userId,
-            @ModelAttribute ObjectionImportRequest request
+            @Valid @ModelAttribute ObjectionImportRequest request
     ) {
         if (userId == null) {
             throw new UnauthorizedException();
         }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(objectionCommandService.importFromCsv(request.file()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(objectionCommandService.importFromCsv(userId, request.modelId(), request.file()));
     }
 
     @Operation(
@@ -92,7 +93,7 @@ public class ObjectionController {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        return ResponseEntity.ok(objectionQueryService.list(page, size, status, keyword, sort));
+        return ResponseEntity.ok(objectionQueryService.list(userId, page, size, status, keyword, sort));
     }
 
     @Operation(summary = "이의제기 상세 조회", description = "이의제기 상세 정보와 판단 근거, 처리 상태를 조회합니다.")
@@ -114,7 +115,7 @@ public class ObjectionController {
             throw new UnauthorizedException();
         }
 
-        return ResponseEntity.ok(objectionQueryService.getDetail(objectionId));
+        return ResponseEntity.ok(objectionQueryService.getDetail(userId, objectionId));
     }
 
     @Operation(
@@ -137,7 +138,7 @@ public class ObjectionController {
             throw new UnauthorizedException();
         }
 
-        return ResponseEntity.ok(objectionQueryService.getDocument(objectionId, decision));
+        return ResponseEntity.ok(objectionQueryService.getDocument(userId, objectionId, decision));
     }
 
     @Operation(summary = "고객 안내문 재생성", description = "처리 결과에 맞는 고객 안내문을 다시 생성합니다. 발송 완료된 건은 재생성할 수 없습니다.")
@@ -157,7 +158,7 @@ public class ObjectionController {
             throw new UnauthorizedException();
         }
 
-        return ResponseEntity.ok(objectionQueryService.regenerateLetter(objectionId, decision));
+        return ResponseEntity.ok(objectionQueryService.regenerateLetter(userId, objectionId, decision));
     }
 
     @Operation(

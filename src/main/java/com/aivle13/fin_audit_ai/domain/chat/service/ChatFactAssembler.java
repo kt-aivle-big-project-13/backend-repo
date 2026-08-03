@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 감사 수치를 질의 응답 근거로 조립한다.
@@ -35,6 +36,13 @@ public class ChatFactAssembler {
 
     // SHAP 기여도는 순위가 낮아질수록 답변에 쓸모가 적고 프롬프트만 길어진다.
     private static final int SHAP_TOP_N = 10;
+
+    // 프론트 fairnessData.ts의 ATTRIBUTE_LABEL과 맞춘 한글 표기. 아직 지원하지 않는
+    // 보호속성이 들어와도 attributeLabel()이 원래 값으로 대체해 예외 없이 동작한다.
+    private static final Map<String, String> ATTRIBUTE_LABELS = Map.of(
+            "AGE_GROUP", "연령대",
+            "CODE_GENDER", "성별"
+    );
 
     private final FairnessResultRepository fairnessResultRepository;
     private final FairnessGroupStatRepository fairnessGroupStatRepository;
@@ -63,13 +71,13 @@ public class ChatFactAssembler {
             facts.add(new ChatAnswerRequest.AuditFact(
                     "AUDIT_METRIC",
                     "%s / %s".formatted(
-                            result.getMetricCode().name(),
-                            result.getAttribute()
+                            result.getMetricCode().label(),
+                            attributeLabel(result.getAttribute())
                     ),
                     text(result.getValue()),
                     "임계값 %s, 상태 %s".formatted(
                             text(result.getThreshold()),
-                            result.getStatus().name()
+                            result.getStatus().label()
                     )
             ));
         }
@@ -86,7 +94,7 @@ public class ChatFactAssembler {
             facts.add(new ChatAnswerRequest.AuditFact(
                     "GROUP_STAT",
                     "%s=%s".formatted(
-                            stat.getAttribute(),
+                            attributeLabel(stat.getAttribute()),
                             stat.getGroupName()
                     ),
                     "승인율 %s".formatted(text(stat.getApprovalRate())),
@@ -111,11 +119,11 @@ public class ChatFactAssembler {
                 : xaiResultRepository.findAllByAudit_Id(auditId)) {
             facts.add(new ChatAnswerRequest.AuditFact(
                     "AUDIT_METRIC",
-                    result.getMetricCode().name(),
+                    result.getMetricCode().label(),
                     text(result.getValue()),
                     "임계값 %s, 상태 %s".formatted(
                             text(result.getThreshold()),
-                            result.getStatus().name()
+                            result.getStatus().label()
                     )
             ));
         }
@@ -163,5 +171,9 @@ public class ChatFactAssembler {
 
     private String text(Object value) {
         return value == null ? "N/A" : value.toString();
+    }
+
+    private String attributeLabel(String attribute) {
+        return ATTRIBUTE_LABELS.getOrDefault(attribute, attribute);
     }
 }

@@ -45,6 +45,17 @@ public final class ObjectionSpecifications {
         };
     }
 
+    public static Specification<ObjectionEntity> ownedBy(
+            Long userId
+    ) {
+        return (root, query, cb) -> cb.equal(
+                root.get("model")
+                        .get("user")
+                        .get("id"),
+                userId
+        );
+    }
+
     private static String escapeLike(String value) {
         return value
                 .replace("\\", "\\\\")
