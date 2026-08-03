@@ -133,6 +133,16 @@ public class AuditEntity extends BaseEntity {
     public void markFailed() {
         this.status = AuditStatus.FAILED;
     }
+    // 대기·진행 중인 감사만 취소할 수 있다 (이미 끝난 감사는 취소 대상이 아님)
+    public boolean isCancellable() {
+        return status == AuditStatus.PENDING || status == AuditStatus.IN_PROGRESS;
+    }
+    public boolean isCancelled() {
+        return status == AuditStatus.CANCELLED;
+    }
+    public void cancel() {
+        this.status = AuditStatus.CANCELLED;
+    }
     // 공정성 단계에서 AI가 준 모델 성능(AUC·정확도)을 기록. 값이 없으면 null 로 남는다.
     public void applyPerformance(BigDecimal modelAuc, BigDecimal modelAccuracy) {
         this.modelAuc = modelAuc;

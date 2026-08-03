@@ -32,18 +32,27 @@ public class AuditProgressService {
     @Transactional
     public void markInProgress(Long auditId) {
         AuditEntity audit = findAudit(auditId);
+        if (audit.isCancelled()) {
+            return;
+        }
         audit.markInProgress();
     }
 
     @Transactional
     public void markShapCompleted(Long auditId) {
         AuditEntity audit = findAudit(auditId);
+        if (audit.isCancelled()) {
+            return;
+        }
         audit.moveToStep(FAIRNESS_STEP);
     }
 
     @Transactional
     public void markFairnessCompleted(Long auditId) {
         AuditEntity audit = findAudit(auditId);
+        if (audit.isCancelled()) {
+            return;
+        }
         AuditStatus verdict = determineVerdict(auditId);
         audit.complete(COMPLETED_STEP, verdict);
         notificationService.notifyAuditComplete(audit);
@@ -82,7 +91,17 @@ public class AuditProgressService {
     @Transactional
     public void markFailed(Long auditId) {
         AuditEntity audit = findAudit(auditId);
+        if (audit.isCancelled()) {
+            return;
+        }
         audit.markFailed();
+    }
+
+    // 취소된 감사는 이후 단계(SHAP 완료→공정성 분석 등)를 더 진행할 필요가 없으므로,
+    // 이벤트 리스너가 다음 단계를 건너뛸지 판단하는 데 쓴다.
+    @Transactional(readOnly = true)
+    public boolean isCancelled(Long auditId) {
+        return findAudit(auditId).isCancelled();
     }
 
     private AuditEntity findAudit(Long auditId) {

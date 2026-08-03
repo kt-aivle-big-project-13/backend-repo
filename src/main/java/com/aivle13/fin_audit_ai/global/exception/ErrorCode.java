@@ -55,7 +55,8 @@ public enum ErrorCode {
     INVALID_SELF_CHECK_ANSWERS(HttpStatus.BAD_REQUEST, "EM016", "자율점검 응답은 5개 항목을 모두, 중복 없이 제출해야 합니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "EM017", "설명가능성 리포트를 찾을 수 없습니다."),
     CHAT_CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "EM018", "질의 대화를 찾을 수 없습니다."),
-    DUPLICATE_MODEL_NAME(HttpStatus.CONFLICT, "EM019", "이미 사용 중인 모델명입니다."),
+    AUDIT_NOT_CANCELLABLE(HttpStatus.CONFLICT, "EM019", "취소할 수 없는 감사 상태입니다."),
+    DUPLICATE_MODEL_NAME(HttpStatus.CONFLICT, "EM020", "이미 사용 중인 모델명입니다."),
 
     // ===== Diagnosis (EP) =====
     PRE_DIAGNOSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "EP001", "사전진단을 찾을 수 없습니다."),
