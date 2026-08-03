@@ -111,10 +111,12 @@ public class ObjectionCommandService {
         Set<String> objectionNosInFile = new HashSet<>();
 
         try (CSVParser parser = format.parse(new StringReader(readAsUtf8WithoutBom(file)))) {
-            if (!parser.getHeaderNames().containsAll(REQUIRED_HEADERS)) {
+            List<String> actualHeaders = parser.getHeaderNames();
+
+            if (actualHeaders.size() != REQUIRED_HEADERS.size() || !actualHeaders.containsAll(REQUIRED_HEADERS)) {
                 throw new InvalidObjectionFileException(
                         "CSV 헤더가 올바르지 않습니다. 필요한 컬럼: " + String.join(", ", REQUIRED_HEADERS)
-                                + " / 실제 헤더: " + parser.getHeaderNames());
+                                + " / 실제 헤더: " + actualHeaders);
             }
 
             long rowNumber = 1; // 1행은 헤더
@@ -122,7 +124,14 @@ public class ObjectionCommandService {
                 rowNumber++;
                 objections.add(toEntity(record, rowNumber, objectionNosInFile));
             }
+        } catch (InvalidObjectionFileException e) {
+            // 필수값 누락, 길이 초과, 헤더 불일치처럼 직접 검증한 CSV 오류는 메시지를 유지한 채 그대로 전달한다.
+            throw e;
+        } catch (IllegalArgumentException e) {
+            // 헤더 이름이 비어 있어 CSV 컬럼을 식별할 수 없는 경우 400 오류로 변환한다.
+            throw new InvalidObjectionFileException("CSV 헤더가 올바르지 않습니다.");
         } catch (IOException e) {
+            // 파일 자체를 읽는 과정에서 발생한 오류는 CSV 파일 읽기 실패로 변환한다.
             throw new InvalidObjectionFileException("CSV 파일을 읽을 수 없습니다: " + file.getOriginalFilename());
         }
 
