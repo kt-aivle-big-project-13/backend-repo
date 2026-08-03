@@ -1,8 +1,12 @@
 package com.aivle13.fin_audit_ai.domain.audit.service.core;
 
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditRetryResponse;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
@@ -14,12 +18,14 @@ import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditNotRetryableException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +45,12 @@ class AuditServiceTest {
     private AuditRepository auditRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private XaiResultRepository xaiResultRepository;
+    @Mock
+    private FairnessResultRepository fairnessResultRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
     @Mock
     private UserEntity user;
 
@@ -193,6 +206,84 @@ class AuditServiceTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> auditService.cancel(AUDIT_ID, USER_ID))
+                .isInstanceOf(AuditNotFoundException.class);
+    }
+
+    private AuditEntity failedAudit() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        audit.markInProgress();
+        audit.moveToStep(3);
+        audit.markFailed();
+        return audit;
+    }
+
+    @Test
+    void 실패한_감사를_재시도하면_PENDING으로_리셋되고_분석이_재발행된다() {
+        AuditEntity audit = failedAudit();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        AuditRetryResponse response = auditService.retry(AUDIT_ID, USER_ID);
+
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.PENDING);
+        assertThat(audit.getCurrentStep()).isEqualTo(1);
+        assertThat(response.status()).isEqualTo("PENDING");
+        assertThat(response.retriedAt()).isNotNull();
+        verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+
+        ArgumentCaptor<AuditStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuditStartedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().auditId()).isEqualTo(AUDIT_ID);
+    }
+
+    @Test
+    void 취소된_감사도_재시도할_수_있다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        audit.markInProgress();
+        audit.cancel();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        AuditRetryResponse response = auditService.retry(AUDIT_ID, USER_ID);
+
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.PENDING);
+        assertThat(response.status()).isEqualTo("PENDING");
+        verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(eventPublisher).publishEvent(any(AuditStartedEvent.class));
+    }
+
+    @Test
+    void FAILED가_아닌_감사는_재시도할_수_없다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        audit.markInProgress();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+
+        assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
+                .isInstanceOf(AuditNotRetryableException.class);
+
+        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+    }
+
+    @Test
+    void 존재하지_않는_감사를_재시도하면_예외가_발생한다() {
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
                 .isInstanceOf(AuditNotFoundException.class);
     }
 }

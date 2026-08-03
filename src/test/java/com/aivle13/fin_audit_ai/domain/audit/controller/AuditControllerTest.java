@@ -2,8 +2,16 @@ package com.aivle13.fin_audit_ai.domain.audit.controller;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
+import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessResultEntity;
+import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
@@ -55,6 +63,12 @@ class AuditControllerTest extends IntegrationTestSupport {
 
     @Autowired
     private AuditRepository auditRepository;
+
+    @Autowired
+    private XaiResultRepository xaiResultRepository;
+
+    @Autowired
+    private FairnessResultRepository fairnessResultRepository;
 
     private Long userId;
     private Long modelId;
@@ -554,6 +568,95 @@ class AuditControllerTest extends IntegrationTestSupport {
     @DisplayName("인증 정보가 없으면 401을 반환한다")
     void list_unauthorized() throws Exception {
         mockMvc.perform(get("/api/v1/audits"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private AuditEntity saveFailedAudit() {
+        AuditEntity audit = saveAudit();
+        audit.markInProgress();
+        audit.moveToStep(3);
+        audit.markFailed();
+        return auditRepository.save(audit);
+    }
+
+    @Test
+    @DisplayName("실패한 감사를 재시도하면 202와 함께 PENDING 상태로 리셋된다")
+    void retry_success() throws Exception {
+        AuditEntity audit = saveFailedAudit();
+        xaiResultRepository.save(XaiResultEntity.of(audit, XaiMetricCode.FIDELITY,
+                BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.5), XaiStatus.PASS));
+        fairnessResultRepository.save(FairnessResultEntity.of(audit, "gender",
+                FairnessMetricCode.DEMOGRAPHIC_PARITY, BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.5), FairnessStatus.PASS));
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/retry")
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.auditId").value(audit.getId()))
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.retriedAt").exists());
+
+        assertThat(xaiResultRepository.findAllByAudit_Id(audit.getId())).isEmpty();
+        assertThat(fairnessResultRepository.findAllByAudit_Id(audit.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("취소된 감사를 재시도하면 202와 함께 PENDING 상태로 리셋된다")
+    void retry_cancelledAudit_success() throws Exception {
+        AuditEntity audit = saveAudit();
+        audit.markInProgress();
+        audit.cancel();
+        auditRepository.save(audit);
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/retry")
+                        .with(authentication(asUser())))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 감사를 재시도하면 404를 반환한다")
+    void retry_notFound() throws Exception {
+        mockMvc.perform(post("/api/v1/audits/999999/retry")
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 감사는 재시도할 수 없어 404를 반환한다")
+    void retry_otherUsersAudit() throws Exception {
+        UserEntity otherUser = userRepository.save(
+                UserEntity.create("다른기관", "김철수", "audit-retry-other@example.com", "hash", UserRole.AUDITOR)
+        );
+        AiModelEntity model = aiModelRepository.findById(modelId).orElseThrow();
+        DatasetEntity dataset = datasetRepository.findById(datasetId).orElseThrow();
+        AuditEntity audit = auditRepository.save(
+                AuditEntity.create(model, dataset, otherUser, "1차 정기감사", "age,gender",
+                        null, ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null)
+        );
+        audit.markFailed();
+        auditRepository.save(audit);
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/retry")
+                        .with(authentication(asUser())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("FAILED 상태가 아닌 감사를 재시도하면 409를 반환한다")
+    void retry_notRetryable() throws Exception {
+        AuditEntity audit = saveAudit();
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/retry")
+                        .with(authentication(asUser())))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자의 재시도 요청은 401을 반환한다")
+    void retry_unauthorized() throws Exception {
+        AuditEntity audit = saveFailedAudit();
+
+        mockMvc.perform(post("/api/v1/audits/" + audit.getId() + "/retry"))
                 .andExpect(status().isUnauthorized());
     }
 }
