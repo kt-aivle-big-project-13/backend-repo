@@ -1,8 +1,12 @@
 package com.aivle13.fin_audit_ai.domain.audit.service.core;
 
+import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditRetryResponse;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
+import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
@@ -10,11 +14,14 @@ import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditNotRetryableException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -23,6 +30,9 @@ public class AuditService {
 
     private final AuditRepository auditRepository;
     private final UserRepository userRepository;
+    private final XaiResultRepository xaiResultRepository;
+    private final FairnessResultRepository fairnessResultRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AuditEntity create(Long userId, AiModelEntity model, DatasetEntity dataset, String auditName,
                                String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
@@ -54,5 +64,25 @@ public class AuditService {
         }
 
         audit.cancel();
+    }
+
+    // FAILED·CANCELLED 상태만 재시도할 수 있고, 이전 실행에서 남은 산출물이 새 분석 결과와
+    // 섞이지 않도록 기존 SHAP·공정성 결과를 먼저 지운 뒤 감사를 초기화하고 분석을 다시 발행한다.
+    @Transactional
+    public AuditRetryResponse retry(Long auditId, Long userId) {
+        AuditEntity audit = auditRepository.findByIdAndUser_IdForUpdate(auditId, userId)
+                .orElseThrow(AuditNotFoundException::new);
+
+        if (!audit.isRetryable()) {
+            throw new AuditNotRetryableException();
+        }
+
+        xaiResultRepository.deleteAllByAudit_Id(auditId);
+        fairnessResultRepository.deleteAllByAudit_Id(auditId);
+        audit.retry();
+
+        eventPublisher.publishEvent(new AuditStartedEvent(auditId));
+
+        return AuditRetryResponse.from(audit, LocalDateTime.now());
     }
 }
