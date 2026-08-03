@@ -15,9 +15,22 @@ public interface ObjectionRepository
 
     boolean existsByObjectionNo(String objectionNo);
 
-    // 같은 이의제기에 대한 동시 발송 요청이 상태 체크를 동시에 통과해 메일이 중복 발송되지 않도록
-    // 행 단위로 잠가 요청을 직렬화한다.
+    // 상세 조회·대응문서 생성·재생성 시 사용자 소유권 검증
+    Optional<ObjectionEntity> findByIdAndModel_User_Id(
+            Long id,
+            Long userId
+    );
+
+    // 발송 시 사용자 소유권 검증과 동시 발송 방지 잠금 적용
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select o from ObjectionEntity o where o.id = :id")
-    Optional<ObjectionEntity> findByIdForUpdate(@Param("id") Long id);
+    @Query("""
+            select objection
+            from ObjectionEntity objection
+            where objection.id = :id
+              and objection.model.user.id = :userId
+            """)
+    Optional<ObjectionEntity> findByIdAndModel_User_IdForUpdate(
+            @Param("id") Long id,
+            @Param("userId") Long userId
+    );
 }

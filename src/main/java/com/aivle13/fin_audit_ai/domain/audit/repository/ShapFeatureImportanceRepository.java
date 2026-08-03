@@ -10,5 +10,7 @@ public interface ShapFeatureImportanceRepository
 
     List<ShapFeatureImportanceEntity> findAllByAudit_IdOrderByRankAsc(Long auditId);
 
+    List<ShapFeatureImportanceEntity> findTop5ByAudit_IdAndSensitiveFalseOrderByRankAsc(Long auditId);
+
     void deleteAllByAudit_Id(Long auditId);
 }

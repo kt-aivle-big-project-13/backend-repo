@@ -86,4 +86,10 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
             @Param("auditId") Long auditId,
             @Param("userId") Long userId
     );
+
+    Optional<AuditEntity>
+    findFirstByModel_IdAndStatusInOrderByCompletedAtDescIdDesc(
+            Long modelId,
+            List<AuditStatus> statuses
+    );
 }
