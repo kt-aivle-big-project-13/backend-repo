@@ -46,6 +46,10 @@ public interface AuditRepository extends JpaRepository<AuditEntity, Long> {
 
     boolean existsByModel_IdAndStatusIn(Long modelId, List<AuditStatus> statuses);
 
+    // 감사 취소 시, 같은 모델에 이번 건 말고도(IdNot) 취소 아닌(StatusNot) 감사가 남아있는지
+    // 확인한다. 없으면 이 모델은 실사용 이력이 없는 것이므로 AiModelEntity.archive() 대상이 된다.
+    boolean existsByModel_IdAndIdNotAndStatusNot(Long modelId, Long excludeAuditId, AuditStatus status);
+
     List<AuditEntity> findAllByStatus(AuditStatus status);
 
     // 목록에서 모델명을 같이 보여줘야 해서 N+1을 피하기 위해 model을 fetch join 한다.

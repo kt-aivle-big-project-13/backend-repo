@@ -52,6 +52,20 @@ class ModelQueryServiceTest {
     }
 
     @Test
+    void 보관된_모델은_목록에서_제외한다() {
+        AiModelEntity active = model("group-a", "1.0.0");
+        AiModelEntity archived = model("group-b", "1.0.0");
+        archived.archive();
+        given(aiModelRepository.findByUser_IdOrderByCreatedAtDescIdDesc(USER_ID))
+                .willReturn(List.of(active, archived));
+
+        List<ModelSummaryResponse> result = modelQueryService.list(USER_ID);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).currentVersion()).isEqualTo("1.0.0");
+    }
+
+    @Test
     void 생성_시각이_동률이면_id가_더_큰_모델을_최신_버전으로_반환한다() {
         AiModelEntity newer = model("group-a", "2.0.0");
         AiModelEntity older = model("group-a", "1.0.0");
