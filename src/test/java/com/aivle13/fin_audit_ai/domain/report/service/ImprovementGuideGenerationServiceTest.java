@@ -155,9 +155,10 @@ class ImprovementGuideGenerationServiceTest {
                         "자율점검 기반 자동 매칭"
                 )),
                 List.of(new ImprovementGuideRequest.SelfCheckGap(
-                        "OBJECTION",
-                        "심사 결과 이의제기 절차 마련 여부"
+                        "UP-01",
+                        "고객이 심사 결과에 이의를 제기할 절차가 있나요?"
                 )),
+                List.of(),
                 List.of(new ImprovementGuideRequest.MetricFinding(
                         "CODE_GENDER",
                         "DEMOGRAPHIC_PARITY",

@@ -6,6 +6,7 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.dto.MatchedChecklistItem;
@@ -61,8 +62,8 @@ class AuditRegulationMappingServiceTest {
 
         // OVERSIGHT(예)와 RISK_MANAGEMENT(아니요) 둘 다 제34조를 참조한다(문항마다 다른 항으로).
         // 같은 조항이 두 항목에 걸쳐 중복 매핑되지 않는지 검증한다.
-        SelfCheckAnswerEntity oversightAnswer = answer(SelfCheckItemCode.OVERSIGHT, true);
-        SelfCheckAnswerEntity riskAnswer = answer(SelfCheckItemCode.RISK_MANAGEMENT, false);
+        SelfCheckAnswerEntity oversightAnswer = answer(SelfCheckItemCode.HO_01, SelfCheckAnswerValue.YES);
+        SelfCheckAnswerEntity riskAnswer = answer(SelfCheckItemCode.RM_01, SelfCheckAnswerValue.NO);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(oversightAnswer, riskAnswer));
 
@@ -104,7 +105,7 @@ class AuditRegulationMappingServiceTest {
     void noticeExcludesPenaltyArticleWhenCompliant() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
-        SelfCheckAnswerEntity compliantNotice = answer(SelfCheckItemCode.NOTICE, true);
+        SelfCheckAnswerEntity compliantNotice = answer(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(compliantNotice));
 
@@ -128,7 +129,7 @@ class AuditRegulationMappingServiceTest {
     void noticeNonCompliantIncludesPenaltyArticle() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
-        SelfCheckAnswerEntity nonCompliantNotice = answer(SelfCheckItemCode.NOTICE, false);
+        SelfCheckAnswerEntity nonCompliantNotice = answer(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.NO);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(nonCompliantNotice));
 
@@ -154,7 +155,7 @@ class AuditRegulationMappingServiceTest {
     void throwsWhenMappedArticleMissingFromLawArticles() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
-        SelfCheckAnswerEntity answer = answer(SelfCheckItemCode.DOCUMENTATION, true);
+        SelfCheckAnswerEntity answer = answer(SelfCheckItemCode.DC_01, SelfCheckAnswerValue.YES);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(answer));
 
         given(lawArticleRepository.findByLawNameAndArticleNo("AI 기본법", "제34조"))
@@ -170,7 +171,7 @@ class AuditRegulationMappingServiceTest {
     void regenerationDeletesAllPreviousMappingsRegardlessOfCompliance() {
         given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
 
-        SelfCheckAnswerEntity documentationAnswer = answer(SelfCheckItemCode.DOCUMENTATION, false);
+        SelfCheckAnswerEntity documentationAnswer = answer(SelfCheckItemCode.DC_01, SelfCheckAnswerValue.NO);
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(documentationAnswer));
 
@@ -226,7 +227,7 @@ class AuditRegulationMappingServiceTest {
         );
         given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
-                .willReturn(List.of(answer(SelfCheckItemCode.NOTICE, true)));
+                .willReturn(List.of(answer(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES)));
 
         List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
 
@@ -235,7 +236,7 @@ class AuditRegulationMappingServiceTest {
         assertThat(views).singleElement().satisfies(view -> {
             assertThat(view.matchedItems())
                     .extracting(MatchedChecklistItem::itemCode, MatchedChecklistItem::clauseNo)
-                    .containsExactly(tuple(SelfCheckItemCode.NOTICE, "①"));
+                    .containsExactly(tuple(SelfCheckItemCode.TR_01, "①"));
             assertThat(view.matchedItems())
                     .allSatisfy(item -> assertThat(item.note()).isNotBlank());
         });
@@ -254,9 +255,9 @@ class AuditRegulationMappingServiceTest {
         );
         given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(
-                answer(SelfCheckItemCode.RISK_MANAGEMENT, true),
-                answer(SelfCheckItemCode.OVERSIGHT, true),
-                answer(SelfCheckItemCode.DOCUMENTATION, true)
+                answer(SelfCheckItemCode.RM_01, SelfCheckAnswerValue.YES),
+                answer(SelfCheckItemCode.HO_01, SelfCheckAnswerValue.YES),
+                answer(SelfCheckItemCode.DC_01, SelfCheckAnswerValue.YES)
         ));
 
         List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
@@ -265,9 +266,9 @@ class AuditRegulationMappingServiceTest {
             assertThat(view.matchedItems())
                     .extracting(MatchedChecklistItem::itemCode, MatchedChecklistItem::clauseNo)
                     .containsExactlyInAnyOrder(
-                            tuple(SelfCheckItemCode.RISK_MANAGEMENT, "①1호"),
-                            tuple(SelfCheckItemCode.OVERSIGHT, "①4호"),
-                            tuple(SelfCheckItemCode.DOCUMENTATION, "①5호")
+                            tuple(SelfCheckItemCode.RM_01, "①1호"),
+                            tuple(SelfCheckItemCode.HO_01, "①4호"),
+                            tuple(SelfCheckItemCode.DC_01, "①5호")
                     );
             assertThat(view.matchedItems())
                     .allSatisfy(item -> assertThat(item.note()).isNotBlank());
@@ -283,7 +284,7 @@ class AuditRegulationMappingServiceTest {
         );
         given(auditRegulationMappingRepository.findAllByAudit_Id(AUDIT_ID)).willReturn(List.of(mapping));
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
-                .willReturn(List.of(answer(SelfCheckItemCode.NOTICE, true)));
+                .willReturn(List.of(answer(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES)));
 
         List<AuditRegulationComplianceView> views = auditRegulationMappingService.getMappings(AUDIT_ID);
 
@@ -322,7 +323,7 @@ class AuditRegulationMappingServiceTest {
                 .isInstanceOf(AuditNotFoundException.class);
     }
 
-    private SelfCheckAnswerEntity answer(SelfCheckItemCode itemCode, boolean value) {
+    private SelfCheckAnswerEntity answer(SelfCheckItemCode itemCode, SelfCheckAnswerValue value) {
         return SelfCheckAnswerEntity.of(audit, itemCode, value);
     }
 

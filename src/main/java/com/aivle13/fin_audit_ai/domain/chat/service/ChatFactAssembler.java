@@ -163,7 +163,7 @@ public class ChatFactAssembler {
             facts.add(new ChatAnswerRequest.AuditFact(
                     "AUDIT_METRIC",
                     "자가점검 · %s".formatted(answer.getItemCode().label()),
-                    answer.isAnswer() ? "예" : "아니오",
+                    answer.getAnswer().label(),
                     null
             ));
         }

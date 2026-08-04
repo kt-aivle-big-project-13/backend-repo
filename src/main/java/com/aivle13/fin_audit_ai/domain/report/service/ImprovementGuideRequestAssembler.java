@@ -56,6 +56,7 @@ public class ImprovementGuideRequestAssembler {
                 audit.getModel().getModelName(),
                 createComplianceGaps(auditId),
                 createSelfCheckGaps(auditId),
+                createSelfCheckRecommendations(auditId),
                 createFairnessFindings(auditId),
                 createExplainabilityFindings(auditId)
         );
@@ -83,12 +84,27 @@ public class ImprovementGuideRequestAssembler {
         );
     }
 
+    // 노력의무가 아닌 항목만 담는다 — 노력의무는 '아니오'여도 위반이 아니라서 여기 섞이면
+    // 안 된다(createSelfCheckRecommendations로 분리).
     private List<ImprovementGuideRequest.SelfCheckGap> createSelfCheckGaps(
             Long auditId
     ) {
         return selfCheckAnswerRepository.findAllByAudit_Id(auditId)
                 .stream()
-                .filter(answer -> !answer.isAnswer())
+                .filter(SelfCheckAnswerEntity::isNo)
+                .filter(answer -> !answer.getItemCode().isEffortObligation())
+                .map(ImprovementGuideRequestAssembler::toSelfCheckGap)
+                .toList();
+    }
+
+    // 노력의무 문항에서 '아니오'로 답한 것들. 위반이 아니라 권장 사항이라 별도 섹션으로 뺀다.
+    private List<ImprovementGuideRequest.SelfCheckGap> createSelfCheckRecommendations(
+            Long auditId
+    ) {
+        return selfCheckAnswerRepository.findAllByAudit_Id(auditId)
+                .stream()
+                .filter(SelfCheckAnswerEntity::isNo)
+                .filter(answer -> answer.getItemCode().isEffortObligation())
                 .map(ImprovementGuideRequestAssembler::toSelfCheckGap)
                 .toList();
     }
@@ -97,7 +113,7 @@ public class ImprovementGuideRequestAssembler {
             SelfCheckAnswerEntity answer
     ) {
         return new ImprovementGuideRequest.SelfCheckGap(
-                answer.getItemCode().name(),
+                answer.getItemCode().code(),
                 answer.getItemCode().label()
         );
     }

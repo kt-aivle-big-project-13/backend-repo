@@ -3,6 +3,7 @@ package com.aivle13.fin_audit_ai.domain.audit.controller;
 import com.aivle13.fin_audit_ai.domain.audit.dto.request.selfcheck.SelfCheckAnswerSaveRequest;
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.selfcheck.SelfCheckAnswerResponse;
 import com.aivle13.fin_audit_ai.domain.audit.service.selfcheck.SelfCheckAnswerService;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ class AuditSelfCheckControllerTest {
     @Test
     void savesAnswersAndReturnsResponse() {
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.HO_01, SelfCheckAnswerValue.YES)
         ));
         SelfCheckAnswerResponse expected = new SelfCheckAnswerResponse(AUDIT_ID, List.of());
 
@@ -61,7 +62,7 @@ class AuditSelfCheckControllerTest {
     @Test
     void throwsWhenSavingWithoutAuthentication() {
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.HO_01, SelfCheckAnswerValue.YES)
         ));
 
         assertThatThrownBy(() -> controller.save(null, AUDIT_ID, request))

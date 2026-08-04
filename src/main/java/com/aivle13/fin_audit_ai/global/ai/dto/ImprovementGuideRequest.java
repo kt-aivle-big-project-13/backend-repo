@@ -29,6 +29,13 @@ public record ImprovementGuideRequest(
         @JsonProperty("self_check_gaps")
         List<SelfCheckGap> selfCheckGaps,
 
+        // 노력의무 문항(IA-01, IA-02, SC-04)에서 '아니오'로 답한 것들 — 위반이 아니라 권장
+        // 사항이라 개선 권고(self_check_gaps)와 섞이지 않도록 별도로 보낸다. AI 서버가
+        // 아직 이 필드를 모르면(스키마 미반영) 조용히 무시되고, 그때까지는 참고 권고
+        // 섹션이 report_narrative에 반영되지 않는다 — AI 레포 쪽 스키마 반영은 별도 진행.
+        @JsonProperty("self_check_recommendations")
+        List<SelfCheckGap> selfCheckRecommendations,
+
         @JsonProperty("fairness_findings")
         List<MetricFinding> fairnessFindings,
 
