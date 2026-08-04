@@ -5,6 +5,7 @@ import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 public record ReviewRequiredModelResponse(
         Long modelId,
         String modelName,
+        String version,
         long issueCount,
         AuditStatus status
 ) {
