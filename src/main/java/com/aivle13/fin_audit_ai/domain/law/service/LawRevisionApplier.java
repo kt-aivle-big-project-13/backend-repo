@@ -86,7 +86,15 @@ public class LawRevisionApplier {
         boolean isSameDateContentFix = apiArticle.effectiveDate().isEqual(lastKnownDate)
                 && !apiArticle.content().equals(article.getContent());
 
-        if (!isNewerRevision && !isSameDateContentFix) {
+        // 전부개정처럼 내용이 안 바뀐 조문까지 시행일자가 갱신되는 경우가 있어, 시행일자가
+        // 최신이라는 것만으로는 개정으로 볼 수 없다. law.go.kr이 내려주는 조문변경여부로
+        // 실제로 이 조문의 내용이 바뀐 게 맞는지 한 번 더 확인한다.
+        boolean isActuallyRevised = (isNewerRevision && apiArticle.changed()) || isSameDateContentFix;
+
+        if (!isActuallyRevised) {
+            if (isNewerRevision) {
+                article.acknowledgeEffectiveDate(apiArticle.effectiveDate());
+            }
             return Optional.empty();
         }
 

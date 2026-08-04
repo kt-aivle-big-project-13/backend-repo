@@ -100,6 +100,11 @@ class LawGoKrApiClientTest {
         // 조문가지번호가 있으면 "제N조의M" 형식으로 정규화된다.
         assertThat(revisions.get(2).effectiveDate()).isEqualTo(LocalDate.of(2026, 7, 21));
 
+        // 조문변경여부(Y/N)가 changed로 그대로 매핑된다.
+        assertThat(revisions.get(0).changed()).isFalse();
+        assertThat(revisions.get(1).changed()).isTrue();
+        assertThat(revisions.get(2).changed()).isFalse();
+
         server.verify();
     }
 
