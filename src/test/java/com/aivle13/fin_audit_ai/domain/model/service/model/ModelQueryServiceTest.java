@@ -53,8 +53,10 @@ class ModelQueryServiceTest {
 
     @Test
     void 보관된_모델은_목록에서_제외한다() {
+        // 두 모델의 버전을 다르게 둬서, 필터링이 실제로 ACTIVE 쪽을 남기는지(우연히
+        // ARCHIVED 쪽이 반환돼도 크기만 맞으면 통과하는 일이 없도록) 값으로 구분한다.
         AiModelEntity active = model("group-a", "1.0.0");
-        AiModelEntity archived = model("group-b", "1.0.0");
+        AiModelEntity archived = model("group-b", "9.9.9");
         archived.archive();
         given(aiModelRepository.findByUser_IdOrderByCreatedAtDescIdDesc(USER_ID))
                 .willReturn(List.of(active, archived));

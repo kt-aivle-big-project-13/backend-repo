@@ -169,6 +169,8 @@ class AuditServiceTest {
                 ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
 
         auditService.cancel(AUDIT_ID, USER_ID);
 
@@ -184,6 +186,8 @@ class AuditServiceTest {
         audit.markInProgress();
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
 
         auditService.cancel(AUDIT_ID, USER_ID);
 
@@ -226,11 +230,30 @@ class AuditServiceTest {
         given(auditRepository.existsByModel_IdAndIdNotAndStatusNot(
                 model.getId(), audit.getId(), AuditStatus.CANCELLED))
                 .willReturn(false);
-        given(aiModelRepository.findById(model.getId())).willReturn(Optional.of(model));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
 
         auditService.cancel(AUDIT_ID, USER_ID);
 
         assertThat(model.getStatus()).isEqualTo(ModelStatus.ARCHIVED);
+    }
+
+    @Test
+    void 취소_시_모델_row를_잠가서_동시_감사_시작과_경합하지_않는다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
+
+        auditService.cancel(AUDIT_ID, USER_ID);
+
+        // AuditStartService.start()·AuditService.retry()와 동일하게 모델 row를 먼저 잠근 뒤에
+        // 보관 여부를 판단해야, 동시에 들어오는 새 감사 시작이 이 판단과 어긋나지 않는다.
+        verify(aiModelRepository).findByIdAndUser_IdForUpdate(model.getId(), USER_ID);
     }
 
     @Test
@@ -241,6 +264,8 @@ class AuditServiceTest {
                 ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
         given(auditRepository.existsByModel_IdAndIdNotAndStatusNot(
                 model.getId(), audit.getId(), AuditStatus.CANCELLED))
                 .willReturn(true);
@@ -248,7 +273,6 @@ class AuditServiceTest {
         auditService.cancel(AUDIT_ID, USER_ID);
 
         assertThat(model.getStatus()).isEqualTo(ModelStatus.ACTIVE);
-        verify(aiModelRepository, never()).findById(any());
     }
 
     private AuditEntity failedAudit() {

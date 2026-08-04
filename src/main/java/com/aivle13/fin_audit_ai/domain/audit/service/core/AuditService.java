@@ -71,14 +71,22 @@ public class AuditService {
         }
 
         audit.cancel();
-        archiveModelIfNoRemainingUsage(audit);
+        archiveModelIfNoRemainingUsage(audit, userId);
     }
 
     // 취소 후 같은 모델에 취소 아닌 감사가 하나도 안 남았으면(=이 모델로 제대로 감사를 진행한
     // 적이 없으면) 모델을 보관 처리해 모델명을 다시 쓸 수 있게 한다. 성공·진행중·실패 등 다른
     // 감사가 하나라도 남아 있으면 실사용 이력이 있는 것이므로 건드리지 않는다.
-    private void archiveModelIfNoRemainingUsage(AuditEntity cancelledAudit) {
+    //
+    // AuditStartService.start()·retry()와 동일하게 모델 row를 먼저 잠근 뒤에 검사·보관을
+    // 수행한다. 잠그지 않으면, 이 검사와 archive() 사이에 다른 트랜잭션이 같은 모델로 새
+    // 감사를 시작(또는 재시도)해도 이 메서드는 그 사실을 못 보고 방금 막 쓰이기 시작한
+    // 모델을 뒤늦게 ARCHIVED로 덮어써버릴 수 있다.
+    private void archiveModelIfNoRemainingUsage(AuditEntity cancelledAudit, Long userId) {
         Long modelId = cancelledAudit.getModel().getId();
+
+        AiModelEntity model = aiModelRepository.findByIdAndUser_IdForUpdate(modelId, userId)
+                .orElseThrow(ModelNotFoundException::new);
 
         boolean hasOtherUsage = auditRepository.existsByModel_IdAndIdNotAndStatusNot(
                 modelId, cancelledAudit.getId(), AuditStatus.CANCELLED);
@@ -87,7 +95,7 @@ public class AuditService {
             return;
         }
 
-        aiModelRepository.findById(modelId).ifPresent(AiModelEntity::archive);
+        model.archive();
     }
 
     // FAILED·CANCELLED 상태만 재시도할 수 있고, 이전 실행에서 남은 산출물이 새 분석 결과와
