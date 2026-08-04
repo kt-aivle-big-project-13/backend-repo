@@ -112,9 +112,44 @@ class LawRevisionApplierTest {
 
         assertThat(revisions).isEmpty();
         assertThat(article.getContent()).isEqualTo("원문");
-        assertThat(article.getRevisionDate()).isNull();
+        // 개정으로는 반영 안 하지만, 다음 배치가 같은 날짜를 기준으로 비교할 수 있도록
+        // 비교 기준일(revisionDate)은 갱신해둬야 한다.
+        assertThat(article.getRevisionDate()).isEqualTo(LocalDate.of(2026, 7, 21));
         verify(lawRevisionRepository, never()).save(any());
         verify(reportLlmClient, never()).generate(anyString(), anyString());
+    }
+
+    @Test
+    void appliesLaterCorrectionAtSameDateAfterSkippingDateOnlyUpdate() {
+        // 1차: 시행일자만 갱신되고 내용은 그대로(changed=N) → 개정 반영은 건너뛰지만
+        // 비교 기준일은 새 시행일자로 갱신된다.
+        LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제6조", "원문", LocalDate.of(2026, 1, 22));
+
+        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
+                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 7, 21), false)
+        ));
+        given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제6조"))
+                .willReturn(Optional.of(article));
+
+        List<LawRevisionEntity> firstRun = lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
+
+        assertThat(firstRun).isEmpty();
+        assertThat(article.getContent()).isEqualTo("원문");
+
+        // 2차: 같은 날짜(2026-07-21)인데 내용이 실제로 다른 정정 응답. changed=N이라도
+        // 비교 기준일이 같은 날짜로 이미 갱신돼 있어야 isSameDateContentFix로 잡힌다.
+        given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
+                new LawArticleRevision("제6조", "정정된 조문", LocalDate.of(2026, 7, 21), false)
+        ));
+        given(reportLlmClient.generate(anyString(), eq("정정된 조문")))
+                .willReturn("정정된 요약");
+        given(lawRevisionRepository.save(any(LawRevisionEntity.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        List<LawRevisionEntity> secondRun = lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME);
+
+        assertThat(article.getContent()).isEqualTo("정정된 조문");
+        assertThat(secondRun).hasSize(1);
     }
 
     @Test

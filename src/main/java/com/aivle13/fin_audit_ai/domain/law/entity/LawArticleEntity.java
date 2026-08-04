@@ -71,4 +71,11 @@ public class LawArticleEntity {
         this.revisionDate = revisionDate;
         this.embedding = null;
     }
+
+    // 조문변경여부=N이라 개정 반영은 건너뛰지만, 비교 기준일은 이 시행일자로 갱신해둔다.
+    // 안 그러면 다음 배치에서 같은 날짜로 오는 후속 정정 응답(내용은 다르지만 changed=N)을
+    // "시행일자가 다르다"는 이유로 영영 놓치게 된다.
+    public void acknowledgeEffectiveDate(LocalDate effectiveDate) {
+        this.revisionDate = effectiveDate;
+    }
 }

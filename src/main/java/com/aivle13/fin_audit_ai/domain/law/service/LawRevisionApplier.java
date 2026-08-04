@@ -92,6 +92,9 @@ public class LawRevisionApplier {
         boolean isActuallyRevised = (isNewerRevision && apiArticle.changed()) || isSameDateContentFix;
 
         if (!isActuallyRevised) {
+            if (isNewerRevision) {
+                article.acknowledgeEffectiveDate(apiArticle.effectiveDate());
+            }
             return Optional.empty();
         }
 
