@@ -8,6 +8,8 @@ public interface ReviewRequiredModelProjection {
 
     String getModelName();
 
+    String getVersion();
+
     Long getIssueCount();
 
     AuditStatus getStatus();

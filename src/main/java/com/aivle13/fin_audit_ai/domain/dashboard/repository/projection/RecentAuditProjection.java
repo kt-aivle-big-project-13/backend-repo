@@ -12,6 +12,8 @@ public interface RecentAuditProjection {
 
     String getModelName();
 
+    String getVersion();
+
     AuditStatus getStatus();
 
     LocalDateTime getCompletedAt();

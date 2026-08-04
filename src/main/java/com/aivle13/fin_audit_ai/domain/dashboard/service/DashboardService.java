@@ -126,6 +126,7 @@ public class DashboardService {
                 .map(summary -> new ReviewRequiredModelResponse(
                         summary.modelId(),
                         summary.modelName(),
+                        summary.version(),
                         summary.issueCount(),
                         summary.status()
                 ))
@@ -145,12 +146,14 @@ public class DashboardService {
                     new ModelIssueSummary(
                             projection.getModelId(),
                             projection.getModelName(),
+                            projection.getVersion(),
                             issueCount,
                             projection.getStatus()
                     ),
                     (existing, incoming) -> new ModelIssueSummary(
                             existing.modelId(),
                             existing.modelName(),
+                            existing.version(),
                             existing.issueCount() + incoming.issueCount(),
                             moreSevere(existing.status(), incoming.status())
                     )
@@ -245,6 +248,7 @@ public class DashboardService {
                         audit.getAuditId(),
                         audit.getModelId(),
                         audit.getModelName(),
+                        audit.getVersion(),
                         audit.getStatus(),
                         keyRisks.getOrDefault(
                                 audit.getAuditId(),
@@ -442,6 +446,7 @@ public class DashboardService {
     private record ModelIssueSummary(
             Long modelId,
             String modelName,
+            String version,
             long issueCount,
             AuditStatus status
     ) {

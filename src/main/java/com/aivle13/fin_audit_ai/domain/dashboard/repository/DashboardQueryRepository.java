@@ -67,6 +67,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             select
                 a.model.id as modelId,
                 a.model.modelName as modelName,
+                a.model.version as version,
                 count(result.id) as issueCount,
                 a.status as status
             from FairnessResultEntity result
@@ -85,7 +86,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus.REVIEW,
                 com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus.FAIL
               )
-            group by a.model.id, a.model.modelName, a.status
+            group by a.model.id, a.model.modelName, a.model.version, a.status
             """)
     List<ReviewRequiredModelProjection> countFairnessIssuesByModel();
 
@@ -93,6 +94,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             select
                 a.model.id as modelId,
                 a.model.modelName as modelName,
+                a.model.version as version,
                 count(result.id) as issueCount,
                 a.status as status
             from XaiResultEntity result
@@ -111,7 +113,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus.WARNING,
                 com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus.REVIEW
               )
-            group by a.model.id, a.model.modelName, a.status
+            group by a.model.id, a.model.modelName, a.model.version, a.status
             """)
     List<ReviewRequiredModelProjection> countXaiIssuesByModel();
 
@@ -178,6 +180,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 a.id as auditId,
                 a.model.id as modelId,
                 a.model.modelName as modelName,
+                a.model.version as version,
                 a.status as status,
                 a.completedAt as completedAt
             from AuditEntity a

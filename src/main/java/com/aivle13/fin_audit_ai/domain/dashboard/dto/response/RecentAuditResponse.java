@@ -8,6 +8,7 @@ public record RecentAuditResponse(
         Long auditId,
         Long modelId,
         String modelName,
+        String version,
         AuditStatus status,
         String keyRisk,
         LocalDateTime completedAt
