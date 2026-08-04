@@ -60,4 +60,33 @@ public class AsyncConfig {
 
         return executor;
     }
+
+    /**
+     * SHAP·Fairlearn 병렬 분석 전용 풀.
+     *
+     * <p>{@code AuditAnalysisEventListener.handle()} 자체가 {@code @Async("auditTaskExecutor")}로
+     * 실행되며 두 분석이 모두 끝날 때까지 그 스레드 하나를 붙잡고 대기한다. 두 분석 제출까지
+     * 같은 {@code auditTaskExecutor}에 맡기면, 대기 중인 리스너 스레드가 코어 자리를 하나
+     * 이미 차지하고 있어(코어가 꽉 차야만 큐 밖으로 스레드가 늘어나는 게 기본 동작) 나머지
+     * 분석 두 개가 실제로는 같은 풀 안에서 순차로 밀려 실행된다 — 병렬화 효과가 사라진다.
+     * 그래서 분석 제출은 별도 풀에서 돌려 리스너 스레드와 경합하지 않게 한다.
+     *
+     * <p>코어 4개는 감사 2건이 동시에 분석 중이어도(건당 SHAP·Fairlearn 2개씩) 대기 없이
+     * 바로 병렬 실행되는 크기다. 그 이상 몰리면 큐에 쌓였다가 처리된다.
+     */
+    @Bean(name = "auditAnalysisExecutor")
+    public Executor auditAnalysisExecutor() {
+        ThreadPoolTaskExecutor executor =
+                new ThreadPoolTaskExecutor();
+
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("audit-analysis-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+
+        return executor;
+    }
 }
