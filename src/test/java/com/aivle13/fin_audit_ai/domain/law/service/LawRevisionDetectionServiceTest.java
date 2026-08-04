@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,7 +55,7 @@ class LawRevisionDetectionServiceTest {
     }
 
     @Test
-    void notifiesAllActiveUsersForEachDetectedRevision() {
+    void notifiesAllActiveUsersWithAllDetectedRevisions() {
         LawRevisionEntity revision = LawRevisionEntity.of(
                 "law.go.kr", "AI 기본법 제31조 개정", RevisionType.AMENDMENT,
                 LocalDate.of(2026, 7, 21), LocalDateTime.now()
@@ -70,8 +71,33 @@ class LawRevisionDetectionServiceTest {
         List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
 
         assertThat(revisions).hasSize(1);
-        verify(notificationService).notifyLawRevision(activeUser1, revision);
-        verify(notificationService).notifyLawRevision(activeUser2, revision);
+        verify(notificationService).notifyLawRevisions(activeUser1, revisions);
+        verify(notificationService).notifyLawRevisions(activeUser2, revisions);
+    }
+
+    @Test
+    void notifiesEachActiveUserOnceEvenWhenMultipleRevisionsAreDetected() {
+        // 한 배치에서 조문이 여러 개 개정되면, 사용자당 메일이 조문 수만큼 따로 가지 않고
+        // notifyLawRevisions가 사용자당 딱 한 번, 개정 건 전체를 모아 호출되어야 한다.
+        LawRevisionEntity revision1 = LawRevisionEntity.of(
+                "law.go.kr", "AI 기본법 제31조 개정", RevisionType.AMENDMENT,
+                LocalDate.of(2026, 7, 21), LocalDateTime.now()
+        );
+        LawRevisionEntity revision2 = LawRevisionEntity.of(
+                "law.go.kr", "AI 기본법 시행령 제5조 개정", RevisionType.AMENDMENT,
+                LocalDate.of(2026, 7, 21), LocalDateTime.now()
+        );
+
+        given(lawRevisionApplier.applyForLaw(LAW_NAME, OFFICIAL_LAW_NAME)).willReturn(List.of(revision1));
+        given(lawRevisionApplier.applyForLaw("AI 기본법 시행령", OFFICIAL_DECREE_NAME)).willReturn(List.of(revision2));
+
+        UserEntity activeUser = UserEntity.create("김철수", "핀테크뱅크", "a@test.com", "hash", UserRole.USER);
+        given(userRepository.findByIsActiveTrue()).willReturn(List.of(activeUser));
+
+        List<LawRevisionEntity> revisions = lawRevisionDetectionService.detectAndApply();
+
+        assertThat(revisions).hasSize(2);
+        verify(notificationService, times(1)).notifyLawRevisions(activeUser, revisions);
     }
 
     @Test
@@ -83,6 +109,6 @@ class LawRevisionDetectionServiceTest {
 
         assertThat(revisions).isEmpty();
         verify(userRepository, never()).findByIsActiveTrue();
-        verify(notificationService, never()).notifyLawRevision(any(), any());
+        verify(notificationService, never()).notifyLawRevisions(any(), any());
     }
 }

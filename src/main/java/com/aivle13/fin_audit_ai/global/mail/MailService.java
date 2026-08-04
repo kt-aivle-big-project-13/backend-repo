@@ -10,6 +10,9 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class MailService {
 
@@ -205,10 +208,11 @@ public class MailService {
         }
     }
 
-    // 법령 개정 알림 이메일 발송
+    // 법령 개정 알림 이메일 발송. 한 배치에서 여러 조문이 개정될 수 있어 조문마다 메일을
+    // 따로 보내지 않고 사용자당 한 통에 모아 보낸다.
     public void sendLawRevisionMail(
             String receiverEmail,
-            String revisionTitle
+            List<String> revisionTitles
     ) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -225,6 +229,10 @@ public class MailService {
             helper.setSubject(
                     "[FinAuditAI] 법령 개정 안내"
             );
+
+            String revisionListHtml = revisionTitles.stream()
+                    .map(title -> "<li style=\"margin-bottom: 8px;\">" + HtmlUtils.htmlEscape(title) + "</li>")
+                    .collect(Collectors.joining());
 
             String html = """
                     <div style="
@@ -248,17 +256,17 @@ public class MailService {
                             관련 법령·고시가 개정되었습니다.
                         </p>
 
-                        <div style="
+                        <ul style="
                             margin-top: 24px;
                             margin-bottom: 24px;
-                            padding: 20px;
+                            padding: 20px 20px 20px 40px;
                             border-radius: 8px;
                             background-color: #f2f4f7;
+                            font-size: 16px;
+                            font-weight: bold;
                         ">
-                            <strong style="font-size: 16px;">
-                                %s
-                            </strong>
-                        </div>
+                            %s
+                        </ul>
 
                         <p style="
                             color: #667085;
@@ -268,7 +276,7 @@ public class MailService {
                             자세한 내용은 마이페이지 알림에서 확인해주세요.
                         </p>
                     </div>
-                    """.formatted(HtmlUtils.htmlEscape(revisionTitle));
+                    """.formatted(revisionListHtml);
 
             helper.setText(html, true);
 

@@ -29,10 +29,13 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -164,31 +167,35 @@ class NotificationServiceTest {
     }
 
     @Test
-    void 법령개정_이메일_알림설정이_켜져있으면_실제로_메일을_보내고_SENT로_기록한다() {
+    void 법령개정_이메일_알림설정이_켜져있으면_감지된_개정을_한_통으로_모아_보내고_SENT로_기록한다() {
+        LawRevisionEntity revision2 = mock(LawRevisionEntity.class);
         given(user.isLawEmailEnabled()).willReturn(true);
         given(user.getEmail()).willReturn("user@example.com");
         given(revision.getTitle()).willReturn("신용정보법 개정안");
+        given(revision2.getTitle()).willReturn("AI 기본법 제31조 개정");
 
-        notificationService.notifyLawRevision(user, revision);
+        notificationService.notifyLawRevisions(user, List.of(revision, revision2));
 
-        verify(mailService).sendLawRevisionMail("user@example.com", "신용정보법 개정안");
+        verify(mailService).sendLawRevisionMail("user@example.com", List.of("신용정보법 개정안", "AI 기본법 제31조 개정"));
 
         ArgumentCaptor<NotificationEntity> captor = ArgumentCaptor.forClass(NotificationEntity.class);
-        verify(notificationRepository).save(captor.capture());
-        assertThat(captor.getValue().getNotifType()).isEqualTo(NotifType.LAW_REVISION);
-        assertThat(captor.getValue().getChannel()).isEqualTo(NotifChannel.EMAIL);
-        assertThat(captor.getValue().getStatus()).isEqualTo(NotifStatus.SENT);
+        verify(notificationRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues()).allSatisfy(notification -> {
+            assertThat(notification.getNotifType()).isEqualTo(NotifType.LAW_REVISION);
+            assertThat(notification.getChannel()).isEqualTo(NotifChannel.EMAIL);
+            assertThat(notification.getStatus()).isEqualTo(NotifStatus.SENT);
+        });
     }
 
     @Test
-    void 법령개정_메일_발송이_실패하면_FAILED로_기록한다() {
+    void 법령개정_메일_발송이_실패하면_개정_건마다_FAILED로_기록한다() {
         given(user.isLawEmailEnabled()).willReturn(true);
         given(user.getEmail()).willReturn("user@example.com");
         given(revision.getTitle()).willReturn("신용정보법 개정안");
         willThrow(new EmailSendFailedException())
-                .given(mailService).sendLawRevisionMail(anyString(), anyString());
+                .given(mailService).sendLawRevisionMail(anyString(), anyList());
 
-        notificationService.notifyLawRevision(user, revision);
+        notificationService.notifyLawRevisions(user, List.of(revision));
 
         ArgumentCaptor<NotificationEntity> captor = ArgumentCaptor.forClass(NotificationEntity.class);
         verify(notificationRepository).save(captor.capture());
@@ -199,7 +206,15 @@ class NotificationServiceTest {
     void 법령개정_이메일_알림설정이_꺼져있으면_메일을_보내지_않는다() {
         given(user.isLawEmailEnabled()).willReturn(false);
 
-        notificationService.notifyLawRevision(user, revision);
+        notificationService.notifyLawRevisions(user, List.of(revision));
+
+        verify(mailService, never()).sendLawRevisionMail(any(), any());
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void 감지된_개정이_없으면_메일을_보내지_않는다() {
+        notificationService.notifyLawRevisions(user, List.of());
 
         verify(mailService, never()).sendLawRevisionMail(any(), any());
         verify(notificationRepository, never()).save(any());
