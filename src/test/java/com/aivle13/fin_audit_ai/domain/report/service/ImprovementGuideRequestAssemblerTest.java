@@ -11,6 +11,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
@@ -98,8 +99,8 @@ class ImprovementGuideRequestAssemblerTest {
         givenEmptyFairness();
         givenEmptyXai();
 
-        SelfCheckAnswerEntity met = answer(SelfCheckItemCode.NOTICE, true);
-        SelfCheckAnswerEntity unmet = answer(SelfCheckItemCode.OBJECTION, false);
+        SelfCheckAnswerEntity met = answer(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES);
+        SelfCheckAnswerEntity unmet = answer(SelfCheckItemCode.UP_01, SelfCheckAnswerValue.NO);
 
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(met, unmet));
@@ -109,7 +110,30 @@ class ImprovementGuideRequestAssemblerTest {
 
         assertThat(request.selfCheckGaps())
                 .extracting(ImprovementGuideRequest.SelfCheckGap::itemCode)
-                .containsExactly("OBJECTION");
+                .containsExactly("UP-01");
+        assertThat(request.selfCheckRecommendations()).isEmpty();
+    }
+
+    // 노력의무 문항(IA-01 등)에서 '아니오'로 답하면 개선 권고가 아니라 참고 권고로 분리된다.
+    @Test
+    void includesEffortObligationNoAnswersAsRecommendationsOnly() {
+        givenAudit();
+        givenEmptyMappings();
+        givenEmptyFairness();
+        givenEmptyXai();
+
+        SelfCheckAnswerEntity effortNo = answer(SelfCheckItemCode.IA_01, SelfCheckAnswerValue.NO);
+
+        given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
+                .willReturn(List.of(effortNo));
+
+        ImprovementGuideRequest request =
+                assembler.assemble(USER_ID, AUDIT_ID);
+
+        assertThat(request.selfCheckGaps()).isEmpty();
+        assertThat(request.selfCheckRecommendations())
+                .extracting(ImprovementGuideRequest.SelfCheckGap::itemCode)
+                .containsExactly("IA-01");
     }
 
     @Test
@@ -191,6 +215,7 @@ class ImprovementGuideRequestAssemblerTest {
         // 조치할 항목이 없어도 가이드는 생성한다(AI 가 "해당 없음"으로 표기).
         assertThat(request.complianceGaps()).isEmpty();
         assertThat(request.selfCheckGaps()).isEmpty();
+        assertThat(request.selfCheckRecommendations()).isEmpty();
         assertThat(request.fairnessFindings()).isEmpty();
         assertThat(request.explainabilityFindings()).isEmpty();
         assertThat(request.auditId()).isEqualTo(AUDIT_ID);
@@ -261,14 +286,14 @@ class ImprovementGuideRequestAssemblerTest {
 
     private SelfCheckAnswerEntity answer(
             SelfCheckItemCode itemCode,
-            boolean value
+            SelfCheckAnswerValue value
     ) {
         SelfCheckAnswerEntity entity =
                 Mockito.mock(SelfCheckAnswerEntity.class);
 
-        given(entity.isAnswer()).willReturn(value);
+        given(entity.isNo()).willReturn(value == SelfCheckAnswerValue.NO);
 
-        if (!value) {
+        if (value == SelfCheckAnswerValue.NO) {
             given(entity.getItemCode()).willReturn(itemCode);
         }
 

@@ -6,6 +6,7 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
@@ -22,7 +23,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -50,16 +50,16 @@ class SelfCheckAnswerServiceTest {
     private SelfCheckAnswerService selfCheckAnswerService;
 
     @Test
-    void savesAllFiveAnswersAndReturnsResponse() {
+    void savesSubmittedAnswersAndReturnsResponse() {
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OBJECTION, false),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOCUMENTATION, false)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.HO_01, SelfCheckAnswerValue.YES),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.UP_01, SelfCheckAnswerValue.NO),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RM_01, SelfCheckAnswerValue.YES),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DC_01, SelfCheckAnswerValue.NO)
         ));
 
         given(selfCheckAnswerRepository.saveAll(anyList()))
@@ -79,24 +79,24 @@ class SelfCheckAnswerServiceTest {
         verify(auditRegulationMappingService).mapFromSelfCheckAnswers(AUDIT_ID);
     }
 
+    // 21문항 중 일부만 제출해도 정상 저장된다 — 미응답 항목을 강제로 채우지 않는다.
     @Test
-    void throwsWhenAnswerIsMissingAnItem() {
+    void savesPartialAnswersSuccessfully() {
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OBJECTION, false),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES)
         ));
 
-        assertThatThrownBy(() -> selfCheckAnswerService.save(USER_ID, AUDIT_ID, request))
-                .isInstanceOf(InvalidSelfCheckAnswersException.class);
+        given(selfCheckAnswerRepository.saveAll(anyList()))
+                .willAnswer(invocation -> invocation.getArgument(0));
 
-        verify(selfCheckAnswerRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(selfCheckAnswerRepository, never()).saveAll(anyList());
-        verify(auditRegulationMappingService, never()).mapFromSelfCheckAnswers(any());
+        SelfCheckAnswerResponse response = selfCheckAnswerService.save(USER_ID, AUDIT_ID, request);
+
+        verify(selfCheckAnswerRepository).deleteAllByAudit_Id(AUDIT_ID);
+        assertThat(response.answers()).hasSize(1);
+        verify(auditRegulationMappingService).mapFromSelfCheckAnswers(AUDIT_ID);
     }
 
     @Test
@@ -105,11 +105,11 @@ class SelfCheckAnswerServiceTest {
                 .willReturn(Optional.of(audit));
 
         SelfCheckAnswerSaveRequest request = new SelfCheckAnswerSaveRequest(List.of(
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.NOTICE, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.OVERSIGHT, false),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RISK_MANAGEMENT, true),
-                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DOCUMENTATION, false)
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.HO_01, SelfCheckAnswerValue.YES),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.HO_01, SelfCheckAnswerValue.NO),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.RM_01, SelfCheckAnswerValue.YES),
+                new SelfCheckAnswerSaveRequest.Item(SelfCheckItemCode.DC_01, SelfCheckAnswerValue.NO)
         ));
 
         assertThatThrownBy(() -> selfCheckAnswerService.save(USER_ID, AUDIT_ID, request))

@@ -11,6 +11,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRep
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
@@ -153,7 +154,7 @@ class ChatFactAssemblerTest {
     @Test
     void keepsSelfCheckAnswersUnaffected() {
         SelfCheckAnswerEntity answer = SelfCheckAnswerEntity.of(
-                null, SelfCheckItemCode.NOTICE, true
+                null, SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES
         );
 
         given(selfCheckAnswerRepository.findAllByAudit_Id(anyLong()))
@@ -168,7 +169,7 @@ class ChatFactAssemblerTest {
 
         assertThat(facts).hasSize(1);
         assertThat(facts.get(0).reference())
-                .isEqualTo("자가점검 · AI 심사 사실 사전 고지 여부");
+                .isEqualTo("자가점검 · AI 심사 사실을 고객에게 사전에 알리고 있나요?");
         assertThat(facts.get(0).value()).isEqualTo("예");
     }
 

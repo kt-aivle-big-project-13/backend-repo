@@ -8,6 +8,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
@@ -81,13 +82,13 @@ class ComplianceReportRequestAssemblerTest {
                 )
                 .containsExactly(
                         Tuple.tuple(
-                                "NOTICE",
-                                SelfCheckItemCode.NOTICE.label(),
+                                "TR-01",
+                                SelfCheckItemCode.TR_01.label(),
                                 true
                         ),
                         Tuple.tuple(
-                                "OBJECTION",
-                                SelfCheckItemCode.OBJECTION.label(),
+                                "UP-01",
+                                SelfCheckItemCode.UP_01.label(),
                                 false
                         )
                 );
@@ -196,9 +197,9 @@ class ComplianceReportRequestAssemblerTest {
     private void givenSelfCheckAnswers() {
         // 스터빙 안에서 다시 스터빙하면 UnfinishedStubbingException 이 나므로
         // mock 을 먼저 완성한 뒤 넘긴다.
-        SelfCheckAnswerEntity notice = answer(SelfCheckItemCode.NOTICE, true);
+        SelfCheckAnswerEntity notice = answer(SelfCheckItemCode.TR_01, SelfCheckAnswerValue.YES);
         SelfCheckAnswerEntity objection =
-                answer(SelfCheckItemCode.OBJECTION, false);
+                answer(SelfCheckItemCode.UP_01, SelfCheckAnswerValue.NO);
 
         given(selfCheckAnswerRepository.findAllByAudit_Id(AUDIT_ID))
                 .willReturn(List.of(notice, objection));
@@ -239,13 +240,14 @@ class ComplianceReportRequestAssemblerTest {
 
     private SelfCheckAnswerEntity answer(
             SelfCheckItemCode itemCode,
-            boolean value
+            SelfCheckAnswerValue value
     ) {
         SelfCheckAnswerEntity entity =
                 Mockito.mock(SelfCheckAnswerEntity.class);
 
         given(entity.getItemCode()).willReturn(itemCode);
-        given(entity.isAnswer()).willReturn(value);
+        given(entity.isYes()).willReturn(value == SelfCheckAnswerValue.YES);
+        given(entity.isNa()).willReturn(value == SelfCheckAnswerValue.NA);
 
         return entity;
     }

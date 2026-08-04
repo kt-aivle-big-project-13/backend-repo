@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.dto.response.selfcheck;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.SelfCheckAnswerEntity;
+import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
 import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
 
 import java.util.Comparator;
@@ -23,13 +24,13 @@ public record SelfCheckAnswerResponse(
     public record Item(
             SelfCheckItemCode itemCode,
             String label,
-            boolean answer
+            SelfCheckAnswerValue answer
     ) {
         public static Item from(SelfCheckAnswerEntity entity) {
             return new Item(
                     entity.getItemCode(),
                     entity.getItemCode().label(),
-                    entity.isAnswer()
+                    entity.getAnswer()
             );
         }
     }

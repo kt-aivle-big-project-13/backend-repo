@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -78,16 +77,18 @@ public class SelfCheckAnswerService {
                 .orElseThrow(AuditNotFoundException::new);
     }
 
-    // 5개 항목을 중복 없이 모두 제출했는지 검증한다. 일부만 제출하거나 같은 항목을
-    // 중복 제출하면 upsert(전체 삭제 후 재삽입) 특성상 나머지 항목이 조용히 사라지므로
-    // 여기서 막는다.
+    // 21문항 중 일부만 제출해도 된다(미응답 문항은 아예 안 보내는 방식) — 차단하지 않고
+    // 프론트에서 경고만 보여준다. 다만 같은 항목을 중복 제출하면 안 된다: 이 메서드는
+    // 매번 전체 삭제 후 재삽입(upsert)하므로, 같은 itemCode가 두 번 오면 그중 하나가
+    // 조용히 사라진 것처럼 보인다 — 그건 명백한 요청 버그이므로 막는다.
+    // 주의: 부분 제출을 허용하므로, 프론트는 매 제출마다 "현재까지 응답한 전체 항목"을
+    // 다시 보내야 한다(직전 제출과의 차이분만 보내면 안 보낸 항목이 삭제됨).
     private void validateAnswers(SelfCheckAnswerSaveRequest request) {
         Set<SelfCheckItemCode> submitted = request.answers().stream()
                 .map(SelfCheckAnswerSaveRequest.Item::itemCode)
                 .collect(Collectors.toSet());
 
-        if (submitted.size() != request.answers().size()
-                || !submitted.equals(EnumSet.allOf(SelfCheckItemCode.class))) {
+        if (submitted.size() != request.answers().size()) {
             throw new InvalidSelfCheckAnswersException();
         }
     }

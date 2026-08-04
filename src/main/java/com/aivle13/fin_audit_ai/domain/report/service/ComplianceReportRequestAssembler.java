@@ -50,9 +50,13 @@ public class ComplianceReportRequestAssembler {
                 .findByIdAndUser_IdWithModelAndDataset(auditId, userId)
                 .orElseThrow(AuditNotFoundException::new);
 
+        // AI 서버 요청 스키마의 answer는 boolean 고정이라 "해당없음"을 담을 수 없다 —
+        // 해당없음은 애초에 판정 대상이 아니므로(적용 여부 자체가 아니라는 뜻) 판정 근거
+        // 목록에서 제외한다.
         List<ComplianceReportRequest.SelfCheckAnswer> answers =
                 selfCheckAnswerRepository.findAllByAudit_Id(auditId)
                         .stream()
+                        .filter(answer -> !answer.isNa())
                         .map(ComplianceReportRequestAssembler::toAnswer)
                         .toList();
 
@@ -85,9 +89,9 @@ public class ComplianceReportRequestAssembler {
             SelfCheckAnswerEntity answer
     ) {
         return new ComplianceReportRequest.SelfCheckAnswer(
-                answer.getItemCode().name(),
+                answer.getItemCode().code(),
                 answer.getItemCode().label(),
-                answer.isAnswer()
+                answer.isYes()
         );
     }
 
