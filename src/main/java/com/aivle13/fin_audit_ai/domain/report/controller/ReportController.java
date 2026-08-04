@@ -1,6 +1,9 @@
 package com.aivle13.fin_audit_ai.domain.report.controller;
 
 import com.aivle13.fin_audit_ai.domain.report.dto.GeneratedReportResponse;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
+import com.aivle13.fin_audit_ai.domain.report.service.FinalReportQueryService;
+import com.aivle13.fin_audit_ai.domain.report.dto.FinalReportMetadataResponse;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationRequest;
 import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationResponse;
 import com.aivle13.fin_audit_ai.domain.report.service.ReportDownloadResult;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,6 +44,7 @@ public class ReportController {
 
     private final ReportGenerationService reportGenerationService;
     private final ReportDownloadService reportDownloadService;
+    private final FinalReportQueryService finalReportQueryService;
 
     @Operation(
             summary = "최종 감사 보고서 생성",
@@ -85,6 +90,38 @@ public class ReportController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @Operation(
+            summary = "최신 최종 감사 보고서 조회",
+            description = """
+                    감사에서 가장 최근에 생성된 최종 감사 보고서 메타데이터를 조회합니다.
+                    이미 만들어 둔 산출물이 있으면 다시 생성하지 않고 바로 내려받을 수 있습니다.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "아직 생성된 최종 감사 보고서가 없음"
+            )
+    })
+    @GetMapping("/audits/{auditId}/deliverables/latest")
+    public ResponseEntity<FinalReportMetadataResponse> getLatest(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long auditId,
+            @RequestParam(defaultValue = "PDF") ReportFormat format
+    ) {
+        if (userId == null) {
+            throw new UnauthorizedException();
+        }
+
+        return ResponseEntity.ok(
+                finalReportQueryService.getLatest(userId, auditId, format)
+        );
     }
 
     @Operation(

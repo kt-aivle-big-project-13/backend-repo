@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.projection.ReportPreGenerationTargetProjection;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,6 +41,7 @@ public class ReportPreGenerationService {
     private final HighImpactReportGenerationService highImpactService;
     private final ComplianceReportGenerationService complianceService;
     private final ImprovementGuideGenerationService improvementService;
+    private final ReportGenerationService finalReportService;
 
     public ReportPreGenerationService(
             AuditRepository auditRepository,
@@ -48,7 +50,8 @@ public class ReportPreGenerationService {
             BiasReportGenerationService biasService,
             HighImpactReportGenerationService highImpactService,
             ComplianceReportGenerationService complianceService,
-            ImprovementGuideGenerationService improvementService
+            ImprovementGuideGenerationService improvementService,
+            ReportGenerationService finalReportService
     ) {
         this.auditRepository = auditRepository;
         this.reportTaskExecutor = reportTaskExecutor;
@@ -57,6 +60,7 @@ public class ReportPreGenerationService {
         this.highImpactService = highImpactService;
         this.complianceService = complianceService;
         this.improvementService = improvementService;
+        this.finalReportService = finalReportService;
     }
 
     /** 분석이 끝난 직후 만들 수 있는 리포트를 병렬로 제출한다. */
@@ -109,7 +113,8 @@ public class ReportPreGenerationService {
                         auditId,
                         List.of(
                                 ReportType.COMPLIANCE_VERDICT,
-                                ReportType.IMPROVEMENT_GUIDE
+                                ReportType.IMPROVEMENT_GUIDE,
+                                ReportType.FINAL_AUDIT_REPORT
                         )
                 )
         );
@@ -173,6 +178,13 @@ public class ReportPreGenerationService {
                     complianceService.generateAndSave(userId, auditId);
             case IMPROVEMENT_GUIDE ->
                     improvementService.generateAndSave(userId, auditId);
+            // 최종 보고서만 포맷별로 파일이 갈린다. 한 번 호출로 PDF·Word 를 함께 만든다.
+            case FINAL_AUDIT_REPORT ->
+                    finalReportService.generate(
+                            userId,
+                            auditId,
+                            List.of(ReportFormat.PDF, ReportFormat.WORD)
+                    );
             default -> log.warn(
                     "선생성 대상이 아닌 리포트 종류입니다: reportType={}",
                     reportType

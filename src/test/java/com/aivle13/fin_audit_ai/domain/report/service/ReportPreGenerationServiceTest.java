@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.projection.ReportPreGenerationTargetProjection;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -43,6 +45,9 @@ class ReportPreGenerationServiceTest {
     private ImprovementGuideGenerationService improvementService;
 
     @Mock
+    private ReportGenerationService finalReportService;
+
+    @Mock
     private ReportPreGenerationTargetProjection target;
 
     private ReportPreGenerationService service;
@@ -57,7 +62,8 @@ class ReportPreGenerationServiceTest {
                 biasService,
                 highImpactService,
                 complianceService,
-                improvementService
+                improvementService,
+                finalReportService
         );
     }
 
@@ -97,6 +103,13 @@ class ReportPreGenerationServiceTest {
 
         verify(complianceService).generateAndSave(USER_ID, AUDIT_ID);
         verify(improvementService).generateAndSave(USER_ID, AUDIT_ID);
+
+        // 최종 보고서만 포맷별로 파일이 갈리므로 PDF·Word 를 함께 요청한다.
+        verify(finalReportService).generate(
+                USER_ID,
+                AUDIT_ID,
+                List.of(ReportFormat.PDF, ReportFormat.WORD)
+        );
 
         // 분석 단계에서 이미 만든 리포트를 다시 만들지 않는다.
         verify(explainabilityService, never()).generateAndSave(USER_ID, AUDIT_ID);
