@@ -183,11 +183,22 @@ public class AuditAnalysisEventListener {
         }
     }
 
+    // AtomicInteger는 카운터 값의 순서(1 다음에 2)만 보장할 뿐, 그 뒤에 이어지는
+    // markShapCompleted()/markFairnessCompleted() 호출까지 순서대로 실행되게 하진
+    // 않는다 — 서로 다른 스레드에서 각각 호출되므로, count=2 쪽이 count=1 쪽보다
+    // 먼저 끝나버리면 이미 완료(4단계+최종 판정)된 감사의 currentStep이 3으로
+    // 되돌아가 버릴 수 있다. AI 서버 호출은 이미 끝난 뒤라 이 메서드는 가벼운 DB
+    // 전이 두 건뿐이므로, completedCount를 락으로 삼아 순서만 강제한다 — 병렬로
+    // 돌린 AI 호출 자체는 전혀 건드리지 않는다. completedCount는 감사 1건 실행마다
+    // 새로 만드는 로컬 인스턴스라, 동시에 다른 감사가 분석 중이어도 서로 락을
+    // 공유하지 않는다.
     private void onAnalysisCompleted(Long auditId, int generation, AtomicInteger completedCount) {
-        if (completedCount.incrementAndGet() < ANALYSIS_COUNT) {
-            auditProgressService.markShapCompleted(auditId, generation);
-        } else {
-            auditProgressService.markFairnessCompleted(auditId, generation);
+        synchronized (completedCount) {
+            if (completedCount.incrementAndGet() < ANALYSIS_COUNT) {
+                auditProgressService.markShapCompleted(auditId, generation);
+            } else {
+                auditProgressService.markFairnessCompleted(auditId, generation);
+            }
         }
     }
 
