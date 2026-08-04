@@ -83,7 +83,7 @@ class FairnessAnalysisServiceTest {
         given(fairnessAnalysisClient.analyze(any(FairnessRunRequest.class)))
                 .willReturn(response);
 
-        fairnessAnalysisService.analyzeAndSave(AUDIT_ID);
+        fairnessAnalysisService.analyzeAndSave(AUDIT_ID, 0);
 
         ArgumentCaptor<FairnessRunRequest> requestCaptor =
                 ArgumentCaptor.forClass(FairnessRunRequest.class);
@@ -101,7 +101,7 @@ class FairnessAnalysisServiceTest {
                 .isEqualByComparingTo("0.9");
 
         verify(fairnessResultService)
-                .saveFairnessResult(AUDIT_ID, response);
+                .saveFairnessResult(AUDIT_ID, 0, response);
     }
 
     @Test
@@ -123,7 +123,7 @@ class FairnessAnalysisServiceTest {
         given(fairnessAnalysisClient.analyze(any(FairnessRunRequest.class)))
                 .willReturn(response);
 
-        fairnessAnalysisService.analyzeAndSave(AUDIT_ID);
+        fairnessAnalysisService.analyzeAndSave(AUDIT_ID, 0);
 
         ArgumentCaptor<FairnessRunRequest> requestCaptor =
                 ArgumentCaptor.forClass(FairnessRunRequest.class);
@@ -139,7 +139,7 @@ class FairnessAnalysisServiceTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                fairnessAnalysisService.analyzeAndSave(AUDIT_ID)
+                fairnessAnalysisService.analyzeAndSave(AUDIT_ID, 0)
         ).isInstanceOf(AuditNotFoundException.class);
 
         verify(fairnessAnalysisClient, never()).analyze(any());
@@ -157,7 +157,7 @@ class FairnessAnalysisServiceTest {
         given(dataset.getDatasetFileKey()).willReturn(null);
 
         assertThatThrownBy(() ->
-                fairnessAnalysisService.analyzeAndSave(AUDIT_ID)
+                fairnessAnalysisService.analyzeAndSave(AUDIT_ID, 0)
         ).isInstanceOf(AuditFailedException.class);
 
         verify(fairnessAnalysisClient, never()).analyze(any());
@@ -176,7 +176,7 @@ class FairnessAnalysisServiceTest {
         given(dataset.getDatasetFileKey()).willReturn("datasets/audit.csv");
 
         assertThatThrownBy(() ->
-                fairnessAnalysisService.analyzeAndSave(AUDIT_ID)
+                fairnessAnalysisService.analyzeAndSave(AUDIT_ID, 0)
         ).isInstanceOf(AuditFailedException.class);
 
         verify(fairnessAnalysisClient, never()).analyze(any());

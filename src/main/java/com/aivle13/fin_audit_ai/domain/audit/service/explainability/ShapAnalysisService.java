@@ -25,7 +25,7 @@ public class ShapAnalysisService {
     private final ShapAnalysisClient shapAnalysisClient;
     private final ExplainabilityService explainabilityService;
 
-    public void analyzeAndSave(Long auditId) {
+    public void analyzeAndSave(Long auditId, int generation) {
         AuditEntity audit = auditRepository
                 .findByIdWithModelAndDataset(auditId)
                 .orElseThrow(AuditNotFoundException::new);
@@ -37,6 +37,7 @@ public class ShapAnalysisService {
 
         explainabilityService.saveExplainabilityResult(
                 auditId,
+                generation,
                 response
         );
     }

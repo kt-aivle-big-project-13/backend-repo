@@ -97,6 +97,12 @@ public class AuditEntity extends BaseEntity {
     @Column(name = "model_accuracy", precision = 6, scale = 4)
     private BigDecimal modelAccuracy;
 
+    // 재시도 때마다 증가하는 실행 세대. 취소 직후 재시도했을 때, 취소되기 전 실행에서
+    // 뒤늦게 도착하는 AI 콜백(느린 SHAP/Fairlearn 응답)이 지금 실행의 상태를 덮어쓰지
+    // 않도록 이벤트·콜백에 실어 보내 대조하는 용도로 쓴다.
+    @Column(name = "generation", nullable = false)
+    private int generation = 0;
+
     public static AuditEntity create(AiModelEntity model, DatasetEntity dataset, UserEntity user, String auditName,
                                       String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
                                       BigDecimal targetApprovalRate, BigDecimal manualThreshold,
@@ -155,6 +161,7 @@ public class AuditEntity extends BaseEntity {
         this.completedAt = null;
         this.modelAuc = null;
         this.modelAccuracy = null;
+        this.generation++;
     }
     // 공정성 단계에서 AI가 준 모델 성능(AUC·정확도)을 기록. 값이 없으면 null 로 남는다.
     public void applyPerformance(BigDecimal modelAuc, BigDecimal modelAccuracy) {

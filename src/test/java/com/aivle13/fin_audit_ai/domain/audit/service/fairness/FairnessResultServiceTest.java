@@ -175,7 +175,7 @@ class FairnessResultServiceTest {
 
     @Test
     void savesThreeMetricsPerAttributeWithJudgedStatus() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.getUser())
                 .willReturn(user);
@@ -214,7 +214,7 @@ class FairnessResultServiceTest {
                 List.of()
         );
 
-        fairnessResultService.saveFairnessResult(AUDIT_ID, response);
+        fairnessResultService.saveFairnessResult(AUDIT_ID, 0, response);
 
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).saveAll(resultCaptor.capture());
@@ -237,8 +237,52 @@ class FairnessResultServiceTest {
     }
 
     @Test
+    void skipsSavingWhenGenerationIsStale() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(audit.getGeneration()).willReturn(1);
+
+        FairnessRunResponse response = new FairnessRunResponse(
+                "21", "테스트 감사", null, 0, null, null,
+                Map.of(
+                        "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
+                                "CODE_GENDER", "COMPUTED",
+                                new BigDecimal("0.05"), null, null, new BigDecimal("0.85"),
+                                null, null, null, List.of(), List.of(), null
+                        )
+                ),
+                Map.of(), null, List.of()
+        );
+
+        fairnessResultService.saveFairnessResult(AUDIT_ID, 0, response);
+
+        verifyNoInteractions(fairnessResultRepository);
+    }
+
+    @Test
+    void skipsSavingWhenAuditIsCancelled() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        FairnessRunResponse response = new FairnessRunResponse(
+                "21", "테스트 감사", null, 0, null, null,
+                Map.of(
+                        "CODE_GENDER", new FairnessRunResponse.AttributeFairness(
+                                "CODE_GENDER", "COMPUTED",
+                                new BigDecimal("0.05"), null, null, new BigDecimal("0.85"),
+                                null, null, null, List.of(), List.of(), null
+                        )
+                ),
+                Map.of(), null, List.of()
+        );
+
+        fairnessResultService.saveFairnessResult(AUDIT_ID, 0, response);
+
+        verifyNoInteractions(fairnessResultRepository);
+    }
+
+    @Test
     void savesGroupStatsAndPerformancePerAttribute() {
-        given(auditRepository.findById(AUDIT_ID)).willReturn(Optional.of(audit));
+        given(auditRepository.findByIdForUpdate(AUDIT_ID)).willReturn(Optional.of(audit));
         given(audit.getUser()).willReturn(user);
         given(user.getId()).willReturn(USER_ID);
 
@@ -266,7 +310,7 @@ class FairnessResultServiceTest {
                 List.of()
         );
 
-        fairnessResultService.saveFairnessResult(AUDIT_ID, response);
+        fairnessResultService.saveFairnessResult(AUDIT_ID, 0, response);
 
         // 집단별 confusion matrix 가 그대로 저장 엔티티로 옮겨진다.
         verify(fairnessGroupStatRepository).deleteAllByAudit_Id(AUDIT_ID);
@@ -290,7 +334,7 @@ class FairnessResultServiceTest {
 
     @Test
     void throwsWhenFairnessByAttributeIsEmpty() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
         FairnessRunResponse response = new FairnessRunResponse(
@@ -299,13 +343,13 @@ class FairnessResultServiceTest {
         );
 
         assertThatThrownBy(() ->
-                fairnessResultService.saveFairnessResult(AUDIT_ID, response)
+                fairnessResultService.saveFairnessResult(AUDIT_ID, 0, response)
         ).isInstanceOf(AuditFailedException.class);
     }
 
     @Test
     void skipsMetricsThatAreNullInsteadOfFailingWholeAudit() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.getUser())
                 .willReturn(user);
@@ -329,7 +373,7 @@ class FairnessResultServiceTest {
                 List.of()
         );
 
-        fairnessResultService.saveFairnessResult(AUDIT_ID, response);
+        fairnessResultService.saveFairnessResult(AUDIT_ID, 0, response);
 
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).saveAll(resultCaptor.capture());
@@ -348,7 +392,7 @@ class FairnessResultServiceTest {
 
     @Test
     void throwsWhenAttributeItselfIsNull() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
 
         FairnessRunResponse response = new FairnessRunResponse(
@@ -360,7 +404,7 @@ class FairnessResultServiceTest {
         );
 
         assertThatThrownBy(() ->
-                fairnessResultService.saveFairnessResult(AUDIT_ID, response)
+                fairnessResultService.saveFairnessResult(AUDIT_ID, 0, response)
         ).isInstanceOf(AuditFailedException.class);
     }
 

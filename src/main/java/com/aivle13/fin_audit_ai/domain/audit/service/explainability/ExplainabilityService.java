@@ -85,13 +85,21 @@ public class ExplainabilityService {
         return ExplainabilityResponse.of(auditId, results, topFeatures);
     }
 
+    // 취소 직후 재시도가 있었으면(제3의 요청) 이 결과는 이미 지나가버린 실행 세대의
+    // 늦은 응답일 수 있다. 그런 경우 저장 자체를 건너뛰어 지금 실행 중인 세대의
+    // 결과와 섞이지 않게 한다. 쓰기 잠금으로 조회해 취소/재시도와의 경합도 막는다.
     @Transactional
     public void saveExplainabilityResult(
             Long auditId,
+            int generation,
             ExplainabilityResultRequest request
     ) {
-        AuditEntity audit = auditRepository.findById(auditId)
+        AuditEntity audit = auditRepository.findByIdForUpdate(auditId)
                 .orElseThrow(AuditNotFoundException::new);
+
+        if (audit.isCancelled() || audit.getGeneration() != generation) {
+            return;
+        }
 
         validateCompletedResult(request);
 

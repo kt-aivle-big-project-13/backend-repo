@@ -11,14 +11,17 @@ import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
+import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
+import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditNotRetryableException;
+import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,6 +46,8 @@ class AuditServiceTest {
 
     @Mock
     private AuditRepository auditRepository;
+    @Mock
+    private AiModelRepository aiModelRepository;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -225,6 +230,8 @@ class AuditServiceTest {
         AuditEntity audit = failedAudit();
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(audit.getModel().getId(), USER_ID))
+                .willReturn(Optional.of(audit.getModel()));
 
         AuditRetryResponse response = auditService.retry(AUDIT_ID, USER_ID);
 
@@ -238,6 +245,28 @@ class AuditServiceTest {
         ArgumentCaptor<AuditStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuditStartedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().auditId()).isEqualTo(AUDIT_ID);
+        // 재시도 때마다 세대가 올라가야, 취소 전 실행에서 뒤늦게 도착하는 콜백을
+        // AuditProgressService가 다른 세대로 구분해 무시할 수 있다.
+        assertThat(eventCaptor.getValue().generation()).isEqualTo(audit.getGeneration());
+        assertThat(audit.getGeneration()).isEqualTo(1);
+    }
+
+    @Test
+    void 재시도할_때마다_세대가_증가한다() {
+        AuditEntity audit = failedAudit();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(audit.getModel().getId(), USER_ID))
+                .willReturn(Optional.of(audit.getModel()));
+
+        auditService.retry(AUDIT_ID, USER_ID);
+        audit.markFailed();
+        auditService.retry(AUDIT_ID, USER_ID);
+
+        ArgumentCaptor<AuditStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuditStartedEvent.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getAllValues().get(0).generation()).isEqualTo(1);
+        assertThat(eventCaptor.getAllValues().get(1).generation()).isEqualTo(2);
     }
 
     @Test
@@ -250,6 +279,8 @@ class AuditServiceTest {
         audit.cancel();
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
 
         AuditRetryResponse response = auditService.retry(AUDIT_ID, USER_ID);
 
@@ -258,6 +289,57 @@ class AuditServiceTest {
         verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher).publishEvent(any(AuditStartedEvent.class));
+    }
+
+    @Test
+    void 같은_모델에_이미_활성_감사가_있으면_재시도할_수_없다() {
+        AuditEntity audit = failedAudit();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(audit.getModel().getId(), USER_ID))
+                .willReturn(Optional.of(audit.getModel()));
+        given(auditRepository.existsByModel_IdAndStatusIn(
+                audit.getModel().getId(), List.of(AuditStatus.PENDING, AuditStatus.IN_PROGRESS)))
+                .willReturn(true);
+
+        assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
+                .isInstanceOf(AuditAlreadyInProgressException.class);
+
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.FAILED);
+        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+    }
+
+    @Test
+    void 재시도_시_모델_row를_잠가서_동시_활성화를_막는다() {
+        AuditEntity audit = failedAudit();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(audit.getModel().getId(), USER_ID))
+                .willReturn(Optional.of(audit.getModel()));
+
+        auditService.retry(AUDIT_ID, USER_ID);
+
+        // existsByModel_IdAndStatusIn(같은 모델에 대한 동시 재시도/시작 여부 확인) 전에
+        // 모델 row를 먼저 잠가서, 두 요청이 동시에 이 체크를 통과하지 못하게 한다.
+        verify(aiModelRepository).findByIdAndUser_IdForUpdate(audit.getModel().getId(), USER_ID);
+    }
+
+    @Test
+    void 모델을_잠글_수_없으면_재시도가_거부된다() {
+        AuditEntity audit = failedAudit();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(audit.getModel().getId(), USER_ID))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
+                .isInstanceOf(ModelNotFoundException.class);
+
+        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
     }
 
     @Test

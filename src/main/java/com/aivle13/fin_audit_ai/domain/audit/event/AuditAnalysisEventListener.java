@@ -33,6 +33,7 @@ public class AuditAnalysisEventListener {
     )
     public void handle(AuditStartedEvent event) {
         Long auditId = event.auditId();
+        int generation = event.generation();
 
         if (!aiServerProperties.enabled()) {
             log.warn(
@@ -40,33 +41,33 @@ public class AuditAnalysisEventListener {
                     auditId
             );
 
-            markFailedSafely(auditId);
+            markFailedSafely(auditId, generation);
             return;
         }
 
         try {
-            auditProgressService.markInProgress(auditId);
+            auditProgressService.markInProgress(auditId, generation);
 
-            if (auditProgressService.isCancelled(auditId)) {
+            if (auditProgressService.isCancelled(auditId, generation)) {
                 return;
             }
 
-            shapAnalysisService.analyzeAndSave(auditId);
+            shapAnalysisService.analyzeAndSave(auditId, generation);
 
-            auditProgressService.markShapCompleted(auditId);
+            auditProgressService.markShapCompleted(auditId, generation);
 
             log.info(
                     "SHAP 분석 및 결과 저장 완료: auditId={}",
                     auditId
             );
 
-            if (auditProgressService.isCancelled(auditId)) {
+            if (auditProgressService.isCancelled(auditId, generation)) {
                 return;
             }
 
-            fairnessAnalysisService.analyzeAndSave(auditId);
+            fairnessAnalysisService.analyzeAndSave(auditId, generation);
 
-            auditProgressService.markFairnessCompleted(auditId);
+            auditProgressService.markFairnessCompleted(auditId, generation);
 
             log.info(
                     "공정성(Fairlearn) 분석 및 결과 저장 완료: auditId={}",
@@ -77,7 +78,7 @@ public class AuditAnalysisEventListener {
             // 재료가 갖춰진 지금 미리 만들어 둔다. 실패해도 감사는 성공으로 남는다.
             reportPreGenerationService.preGenerateAfterAnalysis(auditId);
         } catch (BusinessException exception) {
-            markFailedSafely(auditId);
+            markFailedSafely(auditId, generation);
 
             log.error(
                     "감사 분석 실패: auditId={}, errorCode={}",
@@ -86,7 +87,7 @@ public class AuditAnalysisEventListener {
                     exception
             );
         } catch (RuntimeException exception) {
-            markFailedSafely(auditId);
+            markFailedSafely(auditId, generation);
 
             log.error(
                     "예상하지 못한 감사 분석 오류: auditId={}",
@@ -96,7 +97,7 @@ public class AuditAnalysisEventListener {
         }
     }
 
-    private void markFailedSafely(Long auditId) {
+    private void markFailedSafely(Long auditId, int generation) {
         RuntimeException lastException = null;
 
         for (int attempt = 1;
@@ -104,7 +105,7 @@ public class AuditAnalysisEventListener {
              attempt++) {
 
             try {
-                auditProgressService.markFailed(auditId);
+                auditProgressService.markFailed(auditId, generation);
 
                 if (attempt > 1) {
                     log.info(

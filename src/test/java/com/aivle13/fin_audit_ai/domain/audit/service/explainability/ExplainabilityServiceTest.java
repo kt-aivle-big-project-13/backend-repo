@@ -335,7 +335,7 @@ class ExplainabilityServiceTest {
 
     @Test
     void savesExplainabilityResult() {
-        given(auditRepository.findById(AUDIT_ID))
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
                 .willReturn(Optional.of(audit));
         given(audit.getUser())
                 .willReturn(user);
@@ -354,7 +354,7 @@ class ExplainabilityServiceTest {
                         null
                 );
 
-        explainabilityService.saveExplainabilityResult(AUDIT_ID, request);
+        explainabilityService.saveExplainabilityResult(AUDIT_ID, 0, request);
 
         InOrder inOrder = inOrder(xaiResultRepository);
 
@@ -388,6 +388,50 @@ class ExplainabilityServiceTest {
                                 XaiStatus.WARNING
                         )
                 );
+    }
+
+    @Test
+    void skipsSavingWhenGenerationIsStale() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getGeneration()).willReturn(1);
+
+        ExplainabilityResultRequest request = new ExplainabilityResultRequest(
+                "COMPLETED",
+                "WARNING",
+                new ExplainabilityResultRequest.KeyMetrics(
+                        metric("0.0647", "0.2000", "PASS"),
+                        metric("0.9996", "0.7000", "PASS"),
+                        metric("0.4843", "0.5000", "WARNING")
+                ),
+                null
+        );
+
+        explainabilityService.saveExplainabilityResult(AUDIT_ID, 0, request);
+
+        verifyNoInteractions(xaiResultRepository);
+    }
+
+    @Test
+    void skipsSavingWhenAuditIsCancelled() {
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.isCancelled()).willReturn(true);
+
+        ExplainabilityResultRequest request = new ExplainabilityResultRequest(
+                "COMPLETED",
+                "WARNING",
+                new ExplainabilityResultRequest.KeyMetrics(
+                        metric("0.0647", "0.2000", "PASS"),
+                        metric("0.9996", "0.7000", "PASS"),
+                        metric("0.4843", "0.5000", "WARNING")
+                ),
+                null
+        );
+
+        explainabilityService.saveExplainabilityResult(AUDIT_ID, 0, request);
+
+        verifyNoInteractions(xaiResultRepository);
     }
 
     private ExplainabilityResultRequest.Metric metric(

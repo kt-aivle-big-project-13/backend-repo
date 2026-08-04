@@ -78,7 +78,7 @@ class ShapAnalysisServiceTest {
                 )
         )).willReturn(response);
 
-        shapAnalysisService.analyzeAndSave(AUDIT_ID);
+        shapAnalysisService.analyzeAndSave(AUDIT_ID, 0);
 
         ArgumentCaptor<ShapAnalysisRequest> requestCaptor =
                 ArgumentCaptor.forClass(
@@ -109,6 +109,7 @@ class ShapAnalysisServiceTest {
         verify(explainabilityService)
                 .saveExplainabilityResult(
                         AUDIT_ID,
+                        0,
                         response
                 );
     }
@@ -119,7 +120,7 @@ class ShapAnalysisServiceTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                shapAnalysisService.analyzeAndSave(AUDIT_ID)
+                shapAnalysisService.analyzeAndSave(AUDIT_ID, 0)
         ).isInstanceOf(AuditNotFoundException.class);
 
         verify(shapAnalysisClient, never())
@@ -143,7 +144,7 @@ class ShapAnalysisServiceTest {
                 .willReturn(null);
 
         assertThatThrownBy(() ->
-                shapAnalysisService.analyzeAndSave(AUDIT_ID)
+                shapAnalysisService.analyzeAndSave(AUDIT_ID, 0)
         ).isInstanceOf(AuditFailedException.class);
 
         verify(shapAnalysisClient, never())
