@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -102,8 +103,11 @@ public class NotificationService {
     // (인앱) 기록은 조문 단위로 남겨야 목록에서 각 개정을 구분할 수 있어 revision마다
     // NotificationEntity를 저장한다 — 발송 상태(SENT/FAILED)는 메일 한 통 기준으로 동일하게 기록된다.
     // SMTP 발송을 DB 트랜잭션 밖에서 수행해, 발송 지연이 커넥션을 오래 잡아두거나
-    // 트랜잭션 재시도 시 메일이 중복 발송되는 것을 막는다. save()는 Spring Data
-    // JPA가 자체적으로 트랜잭션을 열어 처리한다.
+    // 트랜잭션 재시도 시 메일이 중복 발송되는 것을 막는다. 클래스 레벨의
+    // readOnly=true를 그대로 물려받으면 save()가 read-only 트랜잭션(MANUAL flush) 안에서
+    // 실행돼 커밋 시 flush가 안 되고 조용히 유실될 수 있어, NOT_SUPPORTED로 트랜잭션 자체를
+    // 끊는다. save()는 Spring Data JPA가 호출마다 자체적으로 트랜잭션을 열어 처리한다.
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void notifyLawRevisions(UserEntity user, List<LawRevisionEntity> revisions) {
         if (!user.isLawEmailEnabled() || revisions.isEmpty()) {
             return;
