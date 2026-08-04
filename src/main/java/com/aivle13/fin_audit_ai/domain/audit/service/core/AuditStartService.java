@@ -14,7 +14,9 @@ import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.IncompatibleDatasetSchemaException;
+import com.aivle13.fin_audit_ai.global.exception.model.ModelArchivedException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
+import com.aivle13.fin_audit_ai.domain.model.type.ModelStatus;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
 import com.aivle13.fin_audit_ai.domain.diagnosis.entity.PreDiagnosisEntity;
 import com.aivle13.fin_audit_ai.domain.diagnosis.repository.PreDiagnosisRepository;
@@ -55,6 +57,14 @@ public class AuditStartService {
                         userId
                 )
                 .orElseThrow(ModelNotFoundException::new);
+
+        // 이 모델로 시작한 감사가 전부 취소돼 AiModelEntity.archive()로 보관 처리된 상태면,
+        // 목록 조회(ModelQueryService)에서는 이미 빠져 있지만 modelId를 직접 아는 요청(예:
+        // 취소 직후 오래 열려 있던 화면에서 보낸 요청)은 여기서도 막아야 한다. 재시도는
+        // AuditService.retry()가 별도로 activate()하므로 여기 걸리지 않는다.
+        if (model.getStatus() != ModelStatus.ACTIVE) {
+            throw new ModelArchivedException();
+        }
 
         validateAssessment(
                 userId,

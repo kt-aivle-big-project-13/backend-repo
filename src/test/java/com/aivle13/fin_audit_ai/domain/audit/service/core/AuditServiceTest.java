@@ -14,6 +14,7 @@ import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
+import com.aivle13.fin_audit_ai.domain.model.type.ModelStatus;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
@@ -168,6 +169,8 @@ class AuditServiceTest {
                 ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
 
         auditService.cancel(AUDIT_ID, USER_ID);
 
@@ -183,6 +186,8 @@ class AuditServiceTest {
         audit.markInProgress();
         given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
                 .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
 
         auditService.cancel(AUDIT_ID, USER_ID);
 
@@ -212,6 +217,62 @@ class AuditServiceTest {
 
         assertThatThrownBy(() -> auditService.cancel(AUDIT_ID, USER_ID))
                 .isInstanceOf(AuditNotFoundException.class);
+    }
+
+    @Test
+    void 취소_후_같은_모델에_남은_감사가_없으면_모델이_보관된다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(auditRepository.existsByModel_IdAndIdNotAndStatusNot(
+                model.getId(), audit.getId(), AuditStatus.CANCELLED))
+                .willReturn(false);
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
+
+        auditService.cancel(AUDIT_ID, USER_ID);
+
+        assertThat(model.getStatus()).isEqualTo(ModelStatus.ARCHIVED);
+    }
+
+    @Test
+    void 취소_시_모델_row를_잠가서_동시_감사_시작과_경합하지_않는다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
+
+        auditService.cancel(AUDIT_ID, USER_ID);
+
+        // AuditStartService.start()·AuditService.retry()와 동일하게 모델 row를 먼저 잠근 뒤에
+        // 보관 여부를 판단해야, 동시에 들어오는 새 감사 시작이 이 판단과 어긋나지 않는다.
+        verify(aiModelRepository).findByIdAndUser_IdForUpdate(model.getId(), USER_ID);
+    }
+
+    @Test
+    void 취소_후_같은_모델에_취소_아닌_감사가_남아있으면_모델을_보관하지_않는다() {
+        AiModelEntity model = aiModel();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
+        given(auditRepository.existsByModel_IdAndIdNotAndStatusNot(
+                model.getId(), audit.getId(), AuditStatus.CANCELLED))
+                .willReturn(true);
+
+        auditService.cancel(AUDIT_ID, USER_ID);
+
+        assertThat(model.getStatus()).isEqualTo(ModelStatus.ACTIVE);
     }
 
     private AuditEntity failedAudit() {
@@ -289,6 +350,25 @@ class AuditServiceTest {
         verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher).publishEvent(any(AuditStartedEvent.class));
+    }
+
+    @Test
+    void 재시도하면_취소로_보관됐던_모델이_다시_활성화된다() {
+        AiModelEntity model = aiModel();
+        model.archive();
+        DatasetEntity dataset = dataset(model);
+        AuditEntity audit = AuditEntity.create(model, dataset, user, "audit-name", "age,gender", null,
+                ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        audit.markInProgress();
+        audit.cancel();
+        given(auditRepository.findByIdAndUser_IdForUpdate(AUDIT_ID, USER_ID))
+                .willReturn(Optional.of(audit));
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(model.getId(), USER_ID))
+                .willReturn(Optional.of(model));
+
+        auditService.retry(AUDIT_ID, USER_ID);
+
+        assertThat(model.getStatus()).isEqualTo(ModelStatus.ACTIVE);
     }
 
     @Test

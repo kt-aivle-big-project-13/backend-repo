@@ -3,6 +3,7 @@ package com.aivle13.fin_audit_ai.domain.model.service.model;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
+import com.aivle13.fin_audit_ai.domain.model.type.ModelStatus;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
@@ -34,7 +35,7 @@ public class AiModelService {
             // 직렬화해서, 뒤에 도착한 요청은 앞선 요청의 커밋 이후에야 존재 여부를 검증하게 만든다.
             aiModelRepository.lockForModelNameRegistration(modelNameLockKey(userId, modelName));
 
-            if (aiModelRepository.existsByUser_IdAndModelName(userId, modelName)) {
+            if (aiModelRepository.existsByUser_IdAndModelNameAndStatus(userId, modelName, ModelStatus.ACTIVE)) {
                 throw new DuplicateModelNameException();
             }
         }

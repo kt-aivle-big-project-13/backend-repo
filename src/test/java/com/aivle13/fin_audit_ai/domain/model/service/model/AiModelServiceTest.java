@@ -3,6 +3,7 @@ package com.aivle13.fin_audit_ai.domain.model.service.model;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
+import com.aivle13.fin_audit_ai.domain.model.type.ModelStatus;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
@@ -80,7 +81,7 @@ class AiModelServiceTest {
 
     @Test
     void 신규_등록시_같은_사용자의_모델명이_이미_있으면_예외가_발생한다() {
-        given(aiModelRepository.existsByUser_IdAndModelName(USER_ID, "credit-model"))
+        given(aiModelRepository.existsByUser_IdAndModelNameAndStatus(USER_ID, "credit-model", ModelStatus.ACTIVE))
                 .willReturn(true);
 
         assertThatThrownBy(() ->
@@ -106,7 +107,7 @@ class AiModelServiceTest {
 
         InOrder inOrder = inOrder(aiModelRepository);
         inOrder.verify(aiModelRepository).lockForModelNameRegistration(anyLong());
-        inOrder.verify(aiModelRepository).existsByUser_IdAndModelName(USER_ID, "credit-model");
+        inOrder.verify(aiModelRepository).existsByUser_IdAndModelNameAndStatus(USER_ID, "credit-model", ModelStatus.ACTIVE);
         inOrder.verify(aiModelRepository).save(any(AiModelEntity.class));
     }
 
@@ -130,7 +131,7 @@ class AiModelServiceTest {
         ).doesNotThrowAnyException();
 
         verify(aiModelRepository, never()).lockForModelNameRegistration(anyLong());
-        verify(aiModelRepository, never()).existsByUser_IdAndModelName(any(), any());
+        verify(aiModelRepository, never()).existsByUser_IdAndModelNameAndStatus(any(), any(), any());
     }
 
     @Test

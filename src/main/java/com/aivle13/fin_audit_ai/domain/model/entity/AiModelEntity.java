@@ -89,4 +89,17 @@ public class AiModelEntity extends BaseEntity {
         model.modelGroupId = modelGroupId;
         return model;
     }
+
+    // 이 모델로 시작한 감사가 전부 취소돼 실사용 이력이 없을 때 호출한다. 모델 row 자체는
+    // 지우지 않는다 — 취소된 감사가 이 모델을 참조하므로 지우면 감사 이력이 깨진다.
+    // 대신 ARCHIVED로 돌려 모델명 중복 검증·목록 조회에서 빠지게 해서, 같은 이름으로
+    // 다시 등록할 수 있게 한다.
+    public void archive() {
+        this.status = ModelStatus.ARCHIVED;
+    }
+
+    // 취소됐던 감사를 재시도할 때, 그 사이 archive()로 보관 처리됐을 수 있는 모델을 다시 활성화한다.
+    public void activate() {
+        this.status = ModelStatus.ACTIVE;
+    }
 }

@@ -1,6 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.model.repository;
 
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
+import com.aivle13.fin_audit_ai.domain.model.type.ModelStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -19,8 +20,9 @@ public interface AiModelRepository extends JpaRepository<AiModelEntity, Long> {
     // createdAt이 동률인 경우까지 결정적으로 정렬되도록 id를 보조 정렬 기준으로 둔다.
     List<AiModelEntity> findByUser_IdOrderByCreatedAtDescIdDesc(Long userId);
 
-    // 신규 모델 등록 시 같은 사용자가 이미 쓰고 있는 모델명인지 확인한다.
-    boolean existsByUser_IdAndModelName(Long userId, String modelName);
+    // 신규 모델 등록 시 같은 사용자가 이미 쓰고 있는 모델명인지 확인한다. ARCHIVED(감사가 전부
+    // 취소돼 실사용 이력이 없는) 모델은 이름을 다시 쓸 수 있어야 하므로 ACTIVE만 검사한다.
+    boolean existsByUser_IdAndModelNameAndStatus(Long userId, String modelName, ModelStatus status);
 
     // (userId, modelName) 조합에 대한 PostgreSQL 트랜잭션 범위 advisory lock을 건다.
     // 같은 이름으로 동시에 두 건의 신규 모델 등록 요청이 들어와도, 뒤에 도착한 트랜잭션은

@@ -18,6 +18,7 @@ import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
 import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.IncompatibleDatasetSchemaException;
+import com.aivle13.fin_audit_ai.global.exception.model.ModelArchivedException;
 import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.SensitiveAttributesNotSelectedException;
 import com.aivle13.fin_audit_ai.domain.diagnosis.entity.PreDiagnosisEntity;
@@ -342,6 +343,18 @@ class AuditStartServiceTest {
 
         verify(datasetRepository, never())
                 .findFirstByModel_ModelGroupIdAndPurposeOrderByCreatedAtDesc(any(), eq(DatasetPurpose.VALIDATION));
+    }
+
+    @Test
+    void 보관된_모델로는_감사를_시작할_수_없다() {
+        AiModelEntity model = newModel(ownerUser);
+        model.archive();
+        given(aiModelRepository.findByIdAndUser_IdForUpdate(MODEL_ID, USER_ID)).willReturn(Optional.of(model));
+
+        assertThatThrownBy(() -> auditStartService.start(USER_ID, request()))
+                .isInstanceOf(ModelArchivedException.class);
+
+        verify(datasetRepository, never()).findById(any());
     }
 
     @Test

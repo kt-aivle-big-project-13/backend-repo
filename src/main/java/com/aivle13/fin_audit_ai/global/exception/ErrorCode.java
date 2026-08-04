@@ -58,6 +58,7 @@ public enum ErrorCode {
     AUDIT_NOT_CANCELLABLE(HttpStatus.CONFLICT, "EM019", "취소할 수 없는 감사 상태입니다."),
     AUDIT_NOT_RETRYABLE(HttpStatus.CONFLICT, "EM020", "재시도할 수 없는 감사 상태입니다."),
     DUPLICATE_MODEL_NAME(HttpStatus.CONFLICT, "EM021", "이미 사용 중인 모델명입니다."),
+    MODEL_ARCHIVED(HttpStatus.CONFLICT, "EM022", "보관 처리된 모델입니다. 신규로 다시 등록해주세요."),
 
 
     // ===== Diagnosis (EP) =====
