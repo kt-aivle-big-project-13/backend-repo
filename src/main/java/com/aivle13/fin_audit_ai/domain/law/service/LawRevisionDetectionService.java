@@ -58,23 +58,22 @@ public class LawRevisionDetectionService {
     }
 
     // 개정 알림은 감사(트랜잭션)와 무관한 브로드캐스트라 모든 법령 처리(및 커밋)가 끝난
-    // 뒤에 트랜잭션 밖에서 실행한다 — NotificationService.notifyLawRevision도 메일 발송을
+    // 뒤에 트랜잭션 밖에서 실행한다 — NotificationService.notifyLawRevisions도 메일 발송을
     // DB 트랜잭션 밖에서 수행하도록 설계돼 있어 이 순서와 맞는다.
+    // 한 배치에서 감지된 개정 건을 사용자당 한 통으로 모아 보내야 해서, 조문이 아니라
+    // 사용자 기준으로 순회한다 — 이전엔 조문×사용자 이중 루프라 조문 수만큼 메일이 갔다.
     private void notifyActiveUsers(List<LawRevisionEntity> revisions) {
         List<UserEntity> activeUsers = userRepository.findByIsActiveTrue();
 
-        for (LawRevisionEntity revision : revisions) {
-            for (UserEntity user : activeUsers) {
-                try {
-                    notificationService.notifyLawRevision(user, revision);
-                } catch (RuntimeException exception) {
-                    log.error(
-                            "법령 개정 알림 발송 실패, 다음 사용자로 계속함: userId={}, revisionId={}",
-                            user.getId(),
-                            revision.getId(),
-                            exception
-                    );
-                }
+        for (UserEntity user : activeUsers) {
+            try {
+                notificationService.notifyLawRevisions(user, revisions);
+            } catch (RuntimeException exception) {
+                log.error(
+                        "법령 개정 알림 발송 실패, 다음 사용자로 계속함: userId={}",
+                        user.getId(),
+                        exception
+                );
             }
         }
     }

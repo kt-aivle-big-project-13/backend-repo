@@ -97,27 +97,32 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    // 법령 개정 감지 시점(추후 크롤러/배치)에서 호출될 실제 이메일 발송 지점.
-    // 감지 로직 자체는 아직 없어 현재는 호출부가 없다.
+    // 법령 개정 감지 시점(LawRevisionDetectionService)에서 호출되는 이메일 발송 지점.
+    // 한 배치에서 여러 조문이 개정될 수 있어 사용자당 메일은 한 통으로 묶어 보내되, 알림 벨
+    // (인앱) 기록은 조문 단위로 남겨야 목록에서 각 개정을 구분할 수 있어 revision마다
+    // NotificationEntity를 저장한다 — 발송 상태(SENT/FAILED)는 메일 한 통 기준으로 동일하게 기록된다.
     // SMTP 발송을 DB 트랜잭션 밖에서 수행해, 발송 지연이 커넥션을 오래 잡아두거나
     // 트랜잭션 재시도 시 메일이 중복 발송되는 것을 막는다. save()는 Spring Data
     // JPA가 자체적으로 트랜잭션을 열어 처리한다.
-    public void notifyLawRevision(UserEntity user, LawRevisionEntity revision) {
-        if (!user.isLawEmailEnabled()) {
+    public void notifyLawRevisions(UserEntity user, List<LawRevisionEntity> revisions) {
+        if (!user.isLawEmailEnabled() || revisions.isEmpty()) {
             return;
         }
 
         NotifStatus status;
         try {
-            mailService.sendLawRevisionMail(user.getEmail(), revision.getTitle());
+            List<String> titles = revisions.stream().map(LawRevisionEntity::getTitle).toList();
+            mailService.sendLawRevisionMail(user.getEmail(), titles);
             status = NotifStatus.SENT;
         } catch (BusinessException exception) {
             status = NotifStatus.FAILED;
         }
 
-        NotificationEntity notification = NotificationEntity.ofLawRevision(
-                user, revision, NotifChannel.EMAIL, status, LocalDateTime.now());
+        for (LawRevisionEntity revision : revisions) {
+            NotificationEntity notification = NotificationEntity.ofLawRevision(
+                    user, revision, NotifChannel.EMAIL, status, LocalDateTime.now());
 
-        notificationRepository.save(notification);
+            notificationRepository.save(notification);
+        }
     }
 }
