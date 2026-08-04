@@ -100,7 +100,10 @@ public class AuditEntity extends BaseEntity {
     // 재시도 때마다 증가하는 실행 세대. 취소 직후 재시도했을 때, 취소되기 전 실행에서
     // 뒤늦게 도착하는 AI 콜백(느린 SHAP/Fairlearn 응답)이 지금 실행의 상태를 덮어쓰지
     // 않도록 이벤트·콜백에 실어 보내 대조하는 용도로 쓴다.
-    @Column(name = "generation", nullable = false)
+    // columnDefinition의 DEFAULT 0은 기존 행이 있는 테이블에 NOT NULL 컬럼을 추가할 때
+    // 제약 위반을 막기 위한 것이다(DEFAULT 없이 추가하면 ddl-auto:update가 실패한다 —
+    // 실제로 재현해서 확인함).
+    @Column(name = "generation", nullable = false, columnDefinition = "integer default 0")
     private int generation = 0;
 
     public static AuditEntity create(AiModelEntity model, DatasetEntity dataset, UserEntity user, String auditName,
