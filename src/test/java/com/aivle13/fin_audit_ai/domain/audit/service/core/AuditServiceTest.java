@@ -41,8 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class AuditServiceTest {
@@ -396,11 +396,13 @@ class AuditServiceTest {
                 .isInstanceOf(AuditAlreadyInProgressException.class);
 
         assertThat(audit.getStatus()).isEqualTo(AuditStatus.FAILED);
-        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(shapFeatureImportanceRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessGroupStatRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+        verifyNoInteractions(
+                xaiResultRepository,
+                shapFeatureImportanceRepository,
+                fairnessResultRepository,
+                fairnessGroupStatRepository,
+                eventPublisher
+        );
     }
 
     @Test
@@ -429,11 +431,13 @@ class AuditServiceTest {
         assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
                 .isInstanceOf(ModelNotFoundException.class);
 
-        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(shapFeatureImportanceRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessGroupStatRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+        verifyNoInteractions(
+                xaiResultRepository,
+                shapFeatureImportanceRepository,
+                fairnessResultRepository,
+                fairnessGroupStatRepository,
+                eventPublisher
+        );
     }
 
     @Test
@@ -449,11 +453,13 @@ class AuditServiceTest {
         assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
                 .isInstanceOf(AuditNotRetryableException.class);
 
-        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(shapFeatureImportanceRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessGroupStatRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+        verifyNoInteractions(
+                xaiResultRepository,
+                shapFeatureImportanceRepository,
+                fairnessResultRepository,
+                fairnessGroupStatRepository,
+                eventPublisher
+        );
     }
 
     @Test
