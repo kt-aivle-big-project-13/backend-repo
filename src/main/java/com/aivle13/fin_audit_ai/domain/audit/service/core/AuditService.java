@@ -5,20 +5,22 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditSummaryRespo
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessGroupStatRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
-import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotRetryableException;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditAlreadyInProgressException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotCancellableException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotRetryableException;
+import com.aivle13.fin_audit_ai.global.exception.model.core.ModelNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -39,12 +41,14 @@ public class AuditService {
     private final UserRepository userRepository;
     private final XaiResultRepository xaiResultRepository;
     private final FairnessResultRepository fairnessResultRepository;
+    private final FairnessGroupStatRepository fairnessGroupStatRepository;
+    private final ShapFeatureImportanceRepository shapFeatureImportanceRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public AuditEntity create(Long userId, AiModelEntity model, DatasetEntity dataset, String auditName,
-                               String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
-                               BigDecimal targetApprovalRate, BigDecimal manualThreshold,
-                               DatasetEntity validationDataset) {
+                              String sensitiveFeatures, Long assessmentId, ThresholdMethod thresholdMethod,
+                              BigDecimal targetApprovalRate, BigDecimal manualThreshold,
+                              DatasetEntity validationDataset) {
         UserEntity user = userRepository.getReferenceById(userId);
         AuditEntity audit = AuditEntity.create(model, dataset, user, auditName, sensitiveFeatures, assessmentId,
                 thresholdMethod, targetApprovalRate, manualThreshold, validationDataset);
@@ -99,7 +103,11 @@ public class AuditService {
     }
 
     // FAILED·CANCELLED 상태만 재시도할 수 있고, 이전 실행에서 남은 산출물이 새 분석 결과와
-    // 섞이지 않도록 기존 SHAP·공정성 결과를 먼저 지운 뒤 감사를 초기화하고 분석을 다시 발행한다.
+    // 섞이지 않도록 기존 SHAP·공정성 결과(지표·집단 통계·피처 중요도)를 먼저 지운 뒤 감사를
+    // 초기화하고 분석을 다시 발행한다. 여기서 안 지워도 saveFairnessResult 등 저장 단계에서
+    // 결국 지우긴 하지만, 새 분석이 저장 단계까지 못 가고 실패하면(예: SHAP 실패로 감사 전체
+    // FAILED) 이전 세대 결과가 그대로 남아 FAILED 감사에 지난 결과가 계속 보이는 정합성
+    // 문제가 생긴다 — 그래서 재시도 시점에 선제적으로 지운다.
     @Transactional
     public AuditRetryResponse retry(Long auditId, Long userId) {
         AuditEntity audit = auditRepository.findByIdAndUser_IdForUpdate(auditId, userId)
@@ -122,7 +130,9 @@ public class AuditService {
         }
 
         xaiResultRepository.deleteAllByAudit_Id(auditId);
+        shapFeatureImportanceRepository.deleteAllByAudit_Id(auditId);
         fairnessResultRepository.deleteAllByAudit_Id(auditId);
+        fairnessGroupStatRepository.deleteAllByAudit_Id(auditId);
         audit.retry();
         // 취소 시 archive()로 보관 처리됐을 수 있으므로, 재시도로 다시 쓰이는 시점에 활성화한다.
         model.activate();

@@ -7,8 +7,8 @@ import com.aivle13.fin_audit_ai.domain.model.dto.request.model.ModelUploadReques
 import com.aivle13.fin_audit_ai.domain.model.dto.response.model.ModelUploadResponse;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
-import com.aivle13.fin_audit_ai.global.exception.model.InvalidModelFileException;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.dataset.InvalidModelFileException;
+import com.aivle13.fin_audit_ai.global.exception.model.core.ModelNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

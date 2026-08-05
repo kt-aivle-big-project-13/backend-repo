@@ -4,7 +4,7 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.ShapFeatureImportanceEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRepository;
-import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.objection.dto.response.ObjectionModelEvidenceResponse;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,6 @@ import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;

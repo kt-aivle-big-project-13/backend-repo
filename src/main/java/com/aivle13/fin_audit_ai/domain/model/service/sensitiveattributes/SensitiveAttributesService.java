@@ -5,9 +5,9 @@ import com.aivle13.fin_audit_ai.domain.model.dto.response.sensitiveattributes.Se
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
-import com.aivle13.fin_audit_ai.global.exception.model.DatasetAlreadyAuditedException;
-import com.aivle13.fin_audit_ai.global.exception.model.DatasetNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.model.InvalidSensitiveAttributeException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.DatasetAlreadyAuditedException;
+import com.aivle13.fin_audit_ai.global.exception.model.dataset.DatasetNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.fairness.InvalidSensitiveAttributeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

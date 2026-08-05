@@ -3,6 +3,8 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.report.entity.ReportEntity;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportDownloadResult;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportDownloadService;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;

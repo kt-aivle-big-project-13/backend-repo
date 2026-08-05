@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+recaptcha:
+  enabled: false
+
+loadtest:
+  user:
+    email: loadtest@example.com
+    password: LoadTest123!

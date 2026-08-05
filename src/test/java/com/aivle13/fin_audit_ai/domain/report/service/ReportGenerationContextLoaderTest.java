@@ -2,12 +2,13 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
-import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.compliance.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.selfcheck.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.dto.MatchedChecklistItem;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingQueryService;
-import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
+import com.aivle13.fin_audit_ai.domain.law.service.mapping.AuditRegulationMappingQueryService;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.ReportGenerationContext;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationContextLoader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

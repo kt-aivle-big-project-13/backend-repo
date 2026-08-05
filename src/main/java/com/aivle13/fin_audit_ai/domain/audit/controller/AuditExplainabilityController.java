@@ -2,7 +2,7 @@ package com.aivle13.fin_audit_ai.domain.audit.controller;
 
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.explainability.ExplainabilityResponse;
 import com.aivle13.fin_audit_ai.domain.audit.service.explainability.ExplainabilityService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

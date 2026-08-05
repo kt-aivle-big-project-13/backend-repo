@@ -5,10 +5,12 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditSummaryRespo
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessGroupStatRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
-import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.ThresholdMethod;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.model.entity.DatasetEntity;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
@@ -18,11 +20,11 @@ import com.aivle13.fin_audit_ai.domain.model.type.ModelStatus;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditAlreadyInProgressException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCancellableException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotRetryableException;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditAlreadyInProgressException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotCancellableException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotRetryableException;
+import com.aivle13.fin_audit_ai.global.exception.model.core.ModelNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,8 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class AuditServiceTest {
@@ -55,6 +57,10 @@ class AuditServiceTest {
     private XaiResultRepository xaiResultRepository;
     @Mock
     private FairnessResultRepository fairnessResultRepository;
+    @Mock
+    private FairnessGroupStatRepository fairnessGroupStatRepository;
+    @Mock
+    private ShapFeatureImportanceRepository shapFeatureImportanceRepository;
     @Mock
     private ApplicationEventPublisher eventPublisher;
     @Mock
@@ -301,7 +307,9 @@ class AuditServiceTest {
         assertThat(response.status()).isEqualTo("PENDING");
         assertThat(response.retriedAt()).isNotNull();
         verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(shapFeatureImportanceRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository).deleteAllByAudit_Id(AUDIT_ID);
 
         ArgumentCaptor<AuditStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuditStartedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -348,7 +356,9 @@ class AuditServiceTest {
         assertThat(audit.getStatus()).isEqualTo(AuditStatus.PENDING);
         assertThat(response.status()).isEqualTo("PENDING");
         verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(shapFeatureImportanceRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher).publishEvent(any(AuditStartedEvent.class));
     }
 
@@ -386,9 +396,13 @@ class AuditServiceTest {
                 .isInstanceOf(AuditAlreadyInProgressException.class);
 
         assertThat(audit.getStatus()).isEqualTo(AuditStatus.FAILED);
-        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+        verifyNoInteractions(
+                xaiResultRepository,
+                shapFeatureImportanceRepository,
+                fairnessResultRepository,
+                fairnessGroupStatRepository,
+                eventPublisher
+        );
     }
 
     @Test
@@ -417,9 +431,13 @@ class AuditServiceTest {
         assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
                 .isInstanceOf(ModelNotFoundException.class);
 
-        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+        verifyNoInteractions(
+                xaiResultRepository,
+                shapFeatureImportanceRepository,
+                fairnessResultRepository,
+                fairnessGroupStatRepository,
+                eventPublisher
+        );
     }
 
     @Test
@@ -435,9 +453,13 @@ class AuditServiceTest {
         assertThatThrownBy(() -> auditService.retry(AUDIT_ID, USER_ID))
                 .isInstanceOf(AuditNotRetryableException.class);
 
-        verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
-        verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
+        verifyNoInteractions(
+                xaiResultRepository,
+                shapFeatureImportanceRepository,
+                fairnessResultRepository,
+                fairnessGroupStatRepository,
+                eventPublisher
+        );
     }
 
     @Test

@@ -10,7 +10,7 @@ import com.aivle13.fin_audit_ai.domain.board.service.post.PostQueryService;
 import com.aivle13.fin_audit_ai.global.dto.PageResponse;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -116,9 +116,8 @@ public class PostController {
                             schema = @Schema(implementation = PostDetailResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않음"),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "409", description = "첨부파일 최대 개수를 초과함")
+            @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않거나 첨부파일 최대 개수를 초과함"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<PostDetailResponse> create(
@@ -146,11 +145,10 @@ public class PostController {
                             schema = @Schema(implementation = PostDetailResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않음"),
+            @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않거나 첨부파일 최대 개수를 초과함"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
             @ApiResponse(responseCode = "403", description = "작성자 본인 또는 관리자가 아님"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음"),
-            @ApiResponse(responseCode = "409", description = "첨부파일 최대 개수를 초과함")
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
     })
     @PatchMapping(path = "/{postId}", consumes = "multipart/form-data")
     public ResponseEntity<PostDetailResponse> update(

@@ -3,7 +3,7 @@ package com.aivle13.fin_audit_ai.domain.model.controller;
 import com.aivle13.fin_audit_ai.domain.model.dto.request.sensitiveattributes.SensitiveAttributesRequest;
 import com.aivle13.fin_audit_ai.domain.model.dto.response.sensitiveattributes.SensitiveAttributesResponse;
 import com.aivle13.fin_audit_ai.domain.model.service.sensitiveattributes.SensitiveAttributesService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

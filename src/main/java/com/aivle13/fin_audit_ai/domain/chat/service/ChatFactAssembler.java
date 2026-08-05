@@ -10,7 +10,7 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository
 import com.aivle13.fin_audit_ai.domain.audit.repository.SelfCheckAnswerRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
-import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerRequest;
+import com.aivle13.fin_audit_ai.global.ai.dto.chat.request.ChatAnswerRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

@@ -22,11 +22,19 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "notifications",
         check = @CheckConstraint(
-                name = "ck_notifications_type_reference",
-                constraint = "(notif_type = 'LAW_REVISION' AND revision_id IS NOT NULL AND audit_id IS NULL) "
-                        + "OR (notif_type = 'REAUDIT_RECOMMEND' AND audit_id IS NOT NULL AND revision_id IS NULL) "
-                        + "OR (notif_type = 'AUDIT_COMPLETE' AND audit_id IS NOT NULL AND revision_id IS NULL)"))
+                name = NotificationEntity.TYPE_REFERENCE_CONSTRAINT_NAME,
+                constraint = NotificationEntity.TYPE_REFERENCE_CONSTRAINT_BODY))
 public class NotificationEntity {
+
+    // ddl-auto:update는 이 제약이 이미 DB에 있으면 본문이 바뀌어도 절대 갱신하지 않는다.
+    // NotifType에 값이 추가될 때마다 NotificationCheckConstraintRunner(dev 전용)가 이
+    // 상수를 그대로 읽어 DROP + ADD CONSTRAINT로 로컬 DB를 코드와 동기화한다.
+    public static final String TYPE_REFERENCE_CONSTRAINT_NAME = "ck_notifications_type_reference";
+    public static final String TYPE_REFERENCE_CONSTRAINT_BODY =
+            "(notif_type = 'LAW_REVISION' AND revision_id IS NOT NULL AND audit_id IS NULL) "
+                    + "OR (notif_type = 'REAUDIT_RECOMMEND' AND audit_id IS NOT NULL AND revision_id IS NULL) "
+                    + "OR (notif_type = 'AUDIT_COMPLETE' AND audit_id IS NOT NULL AND revision_id IS NULL) "
+                    + "OR (notif_type = 'AUDIT_FAILED' AND audit_id IS NOT NULL AND revision_id IS NULL)";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -100,6 +108,19 @@ public class NotificationEntity {
         notification.user = user;
         notification.audit = audit;
         notification.notifType = NotifType.AUDIT_COMPLETE;
+        notification.channel = channel;
+        notification.status = status;
+        notification.sentAt = sentAt;
+        return notification;
+    }
+
+    public static NotificationEntity ofAuditFailed(UserEntity user, AuditEntity audit,
+                                                   NotifChannel channel, NotifStatus status, LocalDateTime sentAt) {
+        Objects.requireNonNull(audit, "audit must not be null for AUDIT_FAILED notification");
+        NotificationEntity notification = new NotificationEntity();
+        notification.user = user;
+        notification.audit = audit;
+        notification.notifType = NotifType.AUDIT_FAILED;
         notification.channel = channel;
         notification.status = status;
         notification.sentAt = sentAt;

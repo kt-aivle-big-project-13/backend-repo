@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.global.jwt;
 
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
-import com.aivle13.fin_audit_ai.global.exception.user.ExpiredTokenException;
-import com.aivle13.fin_audit_ai.global.exception.user.InvalidTokenException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.ExpiredTokenException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.InvalidTokenException;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

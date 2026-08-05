@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.entity;
 
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

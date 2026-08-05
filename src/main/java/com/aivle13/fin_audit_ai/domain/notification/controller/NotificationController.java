@@ -6,7 +6,7 @@ import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
 import com.aivle13.fin_audit_ai.global.dto.PageResponse;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

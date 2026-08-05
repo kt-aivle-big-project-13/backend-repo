@@ -1,7 +1,8 @@
 package com.aivle13.fin_audit_ai.global.ai.client;
 
-import com.aivle13.fin_audit_ai.global.ai.dto.ExplainabilityReportRequest;
-import com.aivle13.fin_audit_ai.global.ai.dto.ExplainabilityReportResponse;
+import com.aivle13.fin_audit_ai.global.ai.client.report.FastApiExplainabilityReportClient;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.request.ExplainabilityReportRequest;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.response.ExplainabilityReportResponse;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerTimeoutException;
 import org.junit.jupiter.api.Test;

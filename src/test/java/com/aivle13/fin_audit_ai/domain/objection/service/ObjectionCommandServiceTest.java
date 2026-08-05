@@ -5,7 +5,7 @@ import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.objection.entity.ObjectionEntity;
 import com.aivle13.fin_audit_ai.domain.objection.repository.ObjectionRepository;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.core.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.mail.MailService;
 import com.aivle13.fin_audit_ai.global.s3.validator.AuditFileValidator;
 import com.aivle13.fin_audit_ai.domain.objection.dto.request.ObjectionDispatchRequest;
