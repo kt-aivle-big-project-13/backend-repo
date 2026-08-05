@@ -149,6 +149,8 @@ class PostControllerTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.authorId").value(user.getId()));
     }
 
+    // 컨트롤러 Swagger 문서는 409로 적혀있지만, 실제 예외(ATTACHMENT_LIMIT_EXCEEDED)는
+    // ErrorCode에 BAD_REQUEST(400)로 정의돼 있어 실동작 기준으로 검증한다.
     @Test
     @DisplayName("첨부파일이 최대 개수를 초과하면 400을 반환한다")
     void create_attachmentLimitExceeded() throws Exception {

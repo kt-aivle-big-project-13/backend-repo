@@ -95,6 +95,8 @@ class PostCommandServiceTest {
     void 첨부파일이_기존과_합쳐_5개를_초과하면_예외() {
         UserEntity author = user(1L, UserRole.AUDITOR);
         given(userRepository.findById(1L)).willReturn(Optional.of(author));
+        // findByIdForUpdate는 락 획득(존재 확인) 목적으로만 쓰이고 반환값 자체는 로직에 쓰이지 않으므로,
+        // create()에서 실제로 만들어지는 게시글과 같은 인스턴스일 필요는 없다.
         given(postRepository.findByIdForUpdate(any())).willReturn(Optional.of(PostEntity.create(author, "x", "y")));
         given(attachmentRepository.countByPost_Id(any())).willReturn(2L);
 
