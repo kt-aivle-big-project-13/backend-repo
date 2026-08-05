@@ -16,6 +16,7 @@ import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditFailedExceptio
 import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotCompletedException;
 import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.model.fairness.FairnessResultNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,10 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 public class FairnessResultService {
@@ -204,6 +207,11 @@ public class FairnessResultService {
 
     // AI 응답의 집단별 기초통계·혼동행렬을 저장 엔티티로 옮긴다. groups 가 없으면(구버전
     // 응답·표본 부족) 아무것도 추가하지 않는다.
+    //
+    // AI 서버 응답에 같은 (attribute, group) 조합이 중복으로 들어오면 fairness_group_stats의
+    // (audit_id, attribute, group_name) 유니크 제약을 그대로 위반해 감사 전체가 실패한다.
+    // 원인은 AI 서버 쪽 응답 이상이지만, 백엔드가 무방비로 믿고 저장하지 않도록 여기서
+    // 한 번 더 막는다 — 같은 그룹이 다시 나오면 첫 번째 값만 남기고 건너뛴다.
     private void addGroupStats(
             List<FairnessGroupStatEntity> target,
             AuditEntity audit,
@@ -213,7 +221,21 @@ public class FairnessResultService {
         if (groups == null) {
             return;
         }
+
+        Set<String> seenGroupNames = new HashSet<>();
+
         for (FairnessRunResponse.GroupStat group : groups) {
+            if (!seenGroupNames.add(group.group())) {
+                log.warn(
+                        "AI 서버 응답에 동일 (attribute, group) 조합이 중복으로 포함되어 있습니다 — "
+                                + "첫 번째 값만 저장합니다: auditId={}, attribute={}, group={}",
+                        audit.getId(),
+                        attribute,
+                        group.group()
+                );
+                continue;
+            }
+
             target.add(FairnessGroupStatEntity.of(
                     audit, attribute, group.group(), group.n(),
                     group.approvalRate(), group.actualDefaultRate(),
