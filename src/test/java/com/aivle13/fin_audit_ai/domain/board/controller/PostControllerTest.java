@@ -67,11 +67,11 @@ class PostControllerTest extends IntegrationTestSupport {
     @BeforeEach
     void setUp() {
         user = userRepository.save(
-                UserEntity.create("테스트기관", "홍길동", "post-test@example.com", "hash", UserRole.AUDITOR));
+                UserEntity.create("홍길동", "테스트기관", "post-test@example.com", "hash", UserRole.AUDITOR));
         otherUser = userRepository.save(
-                UserEntity.create("테스트기관", "김철수", "post-other@example.com", "hash", UserRole.AUDITOR));
+                UserEntity.create("김철수", "테스트기관", "post-other@example.com", "hash", UserRole.AUDITOR));
         admin = userRepository.save(
-                UserEntity.create("테스트기관", "관리자", "post-admin@example.com", "hash", UserRole.ADMIN));
+                UserEntity.create("관리자", "테스트기관", "post-admin@example.com", "hash", UserRole.ADMIN));
     }
 
     private Authentication asUser(UserEntity target) {
