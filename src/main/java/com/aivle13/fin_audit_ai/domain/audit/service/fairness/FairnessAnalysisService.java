@@ -4,9 +4,9 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.request.fairness.FairnessRunReq
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.fairness.FairnessRunResponse;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
-import com.aivle13.fin_audit_ai.global.ai.client.FairnessAnalysisClient;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.ai.client.analysis.FairnessAnalysisClient;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditFailedException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

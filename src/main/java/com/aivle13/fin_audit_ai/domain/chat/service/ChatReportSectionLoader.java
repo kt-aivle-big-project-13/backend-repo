@@ -2,7 +2,7 @@ package com.aivle13.fin_audit_ai.domain.chat.service;
 
 import com.aivle13.fin_audit_ai.domain.report.entity.ReportNarrativeEntity;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportNarrativeRepository;
-import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerRequest;
+import com.aivle13.fin_audit_ai.global.ai.dto.chat.request.ChatAnswerRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

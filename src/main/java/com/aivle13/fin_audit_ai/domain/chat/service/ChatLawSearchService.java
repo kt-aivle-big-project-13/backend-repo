@@ -2,8 +2,8 @@ package com.aivle13.fin_audit_ai.domain.chat.service;
 
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleSimilarityProjection;
-import com.aivle13.fin_audit_ai.global.ai.client.EmbeddingClient;
-import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerRequest;
+import com.aivle13.fin_audit_ai.global.ai.client.chat.EmbeddingClient;
+import com.aivle13.fin_audit_ai.global.ai.dto.chat.request.ChatAnswerRequest;
 import com.pgvector.PGvector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

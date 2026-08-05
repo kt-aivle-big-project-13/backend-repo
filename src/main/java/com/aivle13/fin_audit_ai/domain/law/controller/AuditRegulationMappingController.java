@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.law.controller;
 
 import com.aivle13.fin_audit_ai.domain.law.dto.response.RegulationMappingResponse;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.domain.law.service.mapping.AuditRegulationMappingService;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

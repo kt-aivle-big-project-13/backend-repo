@@ -1,6 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.auth.service;
 
-import com.aivle13.fin_audit_ai.global.exception.user.RefreshTokenMismatchException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.RefreshTokenMismatchException;
 import com.aivle13.fin_audit_ai.global.jwt.JwtProvider;
 
 import org.springframework.data.redis.core.StringRedisTemplate;

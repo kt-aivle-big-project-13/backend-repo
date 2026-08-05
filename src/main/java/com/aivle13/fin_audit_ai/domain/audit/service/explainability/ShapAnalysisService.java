@@ -3,10 +3,10 @@ package com.aivle13.fin_audit_ai.domain.audit.service.explainability;
 import com.aivle13.fin_audit_ai.domain.audit.dto.request.explainability.ExplainabilityResultRequest;
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
-import com.aivle13.fin_audit_ai.global.ai.client.ShapAnalysisClient;
-import com.aivle13.fin_audit_ai.global.ai.dto.ShapAnalysisRequest;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.ai.client.analysis.ShapAnalysisClient;
+import com.aivle13.fin_audit_ai.global.ai.dto.analysis.request.ShapAnalysisRequest;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditFailedException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

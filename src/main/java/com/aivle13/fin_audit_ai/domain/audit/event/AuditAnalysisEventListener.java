@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditProgressService;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPreGenerationService;
 import com.aivle13.fin_audit_ai.domain.audit.service.fairness.FairnessAnalysisService;
 import com.aivle13.fin_audit_ai.domain.audit.service.explainability.ShapAnalysisService;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;

@@ -1,6 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.audit.entity;
 
-import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.compliance.ComplianceStatus;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

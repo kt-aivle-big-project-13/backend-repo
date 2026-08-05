@@ -7,7 +7,7 @@ import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.config.CacheConfig;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.core.ModelNotFoundException;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

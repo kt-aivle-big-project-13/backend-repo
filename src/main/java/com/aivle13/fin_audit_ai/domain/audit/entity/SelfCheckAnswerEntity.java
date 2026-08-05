@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.entity;
 
-import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckAnswerValue;
-import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.selfcheck.SelfCheckAnswerValue;
+import com.aivle13.fin_audit_ai.domain.audit.type.selfcheck.SelfCheckItemCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

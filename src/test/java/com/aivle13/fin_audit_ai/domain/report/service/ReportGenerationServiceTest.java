@@ -2,8 +2,11 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 
 import com.aivle13.fin_audit_ai.domain.report.document.GeneratedReportFile;
 import com.aivle13.fin_audit_ai.domain.report.document.ReportDocumentGenerator;
-import com.aivle13.fin_audit_ai.domain.report.dto.GeneratedReportResponse;
-import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.GeneratedReportResponse;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.ReportGenerationContext;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationContextLoader;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPersistenceService;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportStatus;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;

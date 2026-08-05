@@ -22,13 +22,13 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             select
                 count(a.id) as analyzedModelCount,
                 coalesce(sum(case
-                    when a.status = com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT
+                    when a.status = com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT
                     then 1 else 0 end), 0) as normalModelCount,
                 coalesce(sum(case
-                    when a.status = com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING
+                    when a.status = com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING
                     then 1 else 0 end), 0) as reviewRequiredCount,
                 coalesce(sum(case
-                    when a.status = com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                    when a.status = com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                     then 1 else 0 end), 0) as thresholdExceededCount
             from AuditEntity a
             where a.id = (
@@ -36,9 +36,9 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 from AuditEntity latest
                 where latest.model.id = a.model.id
                   and latest.status in (
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                   )
             )
             """)
@@ -54,9 +54,9 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 from AuditEntity latest
                 where latest.model.id = a.model.id
                   and latest.status in (
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                   )
             )
             group by a.status
@@ -77,14 +77,14 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 from AuditEntity latest
                 where latest.model.id = a.model.id
                   and latest.status in (
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                   )
             )
               and result.status in (
-                com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus.REVIEW,
-                com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus.FAIL
+                com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessStatus.REVIEW,
+                com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessStatus.FAIL
               )
             group by a.model.id, a.model.modelName, a.model.version, a.status
             """)
@@ -104,14 +104,14 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 from AuditEntity latest
                 where latest.model.id = a.model.id
                   and latest.status in (
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                   )
             )
               and result.status in (
-                com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus.WARNING,
-                com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus.REVIEW
+                com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiStatus.WARNING,
+                com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiStatus.REVIEW
               )
             group by a.model.id, a.model.modelName, a.model.version, a.status
             """)
@@ -129,9 +129,9 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 from AuditEntity latest
                 where latest.model.id = a.model.id
                   and latest.status in (
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                   )
             )
             group by result.metricCode, result.status
@@ -147,9 +147,9 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 from AuditEntity latest
                 where latest.model.id = a.model.id
                   and latest.status in (
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING,
-                    com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
+                    com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                   )
             )
             """)
@@ -185,9 +185,9 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 a.completedAt as completedAt
             from AuditEntity a
             where a.status in (
-                com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.COMPLIANT,
-                com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.WARNING,
-                com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus.NON_COMPLIANT
+                com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
+                com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
+                com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
               )
             order by a.completedAt desc, a.id desc
             """)

@@ -1,15 +1,15 @@
 package com.aivle13.fin_audit_ai.domain.report.controller;
 
-import com.aivle13.fin_audit_ai.domain.report.dto.GeneratedReportResponse;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.GeneratedReportResponse;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
-import com.aivle13.fin_audit_ai.domain.report.service.FinalReportQueryService;
-import com.aivle13.fin_audit_ai.domain.report.dto.FinalReportMetadataResponse;
-import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationRequest;
-import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationResponse;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportDownloadResult;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportDownloadService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.FinalReportQueryService;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.FinalReportMetadataResponse;
+import com.aivle13.fin_audit_ai.domain.report.dto.request.ReportGenerationRequest;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.ReportGenerationResponse;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportDownloadResult;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportDownloadService;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

@@ -6,7 +6,7 @@ import com.aivle13.fin_audit_ai.domain.chat.dto.response.ChatConversationRespons
 import com.aivle13.fin_audit_ai.domain.chat.entity.ChatConversationEntity;
 import com.aivle13.fin_audit_ai.domain.chat.repository.ChatConversationRepository;
 import com.aivle13.fin_audit_ai.global.exception.chat.ChatConversationNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

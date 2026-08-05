@@ -10,7 +10,7 @@ import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
 import com.aivle13.fin_audit_ai.global.config.CacheConfig;
 import com.aivle13.fin_audit_ai.global.exception.file.InvalidFileFormatException;
-import com.aivle13.fin_audit_ai.global.exception.model.ModelNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.core.ModelNotFoundException;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import com.aivle13.fin_audit_ai.global.s3.validator.AuditFileValidator;

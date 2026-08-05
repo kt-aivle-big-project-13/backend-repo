@@ -2,6 +2,13 @@ package com.aivle13.fin_audit_ai.domain.report.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.projection.ReportPreGenerationTargetProjection;
+import com.aivle13.fin_audit_ai.domain.report.service.bias.BiasReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPreGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.compliance.ComplianceReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.explainability.ExplainabilityReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.highimpact.HighImpactReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.improvement.ImprovementGuideGenerationService;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

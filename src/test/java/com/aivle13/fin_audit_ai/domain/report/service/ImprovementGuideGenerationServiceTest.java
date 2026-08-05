@@ -1,12 +1,16 @@
 package com.aivle13.fin_audit_ai.domain.report.service;
 
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportNarrativeRecorder;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPersistenceService;
+import com.aivle13.fin_audit_ai.domain.report.service.improvement.ImprovementGuideGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.improvement.ImprovementGuideRequestAssembler;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
-import com.aivle13.fin_audit_ai.global.ai.client.ImprovementGuideClient;
-import com.aivle13.fin_audit_ai.global.ai.dto.ImprovementGuideRequest;
-import com.aivle13.fin_audit_ai.global.ai.dto.ImprovementGuideResponse;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.ai.client.report.ImprovementGuideClient;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.request.ImprovementGuideRequest;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.response.ImprovementGuideResponse;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditFailedException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
