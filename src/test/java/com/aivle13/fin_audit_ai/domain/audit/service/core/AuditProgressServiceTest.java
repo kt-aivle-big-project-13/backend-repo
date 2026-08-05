@@ -204,6 +204,7 @@ class AuditProgressServiceTest {
         auditProgressService.markFailed(AUDIT_ID, GENERATION);
 
         verify(audit).markFailed();
+        verify(notificationService).notifyAuditFailed(audit);
     }
 
     @Test
@@ -215,6 +216,7 @@ class AuditProgressServiceTest {
         auditProgressService.markFailed(AUDIT_ID, GENERATION);
 
         verify(audit, never()).markFailed();
+        verify(notificationService, never()).notifyAuditFailed(any());
     }
 
     @Test
@@ -226,6 +228,7 @@ class AuditProgressServiceTest {
         auditProgressService.markFailed(AUDIT_ID, GENERATION);
 
         verify(audit, never()).markFailed();
+        verify(notificationService, never()).notifyAuditFailed(any());
     }
 
     @Test
@@ -239,6 +242,19 @@ class AuditProgressServiceTest {
         auditProgressService.markFailed(AUDIT_ID);
 
         verify(audit, never()).markFailed();
+    }
+
+    @Test
+    void markFailedWithoutGenerationNeverNotifies() {
+        // 서버 재시작 복구 경로(AuditRecoveryRunner)는 배포/재기동 사정으로 실패 처리되는
+        // 것이라 사용자에게 감사 실패 알림을 보내지 않는다.
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+
+        auditProgressService.markFailed(AUDIT_ID);
+
+        verify(audit).markFailed();
+        verify(notificationService, never()).notifyAuditFailed(any());
     }
 
     @Test

@@ -95,6 +95,7 @@ public class AuditProgressService {
             return;
         }
         audit.markFailed();
+        notificationService.notifyAuditFailed(audit);
     }
 
     // SHAP·Fairlearn 재시도 콜백과 무관하게(자율점검 법령 매핑 실패, 서버 재시작 복구 등)

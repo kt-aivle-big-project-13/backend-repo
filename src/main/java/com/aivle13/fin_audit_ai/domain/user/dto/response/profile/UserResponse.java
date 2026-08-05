@@ -16,7 +16,8 @@ public record UserResponse(
         LocalDateTime lastLoginAt,
         boolean lawEmailEnabled,
         boolean reauditAlertEnabled,
-        boolean auditCompleteAlertEnabled
+        boolean auditCompleteAlertEnabled,
+        boolean auditFailAlertEnabled
 ) {
     @SuppressWarnings("java:S2068")     // 실제 비밀번호가 아닌 마스킹 표시용 상수
     private static final String MASKED_PASSWORD = "********";
@@ -33,7 +34,8 @@ public record UserResponse(
                 user.getLastLoginAt(),
                 user.isLawEmailEnabled(),
                 user.isReauditAlertEnabled(),
-                user.isAuditCompleteAlertEnabled()
+                user.isAuditCompleteAlertEnabled(),
+                user.isAuditFailAlertEnabled()
         );
     }
 }

@@ -84,7 +84,8 @@ public class UserService {
         user.updateNotificationPreferences(
                 request.lawEmailEnabled(),
                 request.reauditAlertEnabled(),
-                request.auditCompleteAlertEnabled()
+                request.auditCompleteAlertEnabled(),
+                request.auditFailAlertEnabled()
         );
 
         return UserResponse.from(user);
