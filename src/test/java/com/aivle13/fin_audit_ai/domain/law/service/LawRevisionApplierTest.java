@@ -4,6 +4,7 @@ import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawRevisionRepository;
+import com.aivle13.fin_audit_ai.domain.law.service.revision.LawRevisionApplier;
 import com.aivle13.fin_audit_ai.domain.law.type.RevisionType;
 import com.aivle13.fin_audit_ai.global.exception.llm.LlmServerErrorException;
 import com.aivle13.fin_audit_ai.global.lawapi.client.LawApiClient;

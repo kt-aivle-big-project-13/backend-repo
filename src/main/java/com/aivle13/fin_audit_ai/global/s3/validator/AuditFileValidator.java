@@ -2,8 +2,8 @@ package com.aivle13.fin_audit_ai.global.s3.validator;
 
 import com.aivle13.fin_audit_ai.global.exception.file.EmptyFileException;
 import com.aivle13.fin_audit_ai.global.exception.file.InvalidFileFormatException;
-import com.aivle13.fin_audit_ai.global.exception.model.FileSizeExceededException;
-import com.aivle13.fin_audit_ai.global.exception.model.InvalidModelFileException;
+import com.aivle13.fin_audit_ai.global.exception.model.dataset.FileSizeExceededException;
+import com.aivle13.fin_audit_ai.global.exception.model.dataset.InvalidModelFileException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 

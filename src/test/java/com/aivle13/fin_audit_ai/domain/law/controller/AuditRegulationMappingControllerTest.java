@@ -1,12 +1,12 @@
 package com.aivle13.fin_audit_ai.domain.law.controller;
 
-import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.SelfCheckItemCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.compliance.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.selfcheck.SelfCheckItemCode;
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
 import com.aivle13.fin_audit_ai.domain.law.dto.MatchedChecklistItem;
 import com.aivle13.fin_audit_ai.domain.law.dto.response.RegulationMappingResponse;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.domain.law.service.mapping.AuditRegulationMappingService;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

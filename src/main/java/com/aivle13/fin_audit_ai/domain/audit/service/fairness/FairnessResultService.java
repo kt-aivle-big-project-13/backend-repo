@@ -8,14 +8,14 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessGroupStatRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
-import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
-import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessStatus;
 import com.aivle13.fin_audit_ai.global.config.CacheConfig;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.model.FairnessResultNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditFailedException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotCompletedException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.fairness.FairnessResultNotFoundException;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
@@ -191,10 +191,18 @@ public class FairnessResultService {
             );
         }
 
+        // deleteAllByAudit_Id는 @Modifying이 없는 파생 delete라 영속성 컨텍스트에 삭제만
+        // 큐잉되고, Hibernate는 flush 시 삭제보다 삽입을 먼저 내보낸다. flush 없이 바로
+        // saveAll을 호출하면 재시도 등으로 재저장할 때(기존 행이 이미 있는 상태) INSERT가
+        // 아직 지워지지 않은 기존 행과 유니크 제약에서 충돌한다 — 그래서 delete를 먼저
+        // DB에 반영시킨 뒤 insert한다. (ExplainabilityService의 xaiResultRepository·
+        // shapFeatureImportanceRepository 저장과 동일한 패턴)
         fairnessResultRepository.deleteAllByAudit_Id(auditId);
+        fairnessResultRepository.flush();
         fairnessResultRepository.saveAll(results);
 
         fairnessGroupStatRepository.deleteAllByAudit_Id(auditId);
+        fairnessGroupStatRepository.flush();
         fairnessGroupStatRepository.saveAll(groupStats);
 
         applyPerformance(audit, response.performance());
@@ -280,7 +288,6 @@ public class FairnessResultService {
         ));
     }
 
-    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
     private FairnessStatus judgeStatus(BigDecimal absValue, BigDecimal threshold) {
         if (absValue.compareTo(threshold) <= 0) {
             return FairnessStatus.PASS;
@@ -316,7 +323,6 @@ public class FairnessResultService {
         ));
     }
 
-    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
     private FairnessStatus judgeRatioStatus(BigDecimal ratio, BigDecimal minRatio) {
         if (ratio.compareTo(minRatio) >= 0) {
             return FairnessStatus.PASS;

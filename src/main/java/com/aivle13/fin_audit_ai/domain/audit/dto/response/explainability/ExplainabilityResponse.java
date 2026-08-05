@@ -2,7 +2,7 @@ package com.aivle13.fin_audit_ai.domain.audit.dto.response.explainability;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.ShapFeatureImportanceEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiMetricCode;
 
 import java.util.ArrayList;
 import java.util.Comparator;

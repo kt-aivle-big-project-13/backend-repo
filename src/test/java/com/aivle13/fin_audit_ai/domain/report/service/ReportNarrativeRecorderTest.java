@@ -1,7 +1,9 @@
 package com.aivle13.fin_audit_ai.domain.report.service;
 
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportNarrativePersistenceService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportNarrativeRecorder;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
-import com.aivle13.fin_audit_ai.global.ai.dto.ReportNarrativeResponse;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.response.ReportNarrativeResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

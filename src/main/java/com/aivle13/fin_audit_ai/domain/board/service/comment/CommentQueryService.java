@@ -23,7 +23,7 @@ public class CommentQueryService {
             throw new PostNotFoundException();
         }
 
-        return commentRepository.findByPost_IdOrderByCreatedAtAsc(postId).stream()
+        return commentRepository.findByPost_IdOrderByCreatedAtAscIdAsc(postId).stream()
                 .map(CommentResponse::from)
                 .toList();
     }

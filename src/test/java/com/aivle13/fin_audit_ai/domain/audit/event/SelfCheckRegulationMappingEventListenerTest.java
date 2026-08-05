@@ -1,13 +1,13 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditProgressService;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
+import com.aivle13.fin_audit_ai.domain.law.service.mapping.AuditRegulationMappingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPreGenerationService;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.willThrow;

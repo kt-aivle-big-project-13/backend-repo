@@ -1,13 +1,13 @@
 package com.aivle13.fin_audit_ai.domain.report.controller;
 
-import com.aivle13.fin_audit_ai.domain.report.dto.ExplainabilityReportGenerationResponse;
-import com.aivle13.fin_audit_ai.domain.report.dto.ExplainabilityReportMetadataResponse;
-import com.aivle13.fin_audit_ai.domain.report.service.ExplainabilityReportGenerationService;
-import com.aivle13.fin_audit_ai.domain.report.service.ExplainabilityReportQueryService;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.explainability.ExplainabilityReportGenerationResponse;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.explainability.ExplainabilityReportMetadataResponse;
+import com.aivle13.fin_audit_ai.domain.report.service.explainability.ExplainabilityReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.explainability.ExplainabilityReportQueryService;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportStatus;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

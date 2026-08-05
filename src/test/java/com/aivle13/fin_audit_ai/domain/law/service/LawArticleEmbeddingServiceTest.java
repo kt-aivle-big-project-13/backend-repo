@@ -2,7 +2,8 @@ package com.aivle13.fin_audit_ai.domain.law.service;
 
 import com.aivle13.fin_audit_ai.domain.law.entity.LawArticleEntity;
 import com.aivle13.fin_audit_ai.domain.law.repository.LawArticleRepository;
-import com.aivle13.fin_audit_ai.global.ai.client.EmbeddingClient;
+import com.aivle13.fin_audit_ai.domain.law.service.embedding.LawArticleEmbeddingService;
+import com.aivle13.fin_audit_ai.global.ai.client.chat.EmbeddingClient;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

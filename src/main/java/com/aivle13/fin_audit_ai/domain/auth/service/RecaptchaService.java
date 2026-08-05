@@ -2,7 +2,7 @@ package com.aivle13.fin_audit_ai.domain.auth.service;
 
 import com.aivle13.fin_audit_ai.domain.auth.dto.response.RecaptchaVerifyResponse;
 import com.aivle13.fin_audit_ai.global.exception.external.RecaptchaServerException;
-import com.aivle13.fin_audit_ai.global.exception.user.RecaptchaVerificationFailedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.RecaptchaVerificationFailedException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;

@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.report.prompt;
 
 import com.aivle13.fin_audit_ai.domain.law.dto.AuditRegulationComplianceView;
-import com.aivle13.fin_audit_ai.domain.report.dto.AuditMetricView;
-import com.aivle13.fin_audit_ai.domain.report.dto.ReportGenerationContext;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.AuditMetricView;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.ReportGenerationContext;
 import com.aivle13.fin_audit_ai.domain.report.template.ReportSectionTemplate;
 
 import java.util.List;

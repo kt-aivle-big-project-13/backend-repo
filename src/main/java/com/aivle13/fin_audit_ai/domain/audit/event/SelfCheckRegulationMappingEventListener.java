@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.audit.event;
 
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditProgressService;
-import com.aivle13.fin_audit_ai.domain.law.service.AuditRegulationMappingService;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
+import com.aivle13.fin_audit_ai.domain.law.service.mapping.AuditRegulationMappingService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPreGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

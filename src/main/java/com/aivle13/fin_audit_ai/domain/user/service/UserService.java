@@ -18,7 +18,7 @@ import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.domain.user.service.password.PasswordResetTokenService;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
-import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.user.common.UserNotFoundException;
 import com.aivle13.fin_audit_ai.global.mail.MailService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -84,7 +84,8 @@ public class UserService {
         user.updateNotificationPreferences(
                 request.lawEmailEnabled(),
                 request.reauditAlertEnabled(),
-                request.auditCompleteAlertEnabled()
+                request.auditCompleteAlertEnabled(),
+                request.auditFailAlertEnabled()
         );
 
         return UserResponse.from(user);

@@ -13,7 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.aivle13.fin_audit_ai.global.ai.config.AiServerProperties;
 import org.junit.jupiter.api.BeforeEach;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPreGenerationService;
+
+import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.willThrow;
@@ -23,6 +25,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class AuditAnalysisEventListenerTest {
@@ -45,25 +49,42 @@ class AuditAnalysisEventListenerTest {
     @Mock
     private ReportPreGenerationService reportPreGenerationService;
 
+    // 실제 병렬 실행 대신, 제출된 작업을 호출한 스레드에서 즉시 실행하는 동기 실행기로
+    // 대체한다. SHAP·Fairlearn 이 진짜 동시에 도는지는 스레드풀 설정(AsyncConfig)의
+    // 책임이고, 여기서는 "두 작업이 각자 결과를 어떻게 진행 상태에 반영하는지"라는
+    // 오케스트레이션 로직만 결정적으로 검증한다. 코드 순서상 SHAP을 먼저 제출하므로,
+    // 동기 실행기에서는 SHAP 쪽 완료 콜백이 항상 먼저 불린다.
+    @Mock
+    private Executor auditAnalysisExecutor;
+
     @BeforeEach
     void setUp() {
         given(aiServerProperties.enabled())
                 .willReturn(true);
+
+        lenient().doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(auditAnalysisExecutor).execute(any());
     }
 
     @InjectMocks
     private AuditAnalysisEventListener listener;
 
     @Test
-    void processesShapAndFairnessAnalysisInOrder() {
+    void processesShapAndFairnessAnalysisInParallelAndCompletesInSubmissionOrder() {
         AuditStartedEvent event = new AuditStartedEvent(AUDIT_ID, GENERATION);
 
         listener.handle(event);
 
+        verify(auditAnalysisExecutor, times(2)).execute(any());
+
         InOrder inOrder = inOrder(
                 auditProgressService,
                 shapAnalysisService,
-                fairnessAnalysisService
+                fairnessAnalysisService,
+                reportPreGenerationService
         );
 
         inOrder.verify(auditProgressService)
@@ -76,13 +97,15 @@ class AuditAnalysisEventListenerTest {
                 .analyzeAndSave(AUDIT_ID, GENERATION);
         inOrder.verify(auditProgressService)
                 .markFairnessCompleted(AUDIT_ID, GENERATION);
+        inOrder.verify(reportPreGenerationService)
+                .preGenerateAfterAnalysis(AUDIT_ID);
 
         verify(auditProgressService, never())
                 .markFailed(AUDIT_ID, GENERATION);
     }
 
     @Test
-    void skipsShapAnalysisWhenAlreadyCancelledBeforeStarting() {
+    void skipsBothAnalysesWhenAlreadyCancelledBeforeStarting() {
         given(auditProgressService.isCancelled(AUDIT_ID, GENERATION))
                 .willReturn(true);
 
@@ -92,30 +115,18 @@ class AuditAnalysisEventListenerTest {
                 .markInProgress(AUDIT_ID, GENERATION);
         verifyNoInteractions(shapAnalysisService);
         verifyNoInteractions(fairnessAnalysisService);
+        verifyNoInteractions(auditAnalysisExecutor);
         verify(auditProgressService, never())
                 .markShapCompleted(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
                 .markFairnessCompleted(AUDIT_ID, GENERATION);
     }
 
+    // 병렬 실행에서는 두 분석이 이미 동시에 AI 서버로 나가 있으므로, 예전처럼 "SHAP 실패 시
+    // Fairlearn 자체를 부르지 않는" 조기 중단은 더 이상 없다. Fairlearn은 그대로 끝까지
+    // 실행되고(여기선 성공), 감사는 결국 FAILED로 표시된다.
     @Test
-    void skipsFairnessAnalysisWhenCancelledDuringShapAnalysis() {
-        given(auditProgressService.isCancelled(AUDIT_ID, GENERATION))
-                .willReturn(false, true);
-
-        listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
-
-        verify(shapAnalysisService)
-                .analyzeAndSave(AUDIT_ID, GENERATION);
-        verify(auditProgressService)
-                .markShapCompleted(AUDIT_ID, GENERATION);
-        verifyNoInteractions(fairnessAnalysisService);
-        verify(auditProgressService, never())
-                .markFairnessCompleted(AUDIT_ID, GENERATION);
-    }
-
-    @Test
-    void marksAuditAsFailedWhenShapAiServerReturnsErrorAndDoesNotRunFairness() {
+    void marksAuditAsFailedWhenShapAiServerReturnsErrorButFairnessStillRuns() {
         willThrow(new AiServerErrorException())
                 .given(shapAnalysisService)
                 .analyzeAndSave(AUDIT_ID, GENERATION);
@@ -124,28 +135,30 @@ class AuditAnalysisEventListenerTest {
 
         verify(auditProgressService)
                 .markInProgress(AUDIT_ID, GENERATION);
+        verify(fairnessAnalysisService)
+                .analyzeAndSave(AUDIT_ID, GENERATION);
         verify(auditProgressService)
                 .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID, GENERATION);
-        verifyNoInteractions(fairnessAnalysisService);
+                .markFairnessCompleted(AUDIT_ID, GENERATION);
+        verify(reportPreGenerationService, never())
+                .preGenerateAfterAnalysis(AUDIT_ID);
     }
 
     @Test
-    void marksAuditAsFailedWhenShapAiServerTimesOutAndDoesNotRunFairness() {
+    void marksAuditAsFailedWhenShapAiServerTimesOutButFairnessStillRuns() {
         willThrow(new AiServerTimeoutException())
                 .given(shapAnalysisService)
                 .analyzeAndSave(AUDIT_ID, GENERATION);
 
         listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
-        verify(auditProgressService)
-                .markInProgress(AUDIT_ID, GENERATION);
+        verify(fairnessAnalysisService)
+                .analyzeAndSave(AUDIT_ID, GENERATION);
         verify(auditProgressService)
                 .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID, GENERATION);
-        verifyNoInteractions(fairnessAnalysisService);
+                .markFairnessCompleted(AUDIT_ID, GENERATION);
     }
 
     @Test
@@ -156,11 +169,12 @@ class AuditAnalysisEventListenerTest {
 
         listener.handle(new AuditStartedEvent(AUDIT_ID, GENERATION));
 
+        verify(fairnessAnalysisService)
+                .analyzeAndSave(AUDIT_ID, GENERATION);
         verify(auditProgressService)
                 .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID, GENERATION);
-        verifyNoInteractions(fairnessAnalysisService);
+                .markFairnessCompleted(AUDIT_ID, GENERATION);
     }
 
     @Test
@@ -197,8 +211,6 @@ class AuditAnalysisEventListenerTest {
 
         verify(auditProgressService, times(3))
                 .markFailed(AUDIT_ID, GENERATION);
-        verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID, GENERATION);
     }
 
     @Test
@@ -212,10 +224,9 @@ class AuditAnalysisEventListenerTest {
                 .markFailed(AUDIT_ID, GENERATION);
         verify(auditProgressService, never())
                 .markInProgress(AUDIT_ID, GENERATION);
-        verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID, GENERATION);
         verifyNoInteractions(shapAnalysisService);
         verifyNoInteractions(fairnessAnalysisService);
+        verifyNoInteractions(auditAnalysisExecutor);
     }
 
     @Test
@@ -233,7 +244,5 @@ class AuditAnalysisEventListenerTest {
 
         verify(auditProgressService, times(2))
                 .markFailed(AUDIT_ID, GENERATION);
-        verify(auditProgressService, never())
-                .markShapCompleted(AUDIT_ID, GENERATION);
     }
 }

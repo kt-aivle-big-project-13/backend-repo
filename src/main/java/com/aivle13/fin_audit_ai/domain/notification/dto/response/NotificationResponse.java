@@ -19,6 +19,7 @@ public record NotificationResponse(
             case LAW_REVISION -> "법령 개정 안내";
             case REAUDIT_RECOMMEND -> "재감사 권고";
             case AUDIT_COMPLETE -> "감사 완료";
+            case AUDIT_FAILED -> "감사 실패";
         };
 
         String message = switch (notification.getNotifType()) {
@@ -28,6 +29,8 @@ public record NotificationResponse(
                     "'" + notification.getAudit().getAuditName() + "' 모델은 감사 결과 재감사가 필요합니다.";
             case AUDIT_COMPLETE ->
                     "'" + notification.getAudit().getAuditName() + "' 감사가 완료되었습니다.";
+            case AUDIT_FAILED ->
+                    "'" + notification.getAudit().getAuditName() + "' 감사가 실패했습니다. 다시 시도해주세요.";
         };
 
         Long auditId = notification.getAudit() != null ? notification.getAudit().getId() : null;
