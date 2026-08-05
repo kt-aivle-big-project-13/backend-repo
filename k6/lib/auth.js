@@ -6,24 +6,40 @@ import { BASE_URL, TEST_USER } from '../config/env.js';
 export function login() {
     const res = http.post(
         `${BASE_URL}/api/v1/auth/login`,
-        JSON.stringify({ email: TEST_USER.email, password: TEST_USER.password, rememberMe: false }),
-        { headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+            email: TEST_USER.email,
+            password: TEST_USER.password,
+            rememberMe: false,
+            recaptchaToken: 'load-test-token',
+        }),
+        {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        },
     );
 
     const token = res.json('accessToken');
 
     const ok = check(res, {
         '로그인 성공': (r) => r.status === 200,
-        'accessToken 발급': () => !!token,
+        'accessToken 발급': () => Boolean(token),
     });
 
     if (!ok) {
-        throw new Error(`로그인 실패: status=${res.status}, body=${res.body}`);
+        throw new Error(
+            `로그인 실패: status=${res.status}, body=${res.body}`,
+        );
     }
 
     return token;
 }
 
 export function authHeaders(token) {
-    return { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    return {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    };
 }
