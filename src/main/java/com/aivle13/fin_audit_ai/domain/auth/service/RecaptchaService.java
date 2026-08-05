@@ -20,12 +20,14 @@ public class RecaptchaService {
     private final RestClient restClient;
     private final String secretKey;
     private final String verifyUrl;
+    private final boolean enabled;
 
     public RecaptchaService(
             @Value("${recaptcha.secret-key}") String secretKey,
             @Value("${recaptcha.verify-url}") String verifyUrl,
             @Value("${recaptcha.connect-timeout}") Duration connectTimeout,
-            @Value("${recaptcha.read-timeout}") Duration readTimeout
+            @Value("${recaptcha.read-timeout}") Duration readTimeout,
+            @Value("${recaptcha.enabled:true}") boolean enabled
     ) {
         SimpleClientHttpRequestFactory requestFactory =
                 new SimpleClientHttpRequestFactory();
@@ -39,9 +41,15 @@ public class RecaptchaService {
 
         this.secretKey = secretKey;
         this.verifyUrl = verifyUrl;
+        this.enabled = enabled;
     }
 
     public void verify(String recaptchaToken) {
+        // 부하 테스트 프로필에서만 reCAPTCHA 검증 생략
+        if (!enabled) {
+            return;
+        }
+
         MultiValueMap<String, String> requestBody =
                 new LinkedMultiValueMap<>();
 
