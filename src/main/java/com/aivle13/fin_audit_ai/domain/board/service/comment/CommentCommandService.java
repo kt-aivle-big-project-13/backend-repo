@@ -11,7 +11,7 @@ import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.board.CommentNotFoundException;
 import com.aivle13.fin_audit_ai.global.exception.board.PostNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.user.common.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

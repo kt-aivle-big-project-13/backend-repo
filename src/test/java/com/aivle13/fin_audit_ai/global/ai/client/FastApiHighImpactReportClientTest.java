@@ -1,7 +1,8 @@
 package com.aivle13.fin_audit_ai.global.ai.client;
 
-import com.aivle13.fin_audit_ai.global.ai.dto.HighImpactReportRequest;
-import com.aivle13.fin_audit_ai.global.ai.dto.HighImpactReportResponse;
+import com.aivle13.fin_audit_ai.global.ai.client.report.FastApiHighImpactReportClient;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.request.HighImpactReportRequest;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.response.HighImpactReportResponse;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerTimeoutException;
 import org.junit.jupiter.api.Test;

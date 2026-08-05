@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.audit.repository;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiMetricCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;

@@ -1,9 +1,10 @@
 package com.aivle13.fin_audit_ai.domain.report.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
-import com.aivle13.fin_audit_ai.domain.report.dto.FinalReportMetadataResponse;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.common.FinalReportMetadataResponse;
 import com.aivle13.fin_audit_ai.domain.report.entity.ReportEntity;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
+import com.aivle13.fin_audit_ai.domain.report.service.common.FinalReportQueryService;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportStatus;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;

@@ -9,9 +9,9 @@ import com.aivle13.fin_audit_ai.domain.chat.repository.ChatConversationRepositor
 import com.aivle13.fin_audit_ai.domain.chat.repository.ChatMessageRepository;
 import com.aivle13.fin_audit_ai.domain.chat.type.CitationType;
 import com.aivle13.fin_audit_ai.domain.chat.type.GroundingStatus;
-import com.aivle13.fin_audit_ai.global.ai.client.ChatAnswerClient;
-import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerRequest;
-import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerResponse;
+import com.aivle13.fin_audit_ai.global.ai.client.chat.ChatAnswerClient;
+import com.aivle13.fin_audit_ai.global.ai.dto.chat.request.ChatAnswerRequest;
+import com.aivle13.fin_audit_ai.global.ai.dto.chat.response.ChatAnswerResponse;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;

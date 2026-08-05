@@ -5,7 +5,7 @@ import com.aivle13.fin_audit_ai.domain.board.dto.request.comment.CommentUpdateRe
 import com.aivle13.fin_audit_ai.domain.board.dto.response.comment.CommentResponse;
 import com.aivle13.fin_audit_ai.domain.board.service.comment.CommentCommandService;
 import com.aivle13.fin_audit_ai.domain.board.service.comment.CommentQueryService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;

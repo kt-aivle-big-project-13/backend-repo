@@ -6,7 +6,7 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditStartRespons
 import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditService;
 import com.aivle13.fin_audit_ai.domain.audit.service.core.AuditStartService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
