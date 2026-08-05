@@ -165,6 +165,33 @@ class DashboardServiceTest {
     }
 
     @Test
+    void SHAP_문제가_합산되면_공정성_문제만으로는_5위_밖이던_모델이_상위로_올라온다() {
+        List<ReviewRequiredModelProjection> fairnessIssues = List.of(
+                reviewRequired(1L, "모델1", "1.0", 6, AuditStatus.WARNING),
+                reviewRequired(2L, "모델2", "1.0", 5, AuditStatus.WARNING),
+                reviewRequired(3L, "모델3", "1.0", 4, AuditStatus.WARNING),
+                reviewRequired(4L, "모델4", "1.0", 3, AuditStatus.WARNING),
+                reviewRequired(5L, "모델5", "1.0", 2, AuditStatus.WARNING),
+                // 공정성 문제만 보면 1건뿐이라 상위 5개(1~5위)에 들지 못하는 모델.
+                reviewRequired(6L, "모델6", "1.0", 1, AuditStatus.WARNING)
+        );
+        // 모델6에 SHAP 문제 10건이 추가로 합산되면 총합이 11건이 되어 6위(제외 대상)에서 1위로 올라오고,
+        // 대신 공정성만으로 5위였던 모델5(2건)가 5위 밖으로 밀려난다.
+        List<ReviewRequiredModelProjection> xaiIssues =
+                List.of(reviewRequired(6L, "모델6", "1.0", 10, AuditStatus.NON_COMPLIANT));
+        stubDashboard(summary(6, 0, 6, 0), List.of(), fairnessIssues, xaiIssues, List.of(), List.of());
+
+        DashboardResponse result = dashboardService.getDashboard();
+
+        assertThat(result.reviewRequiredTopModels()).hasSize(5);
+        assertThat(result.reviewRequiredTopModels().get(0).modelId()).isEqualTo(6L);
+        assertThat(result.reviewRequiredTopModels().get(0).issueCount()).isEqualTo(11);
+        assertThat(result.reviewRequiredTopModels())
+                .extracting(response -> response.modelId())
+                .doesNotContain(5L);
+    }
+
+    @Test
     void 같은_모델의_공정성과_SHAP_문제는_더_심각한_상태로_합쳐진다() {
         List<ReviewRequiredModelProjection> fairnessIssues =
                 List.of(reviewRequired(100L, "모델A", "1.0", 2, AuditStatus.WARNING));

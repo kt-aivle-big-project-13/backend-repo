@@ -10,7 +10,8 @@ import java.util.Optional;
 
 public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
 
-    List<CommentEntity> findByPost_IdOrderByCreatedAtAsc(Long postId);
+    // 같은 트랜잭션에서 연속 저장된 댓글은 createdAt이 동일할 수 있어 id를 보조 정렬 키로 둔다.
+    List<CommentEntity> findByPost_IdOrderByCreatedAtAscIdAsc(Long postId);
 
     List<CommentEntity> findByPost_Id(Long postId);
 

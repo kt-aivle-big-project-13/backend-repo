@@ -42,7 +42,7 @@ class CommentQueryServiceTest {
         CommentEntity first = CommentEntity.create(post, admin, "첫 번째 답변");
         CommentEntity second = CommentEntity.create(post, admin, "두 번째 답변");
         given(postRepository.existsById(10L)).willReturn(true);
-        given(commentRepository.findByPost_IdOrderByCreatedAtAsc(10L)).willReturn(List.of(first, second));
+        given(commentRepository.findByPost_IdOrderByCreatedAtAscIdAsc(10L)).willReturn(List.of(first, second));
 
         List<CommentResponse> result = commentQueryService.list(10L);
 

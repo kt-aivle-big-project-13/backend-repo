@@ -149,14 +149,10 @@ class PostControllerTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.authorId").value(user.getId()));
     }
 
-    // 컨트롤러 Swagger 문서는 409로 적혀있지만, 실제 예외(ATTACHMENT_LIMIT_EXCEEDED)는
-    // ErrorCode에 BAD_REQUEST(400)로 정의돼 있어 실동작 기준으로 검증한다.
     @Test
     @DisplayName("첨부파일이 최대 개수를 초과하면 400을 반환한다")
     void create_attachmentLimitExceeded() throws Exception {
-        when(fileStorageService.store(any(), anyString()))
-                .thenReturn(new StoredFile("board-posts/key", "file.png", "image/png", 100L));
-
+        // 개수 초과 검증이 첨부 저장(S3 업로드)보다 먼저 일어나므로 fileStorageService.store는 호출되지 않는다.
         var multipartRequest = multipart("/api/v1/posts")
                 .param("title", "첨부 초과 테스트")
                 .param("content", "내용");
