@@ -3,7 +3,6 @@ import { check, sleep } from 'k6';
 import { BASE_URL } from '../config/env.js';
 import { login, authHeaders } from '../lib/auth.js';
 
-// TODO(#252): 게시판 목록 조회 부하 테스트. dataset-list.js 패턴을 따른다.
 export const options = {
     stages: [
         { duration: '30s', target: 10 },   // warm-up
