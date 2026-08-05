@@ -94,6 +94,13 @@ public class AuditProgressService {
         if (isStaleOrCancelled(audit, generation)) {
             return;
         }
+        // 같은 auditId·generation으로 markFailed가 두 번 불려도(이벤트 중복 발행 등) 이미
+        // 이 실행에서 FAILED 처리가 끝났다면 다시 처리하지 않는다 - 안 그러면 알림이
+        // 중복 생성된다. 재시도(retry())는 상태를 PENDING으로 되돌리고 generation을
+        // 올리므로, 새로 실패한 실행은 이 가드에 걸리지 않고 정상적으로 알림을 받는다.
+        if (audit.getStatus() == AuditStatus.FAILED) {
+            return;
+        }
         audit.markFailed();
         notificationService.notifyAuditFailed(audit);
     }

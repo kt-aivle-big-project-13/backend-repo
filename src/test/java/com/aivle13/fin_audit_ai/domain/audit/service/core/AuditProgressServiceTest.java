@@ -232,6 +232,20 @@ class AuditProgressServiceTest {
     }
 
     @Test
+    void doesNotDuplicateNotificationWhenAlreadyFailedForSameGeneration() {
+        // 같은 auditId·generation으로 markFailed가 두 번 불려도(이벤트 중복 발행 등)
+        // 이미 FAILED 처리된 실행이면 알림을 다시 만들지 않는다.
+        given(auditRepository.findByIdForUpdate(AUDIT_ID))
+                .willReturn(Optional.of(audit));
+        given(audit.getStatus()).willReturn(AuditStatus.FAILED);
+
+        auditProgressService.markFailed(AUDIT_ID, GENERATION);
+
+        verify(audit, never()).markFailed();
+        verify(notificationService, never()).notifyAuditFailed(any());
+    }
+
+    @Test
     void markFailedWithoutGenerationIgnoresGenerationButRespectsCancelled() {
         // 자율점검 법령 매핑 실패·서버 재시작 복구처럼 특정 실행 세대를 모르는 호출부용
         // 오버로드. 세대는 안 보지만 취소된 감사는 여전히 건드리지 않는다.
