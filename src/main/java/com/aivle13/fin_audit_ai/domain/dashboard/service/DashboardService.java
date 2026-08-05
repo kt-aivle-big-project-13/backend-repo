@@ -19,7 +19,6 @@ import com.aivle13.fin_audit_ai.domain.dashboard.repository.projection.Dashboard
 import com.aivle13.fin_audit_ai.domain.dashboard.repository.projection.RecentAuditProjection;
 import com.aivle13.fin_audit_ai.domain.dashboard.repository.projection.ReviewRequiredModelProjection;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +37,6 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class DashboardService {
 
-    private static final int RECENT_AUDIT_LIMIT = 5;
     private static final int REVIEW_REQUIRED_MODEL_LIMIT = 5;
 
     private final DashboardQueryRepository dashboardQueryRepository;
@@ -227,12 +225,10 @@ public class DashboardService {
         return distributions;
     }
 
-    // 최근 완료 감사 5건을 조회하고 각 감사의 핵심 위험 신호를 연결한다.
+    // 완료된 감사 전체를 최신순으로 조회하고 각 감사의 핵심 위험 신호를 연결한다.
     private List<RecentAuditResponse> createRecentAudits() {
         List<RecentAuditProjection> audits =
-                dashboardQueryRepository.findRecentAudits(
-                        PageRequest.of(0, RECENT_AUDIT_LIMIT)
-                );
+                dashboardQueryRepository.findRecentAudits();
 
         if (audits.isEmpty()) {
             return List.of();
