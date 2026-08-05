@@ -6,7 +6,7 @@ Spring Boot로 만든 **핵심 API 서버**입니다. 사용자·모델·감사�
 
 > 이 레포가 시스템의 중심입니다. `frontend-repo`는 오직 이 서버하고만 통신하며, 공정성·설명가능성 분석 같은 실제 AI 연산은 이 서버가 `ai-repo`(FastAPI)를 호출해 처리합니다. 데이터 영속성(PostgreSQL)과 조항별 준수/미준수 같은 최종 판정 로직도 모두 여기서 이루어집니다.
 
-<br>
+<br><br>
 
 ## 기술 스택
 
@@ -19,6 +19,10 @@ Spring Boot로 만든 **핵심 API 서버**입니다. 사용자·모델·감사�
 | Cache | Redis | 세션/토큰 등 휘발성 데이터의 빠른 조회 + 반복 조회되는 API 응답(설명가능성/공정성/데이터셋 조회 등) 캐싱 |
 | Auth | JWT (jjwt) | Stateless 인증으로 서버 확장(scale-out) 용이 |
 | Storage | AWS S3 (로컬은 MinIO) | 모델 아티팩트·보고서 파일의 저비용 대용량 저장, 로컬은 S3 호환 오브젝트 스토리지인 MinIO로 대체해 자격증명 없이 동일 코드로 개발 |
+| LLM | OpenAI 호환 Chat Completions API | 최종 감사 보고서 서술 생성 전용 클라이언트(`global/llm`). AI 서버(FastAPI)가 생성하는 나머지 5종 리포트와는 별개로, 백엔드가 직접 호출 |
+| 문서 생성 | Apache PDFBox, Apache POI (poi-ooxml) | 최종 감사 보고서를 백엔드에서 직접 PDF·Word(.docx)로 렌더링 (`domain/report/document`) |
+| CSV 파싱 | Apache Commons CSV | 이의제기 CSV 업로드, 자가점검-법령 매핑표 등 CSV 입출력 |
+| Mail | Spring Mail | 이메일 인증·비밀번호 재설정 메일 발송 |
 | API 문서화 | springdoc-openapi (Swagger UI) | 코드 기반 자동 문서화로 프론트와의 스펙 싱크 유지 |
 | 모니터링 | Micrometer, Prometheus, Grafana | 감사 처리 지연·오류율 등 운영 지표 실시간 관찰 |
 | 테스트 | JUnit 5, Mockito, Testcontainers | 실제 DB/Redis와 동일한 환경으로 통합 테스트 신뢰도 확보 |
@@ -26,7 +30,7 @@ Spring Boot로 만든 **핵심 API 서버**입니다. 사용자·모델·감사�
 | Build | Gradle | Groovy/Kotlin DSL 기반의 유연한 빌드 스크립트 |
 | CI/CD & Infra | GitHub Actions, Docker, Docker Hub, AWS EC2 | push 시 빌드~배포 자동화, 컨테이너로 배포 환경 일관성 확보 |
 
-<br>
+<br><br>
 
 ### SW 아키텍처 (AI/프론트/백엔드)
 <img width="1731" height="908" alt="SW 아키텍쳐" src="https://github.com/user-attachments/assets/e2c2eaed-12bb-4453-b527-7390defd02ea" />
@@ -36,28 +40,48 @@ Spring Boot로 만든 **핵심 API 서버**입니다. 사용자·모델·감사�
 ### 배포 아키텍처 (CI/CD)
 <img width="1222" height="782" alt="image" src="https://github.com/user-attachments/assets/0b9f893e-19d4-4760-a214-32a0320e0469" />
 
-GitHub에 push되면 GitHub Actions가 `./Dockerfile`(jdk 기반)로 이미지를 빌드해 Docker Hub에 push하고,
-Actions가 ssh로 EC2에 접속해 방금 push한 이미지를 pull → 기동한다. DB 관련 컨테이너(PostgreSQL, Redis)는 EC2에 별도로 띄워둔다.
 
-<br>
+
+<br><br>
 
 ## Table 설명
+**사용자 · 모델**
 - USERS → **사용자** (플랫폼에 로그인하는 은행 담당자)
 - AI_MODELS → **AI 모델** (감사 대상으로 등록된 신용평가 모델)
+- DATASETS → **감사 데이터셋** (모델에 업로드된 감사·검증용 데이터 파일)
+
+**사전진단 · 감사**
 - PRE_DIAGNOSES → **고영향 AI 사전진단** (진단 1회 실행 결과)
 - DIAGNOSIS_ANSWERS → **사전진단 문항 응답** (예/아니오 응답 낱개)
 - AUDITS → **감사** (모델 1회 감사 실행 건)
 - XAI_RESULTS → **설명가능성 분석 결과** (SHAP 지표)
+- SHAP_FEATURE_IMPORTANCES → **SHAP 전역 피처 중요도** (대시보드 "예측 영향 변수 TOP N" 카드용 랭킹)
 - FAIRNESS_RESULTS → **공정성 분석 결과** (Fairlearn 지표)
-- SELF_CHECK_ANSWERS → **규제 자가점검 응답** (STEP4 예/아니오 체크)
-- LAW_ARTICLES → **법령 조항** (RAG 검색용 AI 기본법 조문)
-- AUDIT_LAW_MAPPINGS → **감사-법령 매핑** (감사 결과와 조항의 충족/미충족 연결)
-- REPORTS → **보고서** (자동 생성 산출물 5종, 버전별)
-- LAW_REVISIONS → **법령 개정 이력** (대시보드 개정 알림 피드)
-- NOTIFICATIONS → **알림 발송 이력** (법령 개정·재감사 권고 SMS/이메일 발송 기록)
-- OBJECTIONS → **고객 이의제기** (이의제기 대응문서 초안·승인·전달)
+- FAIRNESS_GROUP_STATS → **공정성 집단별 통계** (보호속성×집단별 승인율·연체율·혼동행렬·AUC)
+- SELF_CHECK_ANSWERS → **규제 자가점검 응답** (STEP4 21문항, 예/아니오/해당없음)
 
-<br>
+**법령 · 보고서**
+- LAW_ARTICLES → **법령 조항** (RAG 검색용 AI 기본법 조문, pgvector 임베딩 포함)
+- AUDIT_LAW_MAPPINGS → **감사-법령 매핑** (감사 결과와 조항의 충족/미충족 연결)
+- LAW_REVISIONS → **법령 개정 이력** (대시보드 개정 알림 피드)
+- REPORTS → **보고서** (자동 생성 산출물 5종, 버전별)
+- REPORT_NARRATIVES → **리포트 섹션 서술** (AI가 생성한 리포트 본문을 감사 단위로 저장해 챗봇 근거로 재사용)
+
+**챗봇**
+- CHAT_CONVERSATIONS → **감사 질의응답 대화** (감사 결과 기반 챗봇 대화 세션)
+- CHAT_MESSAGES → **챗봇 메시지** (대화별 질문·답변)
+- CHAT_MESSAGE_CITATIONS → **챗봇 답변 인용 근거** (감사 수치·법령 조항·리포트 서술 중 실제로 인용된 근거)
+
+**알림 · 이의제기 · 게시판**
+- NOTIFICATIONS → **알림 발송 이력** (법령 개정·재감사 권고·감사 실패 등 인앱/이메일 발송 기록)
+- OBJECTIONS → **고객 이의제기** (이의제기 대응문서 초안·승인·전달)
+- BOARD_POSTS → **게시글** (공지 고정 지원 사내 게시판 글)
+- BOARD_COMMENTS → **게시글 댓글**
+- BOARD_POST_ATTACHMENTS → **게시글 첨부파일**
+
+> `DASHBOARD`(운영 대시보드) 도메인은 별도 테이블이 없습니다. 위 테이블들(감사·공정성·설명가능성·모델)을 조회 시점에 집계해서 보여주는 읽기 전용 도메인입니다.
+
+<br><br>
 
 ## ERD (ERDCloud 사용)
 <img width="2160" height="1562" alt="ERD" src="https://github.com/user-attachments/assets/d64c112a-4698-442e-a5d0-d1502cf3eb08" />
@@ -65,47 +89,55 @@ Actions가 ssh로 EC2에 접속해 방금 push한 이미지를 pull → 기동�
 `users`를 중심으로 `ai_models` → `audits`/`pre_diagnoses` → `xai_results`/`fairness_results`/`reports` 등으로 이어지는 감사 도메인과,
 `law_articles`/`law_revisions` 기반 법령 추적 도메인, `objections`(이의신청) 도메인으로 구성되어 있다. 각 테이블 의미는 위 [Table 설명](#table-설명) 참고.
 
-<br>
+<br><br>
 
 ## 패키지 구조
 
 도메인 주도(domain-driven) 방식의 패키지 구조를 따른다. 각 도메인은 `controller / dto / entity / repository / service / type` 하위 패키지를 가지며,
-도메인에 속하지 않는 공통 요소는 `global`에 둔다.
+도메인에 속하지 않는 공통 요소는 `global`에 둡니다.<br>
+기능이 많이 늘어난 도메인(`audit`, `report`, `law`)은 `dto`/`service`/`type` 밑을 다시 기능별 하위 패키지로 쪼갭니다.<br>
 
 ```text
 com.aivle13.fin_audit_ai
 ├── FinAuditAiApplication.java
 ├── domain/
-│   ├── user/                  # 사용자(금융기관 담당자) 계정
-│   │   ├── controller/
-│   │   ├── dto/
-│   │   │   ├── request/
-│   │   │   └── response/
-│   │   ├── entity/            # UserEntity
-│   │   ├── repository/
-│   │   ├── service/
-│   │   └── type/               # UserRole
-│   ├── auth/                    # 로그인/회원가입/토큰 재발급 (AuthService, RefreshTokenService)
-│   ├── model/                  # 감사 대상 AI 모델 (AiModelEntity, ModelType, ModelStatus)
-│   ├── diagnosis/               # 고영향 여부 사전진단 (PreDiagnosisEntity, DiagnosisAnswerEntity, DiagnosisResult)
-│   ├── audit/                   # 감사 진행/결과 (AuditEntity, XaiResultEntity, FairnessResultEntity, SelfCheckAnswerEntity, AuditRegulationMappingEntity)
-│   ├── law/                     # 법령 조항/개정 추적 (LawArticleEntity, LawRevisionEntity)
-│   ├── report/                  # 감사 보고서 (ReportEntity)
-│   ├── notification/            # 알림 발송 이력 (NotificationEntity)
-│   └── objection/               # 이의신청 (ObjectionEntity)
+│   ├── user/                    # 사용자(금융기관 담당자) 계정 — 프로필/비밀번호 변경/이메일 인증/회원탈퇴 (UserEntity, UserRole)
+│   ├── auth/                    # 로그인/회원가입/토큰 재발급 (AuthService, RefreshTokenService, RecaptchaService)
+│   ├── model/                   # 감사 대상 AI 모델·데이터셋 (AiModelEntity, DatasetEntity, ModelType, ModelStatus, DataSource)
+│   ├── diagnosis/                # 고영향 여부 사전진단 (PreDiagnosisEntity, DiagnosisAnswerEntity, DiagnosisResult)
+│   ├── audit/                    # 감사 진행/결과 — 기능별로 세분화
+│   │   ├── entity/                 # AuditEntity, XaiResultEntity, ShapFeatureImportanceEntity, FairnessResultEntity, FairnessGroupStatEntity, SelfCheckAnswerEntity, AuditRegulationMappingEntity
+│   │   ├── dto/{request,response}/{core,explainability,fairness,selfcheck}/
+│   │   ├── service/{core,explainability,fairness,selfcheck}/  # AuditService, ShapAnalysisService, FairnessAnalysisService, SelfCheckAnswerService 등
+│   │   └── type/{core,explainability,fairness,selfcheck,compliance}/  # AuditStatus, XaiStatus, FairnessStatus, SelfCheckAnswerValue, ComplianceStatus
+│   ├── law/                      # 법령 조항·개정 추적·자가점검 매핑 (LawArticleEntity, LawRevisionEntity)
+│   │   └── service/{embedding,mapping,revision,search,seed}/  # 조문 임베딩 생성, 자가점검-법령 매핑, 개정 감지·반영 스케줄러, pgvector 유사도 검색, 초기 시딩
+│   ├── report/                   # 감사 보고서 5종 생성·조회 (ReportEntity, ReportNarrativeEntity)
+│   │   ├── document/               # HTML/Markdown → PDF·Word 변환 (ReportDocumentGenerator, ReportMarkdownParser)
+│   │   ├── prompt/                 # 최종 보고서 LLM 프롬프트 빌더·출력 검증
+│   │   └── service/{bias,compliance,explainability,highimpact,improvement,common}/
+│   ├── chat/                     # 감사 결과 기반 질의응답 챗봇 (ChatConversationEntity, ChatMessageEntity, ChatMessageCitationEntity)
+│   ├── dashboard/                 # 운영 대시보드 집계 조회 전용 — 자체 엔티티 없이 다른 도메인 데이터를 JPQL로 집계
+│   ├── board/                    # 사내 게시판 (PostEntity, CommentEntity, PostAttachmentEntity)
+│   ├── notification/              # 알림 발송 이력 (NotificationEntity, NotifChannel, NotifType, NotifStatus)
+│   └── objection/                 # 이의신청 (ObjectionEntity, ObjectionStatus, ObjectionDecision)
 ├── global/
-│   ├── config/                  # SwaggerConfig, CorsConfig, SecurityConfig, S3Config
-│   ├── entity/                  # BaseEntity (created_at/updated_at 공통 필드)
-│   ├── exception/                # BusinessException, ErrorCode, ErrorResponse, GlobalExceptionHandler
-│   │   └── {domain}/              # 도메인별 커스텀 예외
-│   ├── jwt/                      # JWT 발급/검증, 인증 필터·예외 핸들러 (JwtProvider, JwtAuthenticationFilter)
-│   ├── mail/                     # 이메일 인증 메일 발송 (MailService)
-│   ├── s3/                       # 파일 업로드/삭제 (S3FileStorageService, dev 프로필은 MinIO로 자동 분기)
-│   ├── ai/                       # AI 서버(FastAPI) 연동 클라이언트 (ShapAnalysisClient, FairnessAnalysisClient)
-│   ├── util/                     # 공통 유틸 (EmailNormalizer 등)
-│   └── validation/               # 커스텀 Bean Validation (PasswordValidator 등)
-└── health/                       # 인프라(DB/Redis) 연결 확인용 헬스체크
+│   ├── config/                    # SwaggerConfig, CorsConfig, SecurityConfig, S3Config, CacheConfig(Redis)
+│   ├── entity/                    # BaseEntity(created_at/updated_at 공통 필드), VectorType(pgvector용 커스텀 Hibernate 타입)
+│   ├── dto/                       # PageResponse 등 공통 응답 래퍼
+│   ├── exception/                  # BusinessException, ErrorCode, ErrorResponse, GlobalExceptionHandler
+│   │   └── {domain}/                # 도메인별 커스텀 예외 (ai, board, chat, diagnosis, file, law, llm, mail, notification, objection, report, model/{audit,core,dataset,explainability,fairness,selfcheck}, user/{auth,common} 등)
+│   ├── jwt/                        # JWT 발급/검증, 인증 필터·예외 핸들러 (JwtProvider, JwtAuthenticationFilter)
+│   ├── mail/                       # 이메일 인증 메일 발송 (MailService)
+│   ├── s3/                         # 파일 업로드/삭제 (FileStorageService 인터페이스 + S3FileStorageService, dev 프로필은 MinIO로 자동 분기)
+│   ├── ai/                         # AI 서버(FastAPI) 연동 — client/{analysis,chat,report}에 인터페이스+FastApi 구현체, AsyncConfig(리포트 병렬 사전생성 전용 스레드풀)
+│   ├── llm/                        # OpenAI 호환 LLM 클라이언트 (ReportLlmClient) — 최종 감사 보고서 서술 생성 전용, `global/ai`(AI 서버 연동)와는 별개 경로
+│   ├── lawapi/                     # 국가법령정보센터(law.go.kr) Open API 클라이언트 — 법령 개정 자동 감지용 (LawGoKrApiClient)
+│   ├── util/                       # 공통 유틸 (EmailNormalizer 등)
+│   └── validation/                 # 커스텀 Bean Validation (PasswordValidator 등)
+└── health/                        # 인프라(DB/Redis) 연결 확인용 헬스체크 (HealthController, HealthCheckRepository)
 ```
+
 
 각 계층의 역할:
 - `controller`: HTTP 요청/응답만 다룬다. 검증된 DTO를 받아 service를 호출하고 결과를 DTO로 반환한다.
