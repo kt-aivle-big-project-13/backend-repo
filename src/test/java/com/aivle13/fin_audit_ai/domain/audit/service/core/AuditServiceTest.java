@@ -5,7 +5,9 @@ import com.aivle13.fin_audit_ai.domain.audit.dto.response.core.AuditSummaryRespo
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.event.AuditStartedEvent;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessGroupStatRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.FairnessResultRepository;
+import com.aivle13.fin_audit_ai.domain.audit.repository.ShapFeatureImportanceRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.audit.type.core.ThresholdMethod;
@@ -55,6 +57,10 @@ class AuditServiceTest {
     private XaiResultRepository xaiResultRepository;
     @Mock
     private FairnessResultRepository fairnessResultRepository;
+    @Mock
+    private FairnessGroupStatRepository fairnessGroupStatRepository;
+    @Mock
+    private ShapFeatureImportanceRepository shapFeatureImportanceRepository;
     @Mock
     private ApplicationEventPublisher eventPublisher;
     @Mock
@@ -301,7 +307,9 @@ class AuditServiceTest {
         assertThat(response.status()).isEqualTo("PENDING");
         assertThat(response.retriedAt()).isNotNull();
         verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(shapFeatureImportanceRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository).deleteAllByAudit_Id(AUDIT_ID);
 
         ArgumentCaptor<AuditStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuditStartedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -348,7 +356,9 @@ class AuditServiceTest {
         assertThat(audit.getStatus()).isEqualTo(AuditStatus.PENDING);
         assertThat(response.status()).isEqualTo("PENDING");
         verify(xaiResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(shapFeatureImportanceRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher).publishEvent(any(AuditStartedEvent.class));
     }
 
@@ -387,7 +397,9 @@ class AuditServiceTest {
 
         assertThat(audit.getStatus()).isEqualTo(AuditStatus.FAILED);
         verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(shapFeatureImportanceRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
     }
 
@@ -418,7 +430,9 @@ class AuditServiceTest {
                 .isInstanceOf(ModelNotFoundException.class);
 
         verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(shapFeatureImportanceRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
     }
 
@@ -436,7 +450,9 @@ class AuditServiceTest {
                 .isInstanceOf(AuditNotRetryableException.class);
 
         verify(xaiResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(shapFeatureImportanceRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(fairnessResultRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
+        verify(fairnessGroupStatRepository, never()).deleteAllByAudit_Id(AUDIT_ID);
         verify(eventPublisher, never()).publishEvent(any(AuditStartedEvent.class));
     }
 
