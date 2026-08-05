@@ -8,7 +8,6 @@ import com.aivle13.fin_audit_ai.domain.dashboard.repository.projection.Dashboard
 import com.aivle13.fin_audit_ai.domain.dashboard.repository.projection.FairnessMetricCountProjection;
 import com.aivle13.fin_audit_ai.domain.dashboard.repository.projection.RecentAuditProjection;
 import com.aivle13.fin_audit_ai.domain.dashboard.repository.projection.ReviewRequiredModelProjection;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -191,5 +190,5 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
               )
             order by a.completedAt desc, a.id desc
             """)
-    List<RecentAuditProjection> findRecentAudits(Pageable pageable);
+    List<RecentAuditProjection> findRecentAudits();
 }
