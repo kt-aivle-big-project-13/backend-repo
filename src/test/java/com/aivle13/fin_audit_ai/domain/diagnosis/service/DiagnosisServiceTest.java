@@ -14,7 +14,7 @@ import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
 import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.user.common.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

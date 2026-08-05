@@ -14,7 +14,7 @@ import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
-import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.user.common.UserNotFoundException;
 import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import org.junit.jupiter.api.Test;
