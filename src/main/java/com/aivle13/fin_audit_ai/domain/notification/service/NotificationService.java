@@ -82,6 +82,23 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    // 감사 실패 처리 시점(AuditProgressService.markFailed(auditId, generation))에서 호출되는
+    // 알림 생성 지점. 서버 재시작 복구용 markFailed(auditId)에서는 호출하지 않는다 — 감사
+    // 자체의 문제가 아니라 배포/재기동 사정으로 걸린 것들까지 알림이 나가면 안 되기 때문.
+    @Transactional
+    public void notifyAuditFailed(AuditEntity audit) {
+        UserEntity user = audit.getUser();
+
+        if (!user.isAuditFailAlertEnabled()) {
+            return;
+        }
+
+        NotificationEntity notification = NotificationEntity.ofAuditFailed(
+                user, audit, NotifChannel.IN_APP, NotifStatus.SENT, LocalDateTime.now());
+
+        notificationRepository.save(notification);
+    }
+
     // 감사 완료 처리 시점(AuditProgressService)에서, 판정 결과가 '주의(WARNING)' 이상
     // (WARNING 또는 NON_COMPLIANT)일 때만 호출되는 재감사 권고 알림 생성 지점.
     @Transactional
