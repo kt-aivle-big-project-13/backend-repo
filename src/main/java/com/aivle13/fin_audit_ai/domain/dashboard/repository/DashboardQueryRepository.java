@@ -15,6 +15,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.Collection;
 import java.util.List;
 
+// "최신 감사만 집계"하는 서브쿼리는 전부 model.modelGroupId(모델 계열) 기준으로 최신을 가린다.
+// 모델을 재업로드할 때마다 새 버전이 새 ai_models row(새 model.id)로 생기므로, model.id로
+// 비교하면 같은 계열의 옛날 버전 감사까지 전부 "최신"으로 잡혀 중복 집계된다(직접 재현해서
+// 확인함: test_v3 계열 1.0.0~4.0.0 감사 4건이 대시보드 TOP5·도넛차트에 전부 따로 잡힘).
 public interface DashboardQueryRepository extends Repository<AuditEntity, Long> {
 
     @Query("""
@@ -33,7 +37,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             where a.id = (
                 select max(latest.id)
                 from AuditEntity latest
-                where latest.model.id = a.model.id
+                where latest.model.modelGroupId = a.model.modelGroupId
                   and latest.status in (
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
@@ -51,7 +55,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             where a.id = (
                 select max(latest.id)
                 from AuditEntity latest
-                where latest.model.id = a.model.id
+                where latest.model.modelGroupId = a.model.modelGroupId
                   and latest.status in (
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
@@ -74,7 +78,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             where a.id = (
                 select max(latest.id)
                 from AuditEntity latest
-                where latest.model.id = a.model.id
+                where latest.model.modelGroupId = a.model.modelGroupId
                   and latest.status in (
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
@@ -101,7 +105,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             where a.id = (
                 select max(latest.id)
                 from AuditEntity latest
-                where latest.model.id = a.model.id
+                where latest.model.modelGroupId = a.model.modelGroupId
                   and latest.status in (
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
@@ -126,7 +130,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             where a.id = (
                 select max(latest.id)
                 from AuditEntity latest
-                where latest.model.id = a.model.id
+                where latest.model.modelGroupId = a.model.modelGroupId
                   and latest.status in (
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
@@ -144,7 +148,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             where a.id = (
                 select max(latest.id)
                 from AuditEntity latest
-                where latest.model.id = a.model.id
+                where latest.model.modelGroupId = a.model.modelGroupId
                   and latest.status in (
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
                     com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
