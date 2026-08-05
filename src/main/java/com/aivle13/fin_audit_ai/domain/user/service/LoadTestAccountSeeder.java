@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +35,7 @@ public class LoadTestAccountSeeder implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         if (userRepository.existsByEmail(loadTestEmail)) {
+            log.info("부하 테스트 계정이 이미 생성되어 있습니다: {}", loadTestEmail);
             return;
         }
 
@@ -47,12 +47,8 @@ public class LoadTestAccountSeeder implements ApplicationRunner {
                 UserRole.USER
         );
 
-        try {
-            userRepository.save(user);
-            userRepository.flush();
-            log.info("부하 테스트 계정 시딩 완료: {}", loadTestEmail);
-        } catch (DataIntegrityViolationException e) {
-            log.info("부하 테스트 계정이 이미 생성되어 있습니다: {}", loadTestEmail);
-        }
+        userRepository.saveAndFlush(user);
+
+        log.info("부하 테스트 계정 시딩 완료: {}", loadTestEmail);
     }
 }
