@@ -15,7 +15,9 @@ public abstract class IntegrationTestSupport {
     static final PostgreSQLContainer POSTGRES =
             new PostgreSQLContainer(
                     DockerImageName.parse("pgvector/pgvector:pg16")
-                            .asCompatibleSubstituteFor("postgres"));
+                            .asCompatibleSubstituteFor("postgres"))
+                    // 스키마 생성 전에 pgvector 확장을 만들어야 law_articles 가 생성된다.
+                    .withInitScript("testcontainers/init-pgvector.sql");
 
     static final GenericContainer<?> REDIS =
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
