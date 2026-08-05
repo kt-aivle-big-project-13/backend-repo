@@ -288,7 +288,6 @@ public class FairnessResultService {
         ));
     }
 
-    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
     private FairnessStatus judgeStatus(BigDecimal absValue, BigDecimal threshold) {
         if (absValue.compareTo(threshold) <= 0) {
             return FairnessStatus.PASS;
@@ -324,7 +323,6 @@ public class FairnessResultService {
         ));
     }
 
-    // TODO: 정책값 미확정. AI팀/기획 확정 후 조정 필요
     private FairnessStatus judgeRatioStatus(BigDecimal ratio, BigDecimal minRatio) {
         if (ratio.compareTo(minRatio) >= 0) {
             return FairnessStatus.PASS;
