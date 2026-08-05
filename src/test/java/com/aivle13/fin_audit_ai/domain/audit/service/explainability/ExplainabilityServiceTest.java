@@ -6,9 +6,9 @@ import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
 import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
-import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiStatus;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,11 +26,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotFoundException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditNotCompletedException;
-import com.aivle13.fin_audit_ai.global.exception.model.ExplainabilityResultNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.model.AuditFailedException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditNotCompletedException;
+import com.aivle13.fin_audit_ai.global.exception.model.explainability.ExplainabilityResultNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditFailedException;
 
 
 import com.aivle13.fin_audit_ai.domain.audit.dto.request.explainability.ExplainabilityResultRequest;

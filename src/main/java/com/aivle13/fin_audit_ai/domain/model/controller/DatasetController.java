@@ -6,7 +6,7 @@ import com.aivle13.fin_audit_ai.domain.model.dto.response.dataset.DatasetUploadR
 import com.aivle13.fin_audit_ai.domain.model.service.dataset.DatasetQueryService;
 import com.aivle13.fin_audit_ai.domain.model.service.dataset.DatasetUploadService;
 import com.aivle13.fin_audit_ai.domain.model.type.DatasetPurpose;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;

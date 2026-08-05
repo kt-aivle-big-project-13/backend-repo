@@ -1,8 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.audit.dto.response.fairness;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessResultEntity;
-import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
-import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessStatus;
 
 import java.math.BigDecimal;
 

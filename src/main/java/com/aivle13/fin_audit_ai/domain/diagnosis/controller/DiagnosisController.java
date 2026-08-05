@@ -4,7 +4,7 @@ import com.aivle13.fin_audit_ai.domain.diagnosis.dto.request.PreDiagnosisRequest
 import com.aivle13.fin_audit_ai.domain.diagnosis.dto.request.PreDiagnosisQuantitativeRequest;
 import com.aivle13.fin_audit_ai.domain.diagnosis.dto.response.PreDiagnosisResponse;
 import com.aivle13.fin_audit_ai.domain.diagnosis.service.DiagnosisService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

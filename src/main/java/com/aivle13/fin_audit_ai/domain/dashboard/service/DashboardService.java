@@ -2,11 +2,11 @@ package com.aivle13.fin_audit_ai.domain.dashboard.service;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.FairnessResultEntity;
 import com.aivle13.fin_audit_ai.domain.audit.entity.XaiResultEntity;
-import com.aivle13.fin_audit_ai.domain.audit.type.AuditStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.FairnessMetricCode;
-import com.aivle13.fin_audit_ai.domain.audit.type.FairnessStatus;
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiMetricCode;
-import com.aivle13.fin_audit_ai.domain.audit.type.XaiStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiMetricCode;
+import com.aivle13.fin_audit_ai.domain.audit.type.explainability.XaiStatus;
 import com.aivle13.fin_audit_ai.domain.dashboard.dto.response.AuditResultDistributionResponse;
 import com.aivle13.fin_audit_ai.domain.dashboard.dto.response.DashboardResponse;
 import com.aivle13.fin_audit_ai.domain.dashboard.dto.response.DashboardSummaryResponse;

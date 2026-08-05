@@ -13,7 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.aivle13.fin_audit_ai.global.ai.config.AiServerProperties;
 import org.junit.jupiter.api.BeforeEach;
-import com.aivle13.fin_audit_ai.domain.report.service.ReportPreGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPreGenerationService;
 
 import java.util.concurrent.Executor;
 

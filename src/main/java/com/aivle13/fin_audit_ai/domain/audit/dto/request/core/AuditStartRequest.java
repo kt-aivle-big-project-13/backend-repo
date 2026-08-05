@@ -1,6 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.audit.dto.request.core;
 
-import com.aivle13.fin_audit_ai.domain.audit.type.ThresholdMethod;
+import com.aivle13.fin_audit_ai.domain.audit.type.core.ThresholdMethod;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

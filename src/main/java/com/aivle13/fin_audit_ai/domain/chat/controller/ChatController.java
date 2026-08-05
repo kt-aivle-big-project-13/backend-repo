@@ -6,7 +6,7 @@ import com.aivle13.fin_audit_ai.domain.chat.dto.response.ChatConversationRespons
 import com.aivle13.fin_audit_ai.domain.chat.dto.response.ChatMessageResponse;
 import com.aivle13.fin_audit_ai.domain.chat.service.ChatConversationService;
 import com.aivle13.fin_audit_ai.domain.chat.service.ChatMessageService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

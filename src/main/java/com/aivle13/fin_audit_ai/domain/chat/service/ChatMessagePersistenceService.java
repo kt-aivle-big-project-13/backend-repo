@@ -7,7 +7,7 @@ import com.aivle13.fin_audit_ai.domain.chat.repository.ChatConversationRepositor
 import com.aivle13.fin_audit_ai.domain.chat.repository.ChatMessageRepository;
 import com.aivle13.fin_audit_ai.domain.chat.type.CitationType;
 import com.aivle13.fin_audit_ai.domain.chat.type.GroundingStatus;
-import com.aivle13.fin_audit_ai.global.ai.dto.ChatAnswerResponse;
+import com.aivle13.fin_audit_ai.global.ai.dto.chat.response.ChatAnswerResponse;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;
 import com.aivle13.fin_audit_ai.global.exception.chat.ChatConversationNotFoundException;
 import lombok.RequiredArgsConstructor;

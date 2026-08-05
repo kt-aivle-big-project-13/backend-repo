@@ -14,7 +14,7 @@ import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.ErrorCode;
 import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
-import com.aivle13.fin_audit_ai.global.exception.user.UserNotFoundException;
+import com.aivle13.fin_audit_ai.global.exception.user.common.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

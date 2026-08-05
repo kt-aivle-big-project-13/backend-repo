@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.global.ai.client;
 
+import com.aivle13.fin_audit_ai.global.ai.client.chat.FastApiEmbeddingClient;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerErrorException;
 import com.aivle13.fin_audit_ai.global.exception.ai.AiServerTimeoutException;
 import org.junit.jupiter.api.Test;

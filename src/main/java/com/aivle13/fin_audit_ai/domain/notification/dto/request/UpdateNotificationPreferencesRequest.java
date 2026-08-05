@@ -11,7 +11,10 @@ public record UpdateNotificationPreferencesRequest(
         Boolean reauditAlertEnabled,
 
         @NotNull(message = "감사 완료 알림 설정값을 입력해주세요.")
-        Boolean auditCompleteAlertEnabled
+        Boolean auditCompleteAlertEnabled,
+
+        @NotNull(message = "감사 실패 알림 설정값을 입력해주세요.")
+        Boolean auditFailAlertEnabled
 
 ) {
 }

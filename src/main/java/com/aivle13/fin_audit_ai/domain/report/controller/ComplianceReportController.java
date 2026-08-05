@@ -1,11 +1,11 @@
 package com.aivle13.fin_audit_ai.domain.report.controller;
 
-import com.aivle13.fin_audit_ai.domain.report.dto.ComplianceReportGenerationResponse;
-import com.aivle13.fin_audit_ai.domain.report.dto.ComplianceReportMetadataResponse;
-import com.aivle13.fin_audit_ai.domain.report.service.ComplianceReportGenerationService;
-import com.aivle13.fin_audit_ai.domain.report.service.ComplianceReportQueryService;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.compliance.ComplianceReportGenerationResponse;
+import com.aivle13.fin_audit_ai.domain.report.dto.response.compliance.ComplianceReportMetadataResponse;
+import com.aivle13.fin_audit_ai.domain.report.service.compliance.ComplianceReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.compliance.ComplianceReportQueryService;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

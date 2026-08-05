@@ -1,6 +1,8 @@
 package com.aivle13.fin_audit_ai.domain.law.service;
 
 import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
+import com.aivle13.fin_audit_ai.domain.law.service.revision.LawRevisionApplier;
+import com.aivle13.fin_audit_ai.domain.law.service.revision.LawRevisionDetectionService;
 import com.aivle13.fin_audit_ai.domain.law.type.RevisionType;
 import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;

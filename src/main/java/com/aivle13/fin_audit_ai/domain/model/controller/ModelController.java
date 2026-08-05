@@ -5,7 +5,7 @@ import com.aivle13.fin_audit_ai.domain.model.dto.response.model.ModelSummaryResp
 import com.aivle13.fin_audit_ai.domain.model.dto.response.model.ModelUploadResponse;
 import com.aivle13.fin_audit_ai.domain.model.service.model.ModelQueryService;
 import com.aivle13.fin_audit_ai.domain.model.service.model.ModelUploadService;
-import com.aivle13.fin_audit_ai.global.exception.user.UnauthorizedException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;

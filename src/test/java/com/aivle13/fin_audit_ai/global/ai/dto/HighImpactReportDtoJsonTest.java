@@ -1,5 +1,7 @@
 package com.aivle13.fin_audit_ai.global.ai.dto;
 
+import com.aivle13.fin_audit_ai.global.ai.dto.report.request.HighImpactReportRequest;
+import com.aivle13.fin_audit_ai.global.ai.dto.report.response.HighImpactReportResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

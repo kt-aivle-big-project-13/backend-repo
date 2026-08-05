@@ -1,7 +1,7 @@
 package com.aivle13.fin_audit_ai.domain.law.dto;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditRegulationMappingEntity;
-import com.aivle13.fin_audit_ai.domain.audit.type.ComplianceStatus;
+import com.aivle13.fin_audit_ai.domain.audit.type.compliance.ComplianceStatus;
 
 import java.util.List;
 

@@ -2,7 +2,7 @@ package com.aivle13.fin_audit_ai.global.jwt;
 
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
-import com.aivle13.fin_audit_ai.global.exception.user.InvalidTokenException;
+import com.aivle13.fin_audit_ai.global.exception.user.auth.InvalidTokenException;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
