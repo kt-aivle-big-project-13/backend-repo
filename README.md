@@ -84,10 +84,10 @@ Spring Boot로 만든 **핵심 API 서버**입니다. 사용자·모델·감사�
 <br><br>
 
 ## ERD (ERDCloud 사용)
-<img width="2160" height="1562" alt="ERD" src="https://github.com/user-attachments/assets/d64c112a-4698-442e-a5d0-d1502cf3eb08" />
+<img width="1374" height="814" alt="FinAuditAI 최신 ERD" src="https://github.com/user-attachments/assets/575cc8af-b112-46b5-9425-56c6343eb900" />
 
-`users`를 중심으로 `ai_models` → `audits`/`pre_diagnoses` → `xai_results`/`fairness_results`/`reports` 등으로 이어지는 감사 도메인과,
-`law_articles`/`law_revisions` 기반 법령 추적 도메인, `objections`(이의신청) 도메인으로 구성되어 있다. 각 테이블 의미는 위 [Table 설명](#table-설명) 참고.
+현재 PostgreSQL 스키마를 기준으로 사용자·모델·데이터셋·감사·분석 결과·법령·보고서·챗봇·운영 기능 간 관계를 표현했습니다.
+색상은 도메인 구분을 의미합니다. 각 테이블 의미는 위 [Table 설명](#table-설명) 참고.
 
 <br><br>
 
