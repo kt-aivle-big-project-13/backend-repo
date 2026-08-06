@@ -2,6 +2,15 @@ spring:
   config:
     import: optional:file:.env[.properties]   # 테스트에선 .env 무시. optional 이라 없어도 됨
 
+  # 테스트 클래스마다 mock 조합이 달라 Spring 컨텍스트가 여러 개 캐시되고, 컨텍스트마다
+  # 커넥션 풀이 하나씩 생긴다. 기본값(풀 10, 유휴 유지)이면 컨테이너 max_connections 를
+  # 넘겨 "too many clients" 로 컨텍스트 로딩이 깨지므로 풀을 작게 잡고 유휴는 곧 반납한다.
+  datasource:
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 0
+      idle-timeout: 10000
+
   jpa:
     hibernate:
       ddl-auto: create-drop
