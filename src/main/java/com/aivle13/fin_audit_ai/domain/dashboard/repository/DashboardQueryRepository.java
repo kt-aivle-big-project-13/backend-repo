@@ -34,7 +34,8 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                     when a.status = com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
                     then 1 else 0 end), 0) as thresholdExceededCount
             from AuditEntity a
-            where a.id = (
+            where a.user.id = :userId
+              and a.id = (
                 select max(latest.id)
                 from AuditEntity latest
                 where latest.model.modelGroupId = a.model.modelGroupId
@@ -45,14 +46,15 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                   )
             )
             """)
-    DashboardSummaryProjection findSummary();
+    DashboardSummaryProjection findSummary(@Param("userId") Long userId);
 
     @Query("""
             select
                 a.status as status,
                 count(a.id) as count
             from AuditEntity a
-            where a.id = (
+            where a.user.id = :userId
+              and a.id = (
                 select max(latest.id)
                 from AuditEntity latest
                 where latest.model.modelGroupId = a.model.modelGroupId
@@ -64,7 +66,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             )
             group by a.status
             """)
-    List<AuditStatusCountProjection> countLatestAuditsByStatus();
+    List<AuditStatusCountProjection> countLatestAuditsByStatus(@Param("userId") Long userId);
 
     @Query("""
             select
@@ -75,7 +77,8 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 a.status as status
             from FairnessResultEntity result
             join result.audit a
-            where a.id = (
+            where a.user.id = :userId
+              and a.id = (
                 select max(latest.id)
                 from AuditEntity latest
                 where latest.model.modelGroupId = a.model.modelGroupId
@@ -91,7 +94,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
               )
             group by a.model.id, a.model.modelName, a.model.version, a.status
             """)
-    List<ReviewRequiredModelProjection> countFairnessIssuesByModel();
+    List<ReviewRequiredModelProjection> countFairnessIssuesByModel(@Param("userId") Long userId);
 
     @Query("""
             select
@@ -102,7 +105,8 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 a.status as status
             from XaiResultEntity result
             join result.audit a
-            where a.id = (
+            where a.user.id = :userId
+              and a.id = (
                 select max(latest.id)
                 from AuditEntity latest
                 where latest.model.modelGroupId = a.model.modelGroupId
@@ -118,7 +122,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
               )
             group by a.model.id, a.model.modelName, a.model.version, a.status
             """)
-    List<ReviewRequiredModelProjection> countXaiIssuesByModel();
+    List<ReviewRequiredModelProjection> countXaiIssuesByModel(@Param("userId") Long userId);
 
     @Query("""
             select
@@ -127,7 +131,8 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 count(result.id) as count
             from FairnessResultEntity result
             join result.audit a
-            where a.id = (
+            where a.user.id = :userId
+              and a.id = (
                 select max(latest.id)
                 from AuditEntity latest
                 where latest.model.modelGroupId = a.model.modelGroupId
@@ -139,13 +144,14 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
             )
             group by result.metricCode, result.status
             """)
-    List<FairnessMetricCountProjection> countFairnessMetricsByStatus();
+    List<FairnessMetricCountProjection> countFairnessMetricsByStatus(@Param("userId") Long userId);
 
     @Query("""
             select result
             from FairnessResultEntity result
             join fetch result.audit a
-            where a.id = (
+            where a.user.id = :userId
+              and a.id = (
                 select max(latest.id)
                 from AuditEntity latest
                 where latest.model.modelGroupId = a.model.modelGroupId
@@ -156,7 +162,7 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                   )
             )
             """)
-    List<FairnessResultEntity> findLatestFairnessResults();
+    List<FairnessResultEntity> findLatestFairnessResults(@Param("userId") Long userId);
 
     @Query("""
             select result
@@ -187,12 +193,13 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 a.status as status,
                 a.completedAt as completedAt
             from AuditEntity a
-            where a.status in (
+            where a.user.id = :userId
+              and a.status in (
                 com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.COMPLIANT,
                 com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.WARNING,
                 com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus.NON_COMPLIANT
               )
             order by a.completedAt desc, a.id desc
             """)
-    List<RecentAuditProjection> findRecentAudits();
+    List<RecentAuditProjection> findRecentAudits(@Param("userId") Long userId);
 }

@@ -27,11 +27,10 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
-    // 모든 로그인 사용자에게 동일한 전체 감사 통계를 반환한다.
     @Operation(
             summary = "대시보드 조회",
             description = """
-                    전체 사용자의 최신 모델 감사 결과를 집계합니다.
+                    로그인한 사용자 소유의 최신 모델 감사 결과를 집계합니다.
                     상단 요약, 감사 결과 분포, 검토 필요 모델 TOP 5,
                     공정성 지표 분포와 최근 감사 내역을 반환합니다.
                     """
@@ -60,6 +59,6 @@ public class DashboardController {
             throw new UnauthorizedException();
         }
 
-        return ResponseEntity.ok(dashboardService.getDashboard());
+        return ResponseEntity.ok(dashboardService.getDashboard(userId));
     }
 }
