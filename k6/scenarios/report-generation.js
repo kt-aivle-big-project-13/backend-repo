@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { Trend } from 'k6/metrics';
+import { Rate, Trend } from 'k6/metrics';
 import {
     BASE_URL,
     AUDIT_ID,
@@ -30,7 +30,12 @@ import { login, authHeaders } from '../lib/auth.js';
  * 볼 수 있다 — REPORT_FORMATS 로 바꿔가며 잰다.
  */
 
+// 생성이 성공한 요청만 담는다 — 빠르게 떨어진 오류 응답이 섞이면 생성 시간의 의미가 없다.
 const generationDuration = new Trend('report_generation_duration', true);
+
+// 201 을 받고도 요청한 포맷 수만큼 안 나온 경우. check() 실패는 임계값에도 종료 코드에도
+// 잡히지 않아, 지표로 따로 세지 않으면 산출물이 빠져도 스크립트가 성공으로 끝난다.
+const incompleteReports = new Rate('report_incomplete');
 
 export const options = {
     scenarios: {
@@ -43,8 +48,9 @@ export const options = {
     },
     thresholds: {
         // 로컬 단건 실측 20~60초. 동시 요청이 겹치면 늘어나므로 여유를 두고 잡는다.
-        http_req_duration: ['p(95)<120000'],
+        report_generation_duration: ['p(95)<120000'],
         http_req_failed: ['rate<0.05'],
+        report_incomplete: ['rate<0.01'],
     },
 };
 
@@ -64,11 +70,16 @@ export default function reportGenerationScenario(data) {
         }
     );
 
-    generationDuration.add(res.timings.duration);
+    if (res.status === 201) {
+        generationDuration.add(res.timings.duration);
+        // 요청한 포맷 수만큼 산출물이 나와야 한다. 일부만 만들어져도 201 이라 상태 코드로는 안 걸린다.
+        incompleteReports.add(
+            (res.json('reports') || []).length !== REPORT_FORMATS.length
+        );
+    }
 
     check(res, {
         '201 응답': (r) => r.status === 201,
-        // 요청한 포맷 수만큼 산출물이 나와야 한다. 일부만 만들어져도 201 이라 상태 코드로는 안 걸린다.
         '요청한 포맷 수만큼 생성': (r) =>
             r.status !== 201 || (r.json('reports') || []).length === REPORT_FORMATS.length,
     });

@@ -231,9 +231,18 @@ k6 run \
 
 | 스크립트 | 대상 | 실행 방식 | 임계값 |
 |---|---|---|---|
-| `scenarios/chat-history.js` | 대화 목록·이력 조회 | 램프업 최대 100 VU | `p(95)<500ms` |
-| `scenarios/chat-ask.js` | 질문(RAG + LLM) | VU 5 × 반복 8 | `p(95)<8s` |
-| `scenarios/report-generation.js` | 산출물 생성(LLM + 문서 + S3) | VU 3 × 반복 3 | `p(95)<120s` |
+| `scenarios/chat-history.js` | 대화 목록·이력 조회 | 램프업 최대 100 VU | `http_req_duration` p(95)<500ms (API 별로 분리) |
+| `scenarios/chat-ask.js` | 질문(RAG + LLM) | VU 5 × 반복 8 | `chat_answer_duration` p(95)<8s |
+| `scenarios/report-generation.js` | 산출물 생성(LLM + 문서 + S3) | VU 3 × 반복 3 | `report_generation_duration` p(95)<120s |
+
+뒤의 둘은 기본 지표(`http_req_duration`)가 아니라 **성공 응답만 담는 전용 지표**에 임계값을
+건다. 429(쿼터 소진)나 오류 응답은 LLM 을 타지 않아 빠르게 떨어지는데, 기본 지표에 섞이면
+p(95) 를 끌어내려 실제로 느려져도 통과하기 때문이다. 같은 이유로 응답 본문 검증(빈 답변,
+포맷 수 부족)도 `check()` 가 아니라 임계값이 걸린 지표(`chat_answer_empty`,
+`report_incomplete`)로 센다 — k6 는 `check()` 실패로는 종료 코드를 바꾸지 않는다.
+
+`chat-history.js` 는 한 반복에서 목록과 이력을 모두 부르므로 `endpoint` 태그로 나눠 잰다.
+합쳐서 재면 한쪽이 기준을 넘어도 다른 쪽에 희석돼 안 걸린다.
 
 조회 경로(`chat-history.js`)만 기존 램프업 패턴을 그대로 쓴다. 나머지 둘은 병목이 웹 계층이
 아니라 AI 서버 응답이라, VU 를 올려도 큐만 길어지고 알 수 있는 게 없다. 대신 **반복 횟수를
@@ -267,8 +276,9 @@ APP_CHAT_DAILY_QUESTION_LIMIT=1000 ./gradlew bootRun
 ```
 
 시나리오는 429 를 실패로 세지 않고 `chat_quota_exceeded` 지표로 따로 집계한다. 실행 후
-요약에서 이 값이 0 이 아니면 그만큼은 LLM 을 타지 않은 요청이므로, 응답시간은
-`chat_answer_duration`(429 제외) 쪽을 봐야 한다.
+요약에서 이 값이 0 이 아니면 그만큼은 LLM 을 타지 않은 요청이므로, 그만큼 표본이 줄었다고
+보면 된다. 응답시간 임계값은 애초에 201 응답만 담는 `chat_answer_duration` 에 걸려 있어
+429 가 섞여도 왜곡되지 않는다.
 
 **리포트 생성은 감사 결과가 있어야 한다.** `3-5`·`3-6` 의 XAI·공정성 결과가 없으면
 빈 본문으로 리포트가 만들어져 측정값이 실제보다 짧게 나온다.

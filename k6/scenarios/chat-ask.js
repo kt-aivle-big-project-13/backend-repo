@@ -24,12 +24,17 @@ import { login, authHeaders } from '../lib/auth.js';
  *    별도 지표(chat_quota_exceeded)로 따로 본다. 제한 자체를 재고 싶지 않다면
  *    실행 전에 APP_CHAT_DAILY_QUESTION_LIMIT 를 올려야 한다.
  *
- * 실행 후 요약에서 chat_quota_exceeded 가 0 이 아니면 그만큼은 LLM 을 타지 않은 요청이라,
- * chat_answer_duration(429 를 뺀 응답시간) 쪽을 봐야 한다.
+ * 실행 후 요약에서 chat_quota_exceeded 가 0 이 아니면 그만큼 표본이 줄었다는 뜻이다.
+ * 응답시간 임계값은 201 응답만 담는 chat_answer_duration 에 걸려 있어 왜곡되지는 않는다.
  */
 
 const quotaExceeded = new Rate('chat_quota_exceeded');
+
+// 답변이 실제로 생성된 요청(201)만 담는다. 429 는 LLM 을 타지 않고, 5xx 는 실패라
+// 둘 다 섞이면 "답변 생성에 걸리는 시간" 이라는 의미가 사라진다.
 const answerDuration = new Trend('chat_answer_duration', true);
+
+const answerEmpty = new Rate('chat_answer_empty');
 
 export const options = {
     scenarios: {
@@ -43,9 +48,14 @@ export const options = {
     // 429 도 정상 응답으로 보고 http_req_failed 에서 제외한다.
     responseCallback: http.expectedStatuses(201, 429),
     thresholds: {
+        // 응답시간 기준은 http_req_duration 이 아니라 chat_answer_duration 에 건다.
+        // responseCallback 은 429 를 실패 집계에서만 빼고 http_req_duration 에는 그대로 남긴다 —
+        // LLM 을 타지 않아 빠른 429 가 섞이면 p(95) 가 내려가, 답변이 실제로 느려도 통과한다.
         // 로컬 실측 1.4~5.1초 기준. AI 서버 응답이 지배적이라 조회 API 기준값과 자릿수가 다르다.
-        http_req_duration: ['p(95)<8000'],
+        chat_answer_duration: ['p(95)<8000'],
         http_req_failed: ['rate<0.01'],
+        // check 실패는 임계값에 잡히지 않아 그대로 두면 빈 답변이 와도 스크립트가 성공으로 끝난다.
+        chat_answer_empty: ['rate<0.01'],
     },
 };
 
@@ -61,16 +71,16 @@ export default function chatAskScenario(data) {
         authHeaders(data.token)
     );
 
-    const isQuota = res.status === 429;
-    quotaExceeded.add(isQuota);
+    quotaExceeded.add(res.status === 429);
 
-    if (!isQuota) {
+    if (res.status === 201) {
         answerDuration.add(res.timings.duration);
+        // 답변이 비면 201을 받고도 화면에는 아무것도 안 나온다 — 상태 코드만으로는 안 걸린다.
+        answerEmpty.add(!res.json('content'));
     }
 
     check(res, {
         '201 또는 429 응답': (r) => r.status === 201 || r.status === 429,
-        // 답변이 비면 201을 받고도 화면에는 아무것도 안 나온다 — 상태 코드만으로는 안 걸린다.
         '답변 본문 있음': (r) => r.status !== 201 || Boolean(r.json('content')),
     });
 }
