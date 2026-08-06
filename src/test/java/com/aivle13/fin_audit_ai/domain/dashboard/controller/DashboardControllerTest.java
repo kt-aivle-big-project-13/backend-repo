@@ -65,7 +65,7 @@ class DashboardControllerTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("로그인한 사용자는 전체 감사 통계 대시보드를 조회한다")
+    @DisplayName("로그인한 사용자는 본인 소유 감사 통계 대시보드를 조회한다")
     void getDashboard_success() throws Exception {
         UserEntity user = userRepository.findById(userId).orElseThrow();
         AiModelEntity model = aiModelRepository.save(AiModelEntity.create(
@@ -108,5 +108,39 @@ class DashboardControllerTest extends IntegrationTestSupport {
     void getDashboard_unauthorized() throws Exception {
         mockMvc.perform(get("/api/v1/dashboard"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 감사 내역은 내 대시보드에 포함되지 않는다")
+    void getDashboard_excludesOtherUsersAudits() throws Exception {
+        UserEntity me = userRepository.findById(userId).orElseThrow();
+        AiModelEntity myModel = aiModelRepository.save(AiModelEntity.create(
+                me, "my-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/mine.pkl", "1.0.0"));
+        DatasetEntity myDataset = datasetRepository.save(DatasetEntity.create(
+                myModel, DataSource.CUSTOMER, "datasets/mine.csv", 100, "age,gender,income"));
+        AuditEntity myAudit = AuditEntity.create(myModel, myDataset, me, "내 감사", "age,gender",
+                null, ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        myAudit.complete(3, AuditStatus.COMPLIANT);
+        auditRepository.save(myAudit);
+
+        UserEntity other = userRepository.save(
+                UserEntity.create("다른사람", "다른기관", "dashboard-other@example.com", "hash", UserRole.AUDITOR));
+        AiModelEntity otherModel = aiModelRepository.save(AiModelEntity.create(
+                other, "other-model", ModelType.XGBOOST, ModelDomain.CREDIT_SCORING, "models/other.pkl", "1.0.0"));
+        DatasetEntity otherDataset = datasetRepository.save(DatasetEntity.create(
+                otherModel, DataSource.CUSTOMER, "datasets/other.csv", 100, "age,gender,income"));
+        AuditEntity otherAudit = AuditEntity.create(otherModel, otherDataset, other, "다른 사람 감사", "age,gender",
+                null, ThresholdMethod.MANUAL, null, BigDecimal.valueOf(0.5), null);
+        otherAudit.complete(3, AuditStatus.NON_COMPLIANT);
+        auditRepository.save(otherAudit);
+
+        mockMvc.perform(get("/api/v1/dashboard")
+                        .with(authentication(asUser())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.analyzedModelCount").value(1))
+                .andExpect(jsonPath("$.summary.normalModelCount").value(1))
+                .andExpect(jsonPath("$.summary.thresholdExceededCount").value(0))
+                .andExpect(jsonPath("$.recentAudits.length()").value(1))
+                .andExpect(jsonPath("$.recentAudits[0].modelName").value("my-model"));
     }
 }

@@ -41,16 +41,16 @@ public class DashboardService {
 
     private final DashboardQueryRepository dashboardQueryRepository;
 
-    // 대시보드의 모든 영역을 조회하고 하나의 응답으로 조립한다.
-    public DashboardResponse getDashboard() {
-        DashboardSummaryResponse summary = createSummary();
+    // 대시보드의 모든 영역을 로그인한 사용자 소유의 감사만으로 조회해 하나의 응답으로 조립한다.
+    public DashboardResponse getDashboard(Long userId) {
+        DashboardSummaryResponse summary = createSummary(userId);
         AuditResultDistributionResponse auditDistribution =
-                createAuditResultDistribution(summary.analyzedModelCount());
+                createAuditResultDistribution(userId, summary.analyzedModelCount());
         List<ReviewRequiredModelResponse> topModels =
-                createReviewRequiredTopModels();
+                createReviewRequiredTopModels(userId);
         List<FairnessMetricDistributionResponse> fairnessDistributions =
-                createFairnessMetricDistributions(summary.analyzedModelCount());
-        List<RecentAuditResponse> recentAudits = createRecentAudits();
+                createFairnessMetricDistributions(userId, summary.analyzedModelCount());
+        List<RecentAuditResponse> recentAudits = createRecentAudits(userId);
 
         return new DashboardResponse(
                 summary,
@@ -62,9 +62,9 @@ public class DashboardService {
     }
 
     // 상단 카드의 모델 수를 조회하고 전체 규정 준수율을 계산한다.
-    private DashboardSummaryResponse createSummary() {
+    private DashboardSummaryResponse createSummary(Long userId) {
         DashboardSummaryProjection projection =
-                dashboardQueryRepository.findSummary();
+                dashboardQueryRepository.findSummary(userId);
 
         long analyzedCount = valueOrZero(projection.getAnalyzedModelCount());
         long normalCount = valueOrZero(projection.getNormalModelCount());
@@ -84,12 +84,13 @@ public class DashboardService {
 
     // 최신 감사의 종합판정별 모델 수를 도넛 차트 응답으로 변환한다.
     private AuditResultDistributionResponse createAuditResultDistribution(
+            Long userId,
             long analyzedModelCount
     ) {
         Map<AuditStatus, Long> counts = new EnumMap<>(AuditStatus.class);
 
         for (AuditStatusCountProjection projection
-                : dashboardQueryRepository.countLatestAuditsByStatus()) {
+                : dashboardQueryRepository.countLatestAuditsByStatus(userId)) {
             counts.put(projection.getStatus(), valueOrZero(projection.getCount()));
         }
 
@@ -103,16 +104,16 @@ public class DashboardService {
 
     // 공정성·SHAP 문제 개수를 합산해 검토 필요 모델 상위 5개를 선정한다.
     private List<ReviewRequiredModelResponse>
-            createReviewRequiredTopModels() {
+            createReviewRequiredTopModels(Long userId) {
         Map<Long, ModelIssueSummary> summaries = new HashMap<>();
 
         mergeIssueCounts(
                 summaries,
-                dashboardQueryRepository.countFairnessIssuesByModel()
+                dashboardQueryRepository.countFairnessIssuesByModel(userId)
         );
         mergeIssueCounts(
                 summaries,
-                dashboardQueryRepository.countXaiIssuesByModel()
+                dashboardQueryRepository.countXaiIssuesByModel(userId)
         );
 
         return summaries.values().stream()
@@ -161,9 +162,9 @@ public class DashboardService {
 
     // 모델별·공정성 지표별 가장 심각한 판정을 기준으로 상태 분포를 계산한다.
     private List<FairnessMetricDistributionResponse>
-            createFairnessMetricDistributions(long analyzedModelCount) {
+            createFairnessMetricDistributions(Long userId, long analyzedModelCount) {
         List<FairnessResultEntity> results =
-                dashboardQueryRepository.findLatestFairnessResults();
+                dashboardQueryRepository.findLatestFairnessResults(userId);
 
         Map<AuditMetricKey, FairnessStatus> worstStatuses = new HashMap<>();
 
@@ -226,9 +227,9 @@ public class DashboardService {
     }
 
     // 완료된 감사 전체를 최신순으로 조회하고 각 감사의 핵심 위험 신호를 연결한다.
-    private List<RecentAuditResponse> createRecentAudits() {
+    private List<RecentAuditResponse> createRecentAudits(Long userId) {
         List<RecentAuditProjection> audits =
-                dashboardQueryRepository.findRecentAudits();
+                dashboardQueryRepository.findRecentAudits(userId);
 
         if (audits.isEmpty()) {
             return List.of();

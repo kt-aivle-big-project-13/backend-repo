@@ -33,6 +33,8 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private DashboardQueryRepository dashboardQueryRepository;
 
@@ -47,12 +49,12 @@ class DashboardServiceTest {
             List<FairnessResultEntity> latestFairnessResults,
             List<RecentAuditProjection> recentAudits
     ) {
-        given(dashboardQueryRepository.findSummary()).willReturn(summary);
-        given(dashboardQueryRepository.countLatestAuditsByStatus()).willReturn(auditStatusCounts);
-        given(dashboardQueryRepository.countFairnessIssuesByModel()).willReturn(fairnessIssues);
-        given(dashboardQueryRepository.countXaiIssuesByModel()).willReturn(xaiIssues);
-        given(dashboardQueryRepository.findLatestFairnessResults()).willReturn(latestFairnessResults);
-        given(dashboardQueryRepository.findRecentAudits()).willReturn(recentAudits);
+        given(dashboardQueryRepository.findSummary(USER_ID)).willReturn(summary);
+        given(dashboardQueryRepository.countLatestAuditsByStatus(USER_ID)).willReturn(auditStatusCounts);
+        given(dashboardQueryRepository.countFairnessIssuesByModel(USER_ID)).willReturn(fairnessIssues);
+        given(dashboardQueryRepository.countXaiIssuesByModel(USER_ID)).willReturn(xaiIssues);
+        given(dashboardQueryRepository.findLatestFairnessResults(USER_ID)).willReturn(latestFairnessResults);
+        given(dashboardQueryRepository.findRecentAudits(USER_ID)).willReturn(recentAudits);
     }
 
     private DashboardSummaryProjection summary(long analyzed, long normal, long review, long exceeded) {
@@ -106,7 +108,7 @@ class DashboardServiceTest {
     void 상단_요약의_규정준수율을_정상_모델_비율로_계산한다() {
         stubDashboard(summary(10, 7, 2, 1), List.of(), List.of(), List.of(), List.of(), List.of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.summary().analyzedModelCount()).isEqualTo(10);
         assertThat(result.summary().complianceRate()).isEqualTo(70.0);
@@ -116,7 +118,7 @@ class DashboardServiceTest {
     void 분석된_모델이_없으면_규정준수율은_0이다() {
         stubDashboard(summary(0, 0, 0, 0), List.of(), List.of(), List.of(), List.of(), List.of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.summary().complianceRate()).isEqualTo(0.0);
     }
@@ -133,7 +135,7 @@ class DashboardServiceTest {
                 List.of(), List.of(), List.of(), List.of()
         );
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.auditResultDistribution().totalCount()).isEqualTo(10);
         assertThat(result.auditResultDistribution().normalCount()).isEqualTo(6);
@@ -153,7 +155,7 @@ class DashboardServiceTest {
         );
         stubDashboard(summary(6, 0, 6, 0), List.of(), fairnessIssues, List.of(), List.of(), List.of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.reviewRequiredTopModels()).hasSize(5);
         assertThat(result.reviewRequiredTopModels().get(0).modelId()).isEqualTo(1L);
@@ -180,7 +182,7 @@ class DashboardServiceTest {
                 List.of(reviewRequired(6L, "모델6", "1.0", 10, AuditStatus.NON_COMPLIANT));
         stubDashboard(summary(6, 0, 6, 0), List.of(), fairnessIssues, xaiIssues, List.of(), List.of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.reviewRequiredTopModels()).hasSize(5);
         assertThat(result.reviewRequiredTopModels().get(0).modelId()).isEqualTo(6L);
@@ -198,7 +200,7 @@ class DashboardServiceTest {
                 List.of(reviewRequired(100L, "모델A", "1.0", 3, AuditStatus.NON_COMPLIANT));
         stubDashboard(summary(1, 0, 1, 0), List.of(), fairnessIssues, xaiIssues, List.of(), List.of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.reviewRequiredTopModels()).hasSize(1);
         assertThat(result.reviewRequiredTopModels().get(0).issueCount()).isEqualTo(5);
@@ -219,7 +221,7 @@ class DashboardServiceTest {
         );
         stubDashboard(summary(2, 0, 0, 0), List.of(), List.of(), List.of(), latestFairnessResults, List.of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.fairnessMetricDistributions()).hasSize(FairnessMetricCode.values().length);
 
@@ -258,7 +260,7 @@ class DashboardServiceTest {
         given(dashboardQueryRepository.findXaiResultsByAuditIds(List.of(1L, 2L)))
                 .willReturn(List.<XaiResultEntity>of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.recentAudits()).hasSize(2);
         assertThat(result.recentAudits().get(0).auditId()).isEqualTo(1L);
@@ -283,7 +285,7 @@ class DashboardServiceTest {
         given(dashboardQueryRepository.findXaiResultsByAuditIds(List.of(1L)))
                 .willReturn(List.<XaiResultEntity>of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.recentAudits().get(0).keyRisk()).isEqualTo("이상 신호 없음");
     }
@@ -300,7 +302,7 @@ class DashboardServiceTest {
         given(dashboardQueryRepository.findXaiResultsByAuditIds(List.of(1L)))
                 .willReturn(List.<XaiResultEntity>of());
 
-        DashboardResponse result = dashboardService.getDashboard();
+        DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.recentAudits().get(0).keyRisk()).isEqualTo("분석 결과 없음");
     }
