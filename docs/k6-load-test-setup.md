@@ -14,6 +14,10 @@ Redis 캐싱 적용 전/후 성능 개선을 수치로 비교하기 위해 k6로
 (`findByIdAndUser_Id` 패턴). 따라서 테스트 전에 **로그인 가능한 사용자 계정**과
 **그 계정 소유의 모델/데이터셋/감사(완료 상태) 데이터**가 DB에 있어야 한다.
 
+이후 추가된 **리포트 생성·챗봇**은 요청마다 LLM 을 호출해 부하 특성이 전혀 달라 시나리오와
+준비 절차를 따로 둔다 — `6. 리포트 생성·챗봇 시나리오` 참고. 2~4 절의 계정·데이터 준비는
+그대로 필요하다.
+
 ---
 
 ## 2. k6 설치
@@ -217,3 +221,98 @@ k6 run \
 
 세 스크립트는 각각 별도로 실행해 시나리오별로 결과를 비교한다. `AUDIT_ID`/`MODEL_ID`는
 `3-4`/`3-2`에서 `RETURNING`으로 얻은 실제 ID로 바꿔서 사용한다.
+
+---
+
+## 6. 리포트 생성·챗봇 시나리오
+
+위 세 시나리오는 Redis 캐싱 대상인 가벼운 조회 API 기준이다. 리포트 생성과 챗봇은
+**요청 한 건마다 LLM 을 호출**해 부하 특성이 전혀 달라, 시나리오도 따로 둔다.
+
+| 스크립트 | 대상 | 실행 방식 | 임계값 |
+|---|---|---|---|
+| `scenarios/chat-history.js` | 대화 목록·이력 조회 | 램프업 최대 100 VU | `p(95)<500ms` |
+| `scenarios/chat-ask.js` | 질문(RAG + LLM) | VU 5 × 반복 8 | `p(95)<8s` |
+| `scenarios/report-generation.js` | 산출물 생성(LLM + 문서 + S3) | VU 3 × 반복 3 | `p(95)<120s` |
+
+조회 경로(`chat-history.js`)만 기존 램프업 패턴을 그대로 쓴다. 나머지 둘은 병목이 웹 계층이
+아니라 AI 서버 응답이라, VU 를 올려도 큐만 길어지고 알 수 있는 게 없다. 대신 **반복 횟수를
+고정해 호출 수와 비용을 예측 가능하게** 만든다.
+
+### 6-1. 실행 전 확인
+
+**⚠️ 두 시나리오는 부작용이 있다.** 실행하면 실제로 LLM 토큰을 쓰고, 리포트 생성은
+S3(MinIO) 에 파일을 올리고 `reports` 행을 남긴다. 운영 환경에 걸지 말고, 반복 횟수를
+먼저 확인한 뒤 실행한다.
+
+**챗봇은 대화가 미리 있어야 한다.** 시나리오가 매 반복마다 대화를 새로 만들면 재려는
+질문 경로가 아니라 대화 생성까지 같이 재게 되므로, 대화는 한 번만 만들고 그 ID 를 넘긴다.
+
+```bash
+CONVERSATION_ID=$(curl -s -X POST http://localhost:8080/api/v1/audits/1/conversations \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"부하테스트"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['conversationId'])")
+
+echo "$CONVERSATION_ID"
+```
+
+**일일 질문 수 제한을 확인한다.** `app.chat.daily-question-limit` 이 사용자·감사당 하루
+몇 건인지 정한다(기본 50). 기본 반복 횟수(5 × 8 = 40건)는 이 안에 들어오지만, 늘려서 잴
+때는 서버를 띄울 때 함께 올려야 한다. 안 올리면 51번째 요청부터 전부 429 다.
+
+```bash
+APP_CHAT_DAILY_QUESTION_LIMIT=1000 ./gradlew bootRun
+```
+
+시나리오는 429 를 실패로 세지 않고 `chat_quota_exceeded` 지표로 따로 집계한다. 실행 후
+요약에서 이 값이 0 이 아니면 그만큼은 LLM 을 타지 않은 요청이므로, 응답시간은
+`chat_answer_duration`(429 제외) 쪽을 봐야 한다.
+
+**리포트 생성은 감사 결과가 있어야 한다.** `3-5`·`3-6` 의 XAI·공정성 결과가 없으면
+빈 본문으로 리포트가 만들어져 측정값이 실제보다 짧게 나온다.
+
+### 6-2. 실행
+
+```bash
+# 대화 목록·이력 조회 (LLM 없음, 램프업)
+k6 run \
+  --env BASE_URL=http://localhost:8080 \
+  --env TEST_EMAIL=loadtest@example.com \
+  --env TEST_PASSWORD=password1234 \
+  --env AUDIT_ID=1 \
+  --env CONVERSATION_ID=1 \
+  k6/scenarios/chat-history.js
+
+# 질문 (RAG + LLM). CHAT_VUS × CHAT_ITERATIONS 만큼만 호출한다
+k6 run \
+  --env BASE_URL=http://localhost:8080 \
+  --env TEST_EMAIL=loadtest@example.com \
+  --env TEST_PASSWORD=password1234 \
+  --env CONVERSATION_ID=1 \
+  --env CHAT_VUS=5 \
+  --env CHAT_ITERATIONS=8 \
+  k6/scenarios/chat-ask.js
+
+# 산출물 생성 (LLM + 문서 변환 + S3). 기본 3 × 3 = 9건
+k6 run \
+  --env BASE_URL=http://localhost:8080 \
+  --env TEST_EMAIL=loadtest@example.com \
+  --env TEST_PASSWORD=password1234 \
+  --env AUDIT_ID=1 \
+  --env REPORT_FORMATS=PDF \
+  --env REPORT_VUS=3 \
+  --env REPORT_ITERATIONS=3 \
+  k6/scenarios/report-generation.js
+```
+
+### 6-3. 무엇을 볼 것인가
+
+- **리포트 생성**: 포맷을 여러 개 요청해도 LLM 본문은 한 번만 만들고 문서 변환만 포맷 수만큼
+  돈다(`ReportGenerationService.generate`). `REPORT_FORMATS=PDF` 와 `REPORT_FORMATS=PDF,WORD`
+  를 비교하면 문서 변환 비용만 분리해서 볼 수 있다.
+- **챗봇**: `chat_answer_duration` 의 p(95) 가 AI 서버 응답 시간에 얼마나 붙어 있는지 본다.
+  둘의 차이가 벌어지면 병목이 AI 서버가 아니라 RAG 검색(pgvector) 이나 영속화 쪽이다.
+- 두 시나리오 모두 VU 를 올렸을 때 응답시간이 **선형으로 늘면 큐가 쌓이는 것**이고,
+  꺾이면 그 지점이 동시 처리 한계다.
