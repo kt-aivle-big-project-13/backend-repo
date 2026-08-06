@@ -61,10 +61,13 @@ services:
     image: prom/node-exporter:v1.8.2
     container_name: audit-node-exporter
     command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
       - "--path.rootfs=/host"
-    pid: host
     volumes:
-      - /:/host:ro,rslave
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
     restart: unless-stopped
 
   minio:
