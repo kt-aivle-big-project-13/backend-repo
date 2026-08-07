@@ -127,6 +127,8 @@ public class DashboardService {
                         summary.modelName(),
                         summary.version(),
                         summary.issueCount(),
+                        summary.warningCount(),
+                        summary.thresholdExceededCount(),
                         summary.status()
                 ))
                 .toList();
@@ -139,6 +141,9 @@ public class DashboardService {
     ) {
         for (ReviewRequiredModelProjection projection : projections) {
             long issueCount = valueOrZero(projection.getIssueCount());
+            long warningCount = valueOrZero(projection.getWarningCount());
+            long thresholdExceededCount =
+                    valueOrZero(projection.getThresholdExceededCount());
 
             summaries.merge(
                     projection.getModelId(),
@@ -147,6 +152,8 @@ public class DashboardService {
                             projection.getModelName(),
                             projection.getVersion(),
                             issueCount,
+                            warningCount,
+                            thresholdExceededCount,
                             projection.getStatus()
                     ),
                     (existing, incoming) -> new ModelIssueSummary(
@@ -154,6 +161,9 @@ public class DashboardService {
                             existing.modelName(),
                             existing.version(),
                             existing.issueCount() + incoming.issueCount(),
+                            existing.warningCount() + incoming.warningCount(),
+                            existing.thresholdExceededCount()
+                                    + incoming.thresholdExceededCount(),
                             moreSevere(existing.status(), incoming.status())
                     )
             );
@@ -445,6 +455,8 @@ public class DashboardService {
             String modelName,
             String version,
             long issueCount,
+            long warningCount,
+            long thresholdExceededCount,
             AuditStatus status
     ) {
     }

@@ -76,11 +76,20 @@ class DashboardServiceTest {
     private ReviewRequiredModelProjection reviewRequired(
             Long modelId, String name, String version, long issueCount, AuditStatus status
     ) {
+        return reviewRequired(modelId, name, version, issueCount, issueCount, 0, status);
+    }
+
+    private ReviewRequiredModelProjection reviewRequired(
+            Long modelId, String name, String version, long issueCount,
+            long warningCount, long thresholdExceededCount, AuditStatus status
+    ) {
         ReviewRequiredModelProjection projection = mock(ReviewRequiredModelProjection.class);
         given(projection.getModelId()).willReturn(modelId);
         given(projection.getModelName()).willReturn(name);
         given(projection.getVersion()).willReturn(version);
         given(projection.getIssueCount()).willReturn(issueCount);
+        given(projection.getWarningCount()).willReturn(warningCount);
+        given(projection.getThresholdExceededCount()).willReturn(thresholdExceededCount);
         given(projection.getStatus()).willReturn(status);
         return projection;
     }
@@ -195,15 +204,19 @@ class DashboardServiceTest {
     @Test
     void 같은_모델의_공정성과_SHAP_문제는_더_심각한_상태로_합쳐진다() {
         List<ReviewRequiredModelProjection> fairnessIssues =
-                List.of(reviewRequired(100L, "모델A", "1.0", 2, AuditStatus.WARNING));
+                List.of(reviewRequired(100L, "모델A", "1.0", 2, 1, 1,
+                        AuditStatus.WARNING));
         List<ReviewRequiredModelProjection> xaiIssues =
-                List.of(reviewRequired(100L, "모델A", "1.0", 3, AuditStatus.NON_COMPLIANT));
+                List.of(reviewRequired(100L, "모델A", "1.0", 3, 3, 0,
+                        AuditStatus.NON_COMPLIANT));
         stubDashboard(summary(1, 0, 1, 0), List.of(), fairnessIssues, xaiIssues, List.of(), List.of());
 
         DashboardResponse result = dashboardService.getDashboard(USER_ID);
 
         assertThat(result.reviewRequiredTopModels()).hasSize(1);
         assertThat(result.reviewRequiredTopModels().get(0).issueCount()).isEqualTo(5);
+        assertThat(result.reviewRequiredTopModels().get(0).warningCount()).isEqualTo(4);
+        assertThat(result.reviewRequiredTopModels().get(0).thresholdExceededCount()).isEqualTo(1);
         assertThat(result.reviewRequiredTopModels().get(0).status()).isEqualTo(AuditStatus.NON_COMPLIANT);
     }
 
