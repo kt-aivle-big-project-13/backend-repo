@@ -7,6 +7,8 @@ public record ReviewRequiredModelResponse(
         String modelName,
         String version,
         long issueCount,
+        long warningCount,
+        long thresholdExceededCount,
         AuditStatus status
 ) {
 }

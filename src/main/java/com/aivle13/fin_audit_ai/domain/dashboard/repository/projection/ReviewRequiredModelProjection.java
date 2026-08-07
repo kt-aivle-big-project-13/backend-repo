@@ -12,5 +12,9 @@ public interface ReviewRequiredModelProjection {
 
     Long getIssueCount();
 
+    Long getWarningCount();
+
+    Long getThresholdExceededCount();
+
     AuditStatus getStatus();
 }

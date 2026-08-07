@@ -74,6 +74,14 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 a.model.modelName as modelName,
                 a.model.version as version,
                 count(result.id) as issueCount,
+                sum(case
+                    when result.status = com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessStatus.REVIEW
+                    then 1 else 0
+                end) as warningCount,
+                sum(case
+                    when result.status = com.aivle13.fin_audit_ai.domain.audit.type.fairness.FairnessStatus.FAIL
+                    then 1 else 0
+                end) as thresholdExceededCount,
                 a.status as status
             from FairnessResultEntity result
             join result.audit a
@@ -102,6 +110,8 @@ public interface DashboardQueryRepository extends Repository<AuditEntity, Long> 
                 a.model.modelName as modelName,
                 a.model.version as version,
                 count(result.id) as issueCount,
+                count(result.id) as warningCount,
+                0L as thresholdExceededCount,
                 a.status as status
             from XaiResultEntity result
             join result.audit a
