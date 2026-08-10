@@ -123,5 +123,9 @@ jobs:
             esac
             sleep 30
           done
-          echo "Timed out waiting for instance refresh"
+          echo "Timed out waiting for instance refresh. Current status:"
+          aws autoscaling describe-instance-refreshes \
+            --auto-scaling-group-name "$ASG_NAME" \
+            --instance-refresh-ids "$REFRESH_ID" \
+            --query 'InstanceRefreshes[0].{Status:Status,StatusReason:StatusReason}' --output json
           exit 1
