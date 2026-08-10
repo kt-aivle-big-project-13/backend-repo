@@ -88,14 +88,44 @@ jobs:
     needs: docker
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ASG_NAME: aivle-audit-core-asg
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/backend-repo
-            git pull
-            docker compose -f docker-compose.prod.yml up -d --build
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Trigger ASG instance refresh
+        run: |
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "$ASG_NAME" \
+            --preferences '{"MinHealthyPercentage": 0, "InstanceWarmup": 60}' \
+            --query 'InstanceRefreshId' --output text)
+          echo "Instance refresh started: $REFRESH_ID"
+          echo "REFRESH_ID=$REFRESH_ID" >> "$GITHUB_ENV"
+
+      - name: Wait for instance refresh to complete
+        run: |
+          for i in $(seq 1 60); do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "$ASG_NAME" \
+              --instance-refresh-ids "$REFRESH_ID" \
+              --query 'InstanceRefreshes[0].Status' --output text)
+            echo "Status: $STATUS"
+            case "$STATUS" in
+              Successful) exit 0 ;;
+              Failed|Cancelled|RollbackFailed|RollbackSuccessful) echo "Instance refresh did not succeed"; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "Timed out waiting for instance refresh. Current status:"
+          aws autoscaling describe-instance-refreshes \
+            --auto-scaling-group-name "$ASG_NAME" \
+            --instance-refresh-ids "$REFRESH_ID" \
+            --query 'InstanceRefreshes[0].{Status:Status,StatusReason:StatusReason}' --output json
+          exit 1
