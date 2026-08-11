@@ -4,9 +4,7 @@ import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostDetailRespons
 import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostAttachmentEntity;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostEntity;
-import com.aivle13.fin_audit_ai.domain.board.repository.CommentRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostAttachmentRepository;
-import com.aivle13.fin_audit_ai.domain.board.repository.PostCommentCountProjection;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostSpecifications;
 import com.aivle13.fin_audit_ai.global.dto.PageResponse;
@@ -25,8 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +31,6 @@ public class PostQueryService {
 
     private final PostRepository postRepository;
     private final PostAttachmentRepository attachmentRepository;
-    private final CommentRepository commentRepository;
     private final FileStorageService fileStorageService;
 
     public PageResponse<PostSummaryResponse> list(int page, int size, String keyword, String sort) {
@@ -46,20 +41,11 @@ public class PostQueryService {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
 
         Specification<PostEntity> spec = PostSpecifications.keywordContains(keyword)
-                .and(PostSpecifications.orderByPinnedFirst(oldestFirst));
+                .and(PostSpecifications.orderByCreatedAt(oldestFirst));
         Page<PostEntity> result = postRepository.findAll(spec, pageable);
 
-        List<Long> postIds = result.getContent().stream().map(PostEntity::getId).toList();
-        Map<Long, Long> commentCounts = postIds.isEmpty()
-                ? Map.of()
-                : commentRepository.countByPostIds(postIds).stream()
-                .collect(Collectors.toMap(
-                        PostCommentCountProjection::getPostId,
-                        PostCommentCountProjection::getCommentCount
-                ));
-
         List<PostSummaryResponse> content = result.getContent().stream()
-                .map(post -> PostSummaryResponse.of(post, commentCounts.getOrDefault(post.getId(), 0L)))
+                .map(PostSummaryResponse::from)
                 .toList();
 
         return PageResponse.of(result, content);

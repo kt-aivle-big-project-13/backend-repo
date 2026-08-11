@@ -1,7 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.board.controller;
 
 import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostCreateRequest;
-import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostPinRequest;
 import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostUpdateRequest;
 import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostDetailResponse;
 import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostSummaryResponse;
@@ -30,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-@Tag(name = "Board Post", description = "게시판 게시글 API")
+@Tag(name = "Notice", description = "공지사항 API")
 @RestController
 @RequestMapping("/api/v1/posts")
 @RequiredArgsConstructor
@@ -42,17 +41,16 @@ public class PostController {
     private final PostCommandService postCommandService;
 
     @Operation(
-            summary = "게시글 목록 조회",
+            summary = "공지사항 목록 조회",
             description = """
-                    게시글 목록을 검색·정렬·페이지네이션하여 조회합니다.
-                    keyword를 주면 제목/내용에 포함된 게시글만 조회하고, sort는 latest(기본)/oldest를 지원합니다.
-                    공지(pinned) 게시글은 정렬 옵션과 무관하게 항상 최상단에 노출됩니다.
+                    공지사항 목록을 검색·정렬·페이지네이션하여 조회합니다.
+                    keyword를 주면 제목/내용에 포함된 공지사항만 조회하고, sort는 latest(기본)/oldest를 지원합니다.
                     """
     )
     // 200 응답은 content를 명시하지 않아, 실제 반환 타입인 PageResponse<PostSummaryResponse>를
     // springdoc이 그대로 추론하도록 둔다(PostSummaryResponse만 명시하면 페이지네이션 래퍼가 문서에서 빠진다).
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
+            @ApiResponse(responseCode = "200", description = "공지사항 목록 조회 성공"),
             @ApiResponse(responseCode = "400", description = "페이지/사이즈 값이 올바르지 않음"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
@@ -76,20 +74,20 @@ public class PostController {
     }
 
     @Operation(
-            summary = "게시글 상세 조회",
-            description = "게시글 본문과 첨부파일 목록을 조회합니다."
+            summary = "공지사항 상세 조회",
+            description = "공지사항 본문과 첨부파일 목록을 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "게시글 상세 조회 성공",
+                    description = "공지사항 상세 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = PostDetailResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "공지사항을 찾을 수 없음")
     })
     @GetMapping("/{postId}")
     public ResponseEntity<PostDetailResponse> get(
@@ -104,20 +102,21 @@ public class PostController {
     }
 
     @Operation(
-            summary = "게시글 작성",
-            description = "게시글을 작성합니다. 관리자뿐 아니라 로그인한 모든 사용자가 작성할 수 있으며, 첨부파일은 게시글당 최대 5개까지 등록할 수 있습니다."
+            summary = "공지사항 작성",
+            description = "관리자가 공지사항을 작성합니다. 첨부파일은 공지사항당 최대 5개까지 등록할 수 있습니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "201",
-                    description = "게시글 작성 성공",
+                    description = "공지사항 작성 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = PostDetailResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않거나 첨부파일 최대 개수를 초과함"),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+            @ApiResponse(responseCode = "403", description = "관리자가 아님")
     })
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<PostDetailResponse> create(
@@ -133,13 +132,13 @@ public class PostController {
     }
 
     @Operation(
-            summary = "게시글 수정",
-            description = "게시글 제목/내용과 첨부파일을 수정합니다. 작성자 본인 또는 관리자만 가능합니다."
+            summary = "공지사항 수정",
+            description = "관리자가 공지사항 제목/내용과 첨부파일을 수정합니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "게시글 수정 성공",
+                    description = "공지사항 수정 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = PostDetailResponse.class)
@@ -147,8 +146,8 @@ public class PostController {
             ),
             @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않거나 첨부파일 최대 개수를 초과함"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "403", description = "작성자 본인 또는 관리자가 아님"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+            @ApiResponse(responseCode = "403", description = "관리자가 아님"),
+            @ApiResponse(responseCode = "404", description = "공지사항을 찾을 수 없음")
     })
     @PatchMapping(path = "/{postId}", consumes = "multipart/form-data")
     public ResponseEntity<PostDetailResponse> update(
@@ -164,14 +163,14 @@ public class PostController {
     }
 
     @Operation(
-            summary = "게시글 삭제",
-            description = "게시글과 첨부파일·댓글을 함께 삭제합니다. 작성자 본인 또는 관리자만 가능합니다."
+            summary = "공지사항 삭제",
+            description = "관리자가 공지사항과 첨부파일을 함께 삭제합니다."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "게시글 삭제 성공"),
+            @ApiResponse(responseCode = "204", description = "공지사항 삭제 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "403", description = "작성자 본인 또는 관리자가 아님"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+            @ApiResponse(responseCode = "403", description = "관리자가 아님"),
+            @ApiResponse(responseCode = "404", description = "공지사항을 찾을 수 없음")
     })
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> delete(
@@ -187,39 +186,8 @@ public class PostController {
     }
 
     @Operation(
-            summary = "게시글 공지 고정/해제",
-            description = "게시글을 공지로 고정하거나 해제합니다. 관리자만 가능합니다."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "공지 고정/해제 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = PostDetailResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "요청값이 올바르지 않음"),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "403", description = "관리자가 아님"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
-    })
-    @PatchMapping("/{postId}/pin")
-    public ResponseEntity<PostDetailResponse> pin(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable Long postId,
-            @Valid @RequestBody PostPinRequest request
-    ) {
-        if (userId == null) {
-            throw new UnauthorizedException();
-        }
-
-        return ResponseEntity.ok(postCommandService.updatePinned(userId, postId, request.pinned()));
-    }
-
-    @Operation(
-            summary = "게시글 첨부파일 다운로드",
-            description = "게시글에 등록된 첨부파일을 원본 파일로 다운로드합니다."
+            summary = "공지사항 첨부파일 다운로드",
+            description = "공지사항에 등록된 첨부파일을 원본 파일로 다운로드합니다."
     )
     @ApiResponses({
             @ApiResponse(
@@ -228,7 +196,7 @@ public class PostController {
                     content = @Content(mediaType = "application/octet-stream")
             ),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "404", description = "게시글 또는 첨부파일을 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "공지사항 또는 첨부파일을 찾을 수 없음")
     })
     @GetMapping("/{postId}/attachments/{attachmentId}")
     public ResponseEntity<InputStreamResource> download(

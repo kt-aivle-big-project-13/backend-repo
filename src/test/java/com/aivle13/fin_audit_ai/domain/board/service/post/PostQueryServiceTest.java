@@ -4,9 +4,7 @@ import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostDetailRespons
 import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostSummaryResponse;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostAttachmentEntity;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostEntity;
-import com.aivle13.fin_audit_ai.domain.board.repository.CommentRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostAttachmentRepository;
-import com.aivle13.fin_audit_ai.domain.board.repository.PostCommentCountProjection;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostRepository;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.type.UserRole;
@@ -37,8 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,9 +45,6 @@ class PostQueryServiceTest {
 
     @Mock
     private PostAttachmentRepository attachmentRepository;
-
-    @Mock
-    private CommentRepository commentRepository;
 
     @Mock
     private FileStorageService fileStorageService;
@@ -67,14 +60,7 @@ class PostQueryServiceTest {
         return post;
     }
 
-    private PostCommentCountProjection projection(Long postId, Long count) {
-        PostCommentCountProjection projection = mock(PostCommentCountProjection.class);
-        given(projection.getPostId()).willReturn(postId);
-        given(projection.getCommentCount()).willReturn(count);
-        return projection;
-    }
-
-    // 키워드/공지 우선/정렬 조건 자체는 PostSpecifications가 JPA Criteria로 구성하므로
+    // 키워드/정렬 조건 자체는 PostSpecifications가 JPA Criteria로 구성하므로
     // 순수 단위 테스트로는 검증할 수 없다(실제 쿼리 실행이 필요). 여기서는 서비스가
     // 리포지토리에 올바른 Pageable로 위임하고 결과를 응답으로 조립하는 부분만 검증한다.
     @Test
@@ -91,30 +77,25 @@ class PostQueryServiceTest {
     }
 
     @Test
-    void 조회된_게시글에_댓글_수를_매핑해_요약_응답으로_반환한다() {
+    void 조회된_공지사항을_요약_응답으로_반환한다() {
         PostEntity post1 = post(1L, "첫 글");
         PostEntity post2 = post(2L, "댓글 없는 글");
         Page<PostEntity> page = new PageImpl<>(List.of(post1, post2), PageRequest.of(0, 10), 2);
         given(postRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(page);
-        PostCommentCountProjection projection = projection(1L, 3L);
-        given(commentRepository.countByPostIds(List.of(1L, 2L))).willReturn(List.of(projection));
-
         PageResponse<PostSummaryResponse> result = postQueryService.list(1, 10, null, "latest");
 
         assertThat(result.content()).hasSize(2);
-        assertThat(result.content().get(0).commentCount()).isEqualTo(3L);
-        assertThat(result.content().get(1).commentCount()).isEqualTo(0L);
+        assertThat(result.content().get(0).title()).isEqualTo("첫 글");
     }
 
     @Test
-    void 조회_결과가_없으면_댓글_수_집계를_생략한다() {
+    void 조회_결과가_없으면_빈_목록을_반환한다() {
         given(postRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of()));
 
         PageResponse<PostSummaryResponse> result = postQueryService.list(1, 10, "검색어", "oldest");
 
         assertThat(result.content()).isEmpty();
-        verify(commentRepository, never()).countByPostIds(any());
     }
 
     @Test
