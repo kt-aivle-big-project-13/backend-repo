@@ -156,13 +156,22 @@ sudo ls -l /home/ubuntu/backend-repo/.env
 
 ### 모니터링 확인
 
-Prometheus 타깃이 모두 UP인지 본다.
+Prometheus·Grafana 는 앱 인스턴스가 아니라 **ASG 외부 모니터링 전용 인스턴스**에서 구동된다(#307). 앱 인스턴스에는 `node-exporter` 만 남아 있다.
+
+앱 인스턴스에서는 스크랩 대상 포트가 열려 있는지만 확인한다.
+
+```bash
+sudo docker compose -f docker-compose.prod.yml ps | grep node-exporter
+curl -s localhost:8080/actuator/prometheus | head -3
+```
+
+타깃 상태는 모니터링 인스턴스에서 확인한다.
 
 ```bash
 curl -s localhost:9090/api/v1/targets | grep -o '"health":"[^"]*"'
 ```
 
-`spring-boot` 잡이 DOWN이면 `docker/prometheus/prometheus.prod.yml`의 타깃 설정을 확인한다(#291 / PR #292).
+`spring-boot` 나 `node` 가 DOWN이면 앱 보안그룹에 모니터링 SG로부터의 8080·9100 인바운드가 있는지 먼저 확인한다.
 
 ## 롤백
 
