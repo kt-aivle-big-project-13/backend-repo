@@ -333,15 +333,7 @@ public class MailService {
                         ">
                             %s
                         </h1>
-
-                        <p style="
-                            margin-bottom: 20px;
-                            line-height: 1.7;
-                            font-size: 15px;
-                        ">
-                            %s님, 안녕하세요.
-                        </p>
-
+            
                         <div style="
                             margin-top: 16px;
                             padding: 20px;
@@ -352,7 +344,7 @@ public class MailService {
                         ">
                             %s
                         </div>
-
+            
                         <p style="
                             margin-top: 28px;
                             color: #667085;
@@ -365,7 +357,6 @@ public class MailService {
                     </div>
                     """.formatted(
                     HtmlUtils.htmlEscape(sanitizedTitle),
-                    HtmlUtils.htmlEscape(customerName),
                     escapedBody
             );
 
