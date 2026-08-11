@@ -42,7 +42,6 @@ public record LawServiceResponse(
             @JsonProperty("조문가지번호") String articleSubNo,
             @JsonProperty("조문여부") String articleType,
             @JsonProperty("조문시행일자") String effectiveDate,
-            @JsonProperty("조문변경여부") String changed,
             @JsonProperty("조문내용") String content,
             @JsonProperty("항") JsonNode paragraphs
     ) {

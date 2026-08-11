@@ -30,7 +30,6 @@ public class LawGoKrApiClient implements LawApiClient {
 
     private static final String LAW_SERVICE_PATH = "/DRF/lawService.do";
     private static final DateTimeFormatter EFFECTIVE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final String CHANGED_FLAG_VALUE = "Y";
 
     private final RestClient restClient;
     private final LawApiProperties properties;
@@ -92,9 +91,8 @@ public class LawGoKrApiClient implements LawApiClient {
 
         String content = LawGoKrTextFlattener.flatten(unit.content(), unit.paragraphs());
         LocalDate effectiveDate = LocalDate.parse(unit.effectiveDate(), EFFECTIVE_DATE_FORMAT);
-        boolean changed = CHANGED_FLAG_VALUE.equals(unit.changed());
 
-        return new LawArticleRevision(articleNo, content, effectiveDate, changed);
+        return new LawArticleRevision(articleNo, content, effectiveDate);
     }
 
     private String normalizeArticleNo(String articleNo, String articleSubNo) {

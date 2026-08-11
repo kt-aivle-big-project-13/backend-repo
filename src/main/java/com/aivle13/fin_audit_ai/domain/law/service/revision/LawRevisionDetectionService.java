@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.law.service.revision;
 
 import com.aivle13.fin_audit_ai.domain.law.entity.LawRevisionEntity;
 import com.aivle13.fin_audit_ai.domain.law.service.embedding.LawArticleEmbeddingService;
+import com.aivle13.fin_audit_ai.domain.law.type.TrackedLaw;
 import com.aivle13.fin_audit_ai.domain.notification.service.NotificationService;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * law.go.kr에서 추적 대상 법령의 현재 조문을 조회해, 우리 DB에 저장된 조문보다 시행일자가
@@ -26,12 +26,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LawRevisionDetectionService {
 
-    // law_articles.law_name(축약형) → law.go.kr 정식 법령명
-    private static final Map<String, String> TRACKED_LAWS = Map.of(
-            "AI 기본법", "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
-            "AI 기본법 시행령", "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 시행령"
-    );
-
     private final LawRevisionApplier lawRevisionApplier;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
@@ -39,13 +33,13 @@ public class LawRevisionDetectionService {
     public List<LawRevisionEntity> detectAndApply() {
         List<LawRevisionEntity> revisions = new ArrayList<>();
 
-        for (Map.Entry<String, String> trackedLaw : TRACKED_LAWS.entrySet()) {
+        for (TrackedLaw trackedLaw : TrackedLaw.values()) {
             try {
-                revisions.addAll(lawRevisionApplier.applyForLaw(trackedLaw.getKey(), trackedLaw.getValue()));
+                revisions.addAll(lawRevisionApplier.applyForLaw(trackedLaw.getLawName(), trackedLaw.getOfficialName()));
             } catch (RuntimeException exception) {
                 log.error(
                         "법령 개정 감지 실패, 다음 추적 대상 법령으로 계속함: lawName={}",
-                        trackedLaw.getKey(),
+                        trackedLaw.getLawName(),
                         exception
                 );
             }

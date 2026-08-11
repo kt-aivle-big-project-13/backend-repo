@@ -1,5 +1,6 @@
 package com.aivle13.fin_audit_ai.domain.law.service.seed;
 
+import com.aivle13.fin_audit_ai.domain.law.type.TrackedLaw;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -9,7 +10,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * 로컬 개발 환경에서 법령 조항 원문(엑셀 기반 CSV)을 law_articles 테이블에 시딩한다.
@@ -24,18 +24,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LawArticleSeeder implements ApplicationRunner {
 
-    private static final List<String> SEED_FILES = List.of(
-            "db/seed/ai-basic-act.csv",
-            "db/seed/ai-basic-act-decree.csv"
-    );
-
     private final LawArticleSeedService lawArticleSeedService;
 
     @Override
     public void run(ApplicationArguments args) throws IOException {
-        for (String seedFile : SEED_FILES) {
-            int inserted = lawArticleSeedService.seedFrom(seedFile);
-            log.info("법령 조항 시딩 확인: {} (신규 {}건)", seedFile, inserted);
+        for (TrackedLaw trackedLaw : TrackedLaw.values()) {
+            int inserted = lawArticleSeedService.seedFrom(trackedLaw.getSeedFile(), trackedLaw.getOfficialName());
+            log.info("법령 조항 시딩 확인: {} (신규 {}건)", trackedLaw.getSeedFile(), inserted);
         }
     }
 }
