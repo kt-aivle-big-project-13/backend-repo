@@ -1,0 +1,15 @@
+# 대시보드를 파일로 관리해 인스턴스가 교체되어도 복원되도록 한다.
+# 이 디렉터리에 대시보드 JSON을 두면 Grafana 기동 시 자동 등록된다.
+apiVersion: 1
+
+providers:
+  - name: 'default'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false
