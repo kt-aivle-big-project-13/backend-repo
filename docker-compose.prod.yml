@@ -57,6 +57,10 @@ services:
       - "--path.procfs=/host/proc"
       - "--path.sysfs=/host/sys"
       - "--path.rootfs=/host"
+    # 모니터링 전용 인스턴스에서 원격 스크랩할 수 있도록 공개한다.
+    # 접근 제어는 보안그룹(모니터링 SG만 허용)으로 한다.
+    ports:
+      - "9100:9100"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro

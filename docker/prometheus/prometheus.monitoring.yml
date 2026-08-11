@@ -1,0 +1,44 @@
+# 모니터링 전용 인스턴스용 스크랩 설정.
+# 앱 인스턴스는 ASG로 교체되며 IP가 바뀌므로 고정 타깃을 쓸 수 없다.
+# EC2 서비스 디스커버리로 ASG 태그를 기준으로 타깃을 자동 추적한다.
+# 필요 IAM 권한: ec2:DescribeInstances, ec2:DescribeAvailabilityZones
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'spring-boot'
+    metrics_path: '/actuator/prometheus'
+    ec2_sd_configs:
+      - region: ap-northeast-2
+        port: 8080
+        filters:
+          - name: 'tag:aws:autoscaling:groupName'
+            values: ['aivle-audit-core-asg']
+          - name: 'instance-state-name'
+            values: ['running']
+    relabel_configs:
+      # 인스턴스 교체 이력을 추적할 수 있도록 인스턴스 ID를 라벨로 남긴다.
+      - source_labels: [__meta_ec2_instance_id]
+        target_label: instance_id
+      - source_labels: [__meta_ec2_availability_zone]
+        target_label: availability_zone
+
+  - job_name: 'node'
+    ec2_sd_configs:
+      - region: ap-northeast-2
+        port: 9100
+        filters:
+          - name: 'tag:aws:autoscaling:groupName'
+            values: ['aivle-audit-core-asg']
+          - name: 'instance-state-name'
+            values: ['running']
+    relabel_configs:
+      - source_labels: [__meta_ec2_instance_id]
+        target_label: instance_id
+      - source_labels: [__meta_ec2_availability_zone]
+        target_label: availability_zone
