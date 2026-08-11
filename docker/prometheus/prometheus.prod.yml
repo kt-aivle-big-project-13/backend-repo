@@ -7,12 +7,12 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # dev는 앱을 호스트에서 실행(bootRun)하므로 host-gateway 로 호스트에 접근한다.
-  # prod(prometheus.prod.yml)는 앱이 컨테이너로 뜨므로 서비스명 backend 를 쓴다.
+  # prod는 앱이 같은 컴포즈 네트워크의 컨테이너로 뜨므로 서비스명으로 접근한다.
+  # dev(prometheus.yml)는 앱을 호스트에서 실행해 host.docker.internal 을 쓴다.
   - job_name: 'spring-boot'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8080']
+      - targets: ['backend:8080']
 
   - job_name: 'node'
     static_configs:
