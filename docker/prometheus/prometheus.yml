@@ -7,8 +7,8 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # dev는 앱을 호스트에서 실행(bootRun)하므로 host-gateway 로 호스트에 접근한다.
-  # prod(prometheus.prod.yml)는 앱이 컨테이너로 뜨므로 서비스명 backend 를 쓴다.
+  # 이 파일은 dev 전용이다. 앱을 호스트에서 실행(bootRun)하므로 host-gateway 로 접근한다.
+  # prod 는 ASG 외부 모니터링 인스턴스에서 prometheus.monitoring.yml 로 수집한다.
   - job_name: 'spring-boot'
     metrics_path: '/actuator/prometheus'
     static_configs:
