@@ -5,7 +5,6 @@ import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostUpdateRequest;
 import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostDetailResponse;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostAttachmentEntity;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostEntity;
-import com.aivle13.fin_audit_ai.domain.board.repository.CommentRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostAttachmentRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostRepository;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
@@ -35,13 +34,13 @@ public class PostCommandService {
 
     private final PostRepository postRepository;
     private final PostAttachmentRepository attachmentRepository;
-    private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
     public PostDetailResponse create(Long userId, PostCreateRequest request) {
         UserEntity author = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
+        ensureAdmin(author);
 
         PostEntity post = PostEntity.create(author, request.title(), request.content());
         postRepository.save(post);
@@ -53,10 +52,9 @@ public class PostCommandService {
     }
 
     public PostDetailResponse update(Long userId, Long postId, PostUpdateRequest request) {
+        ensureAdmin(userId);
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(PostNotFoundException::new);
-
-        ensureEditable(userId, post);
 
         post.update(request.title(), request.content());
 
@@ -75,48 +73,26 @@ public class PostCommandService {
     }
 
     public void delete(Long userId, Long postId) {
+        ensureAdmin(userId);
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(PostNotFoundException::new);
-
-        ensureEditable(userId, post);
 
         List<PostAttachmentEntity> attachments = attachmentRepository.findByPost_Id(postId);
         List<String> fileKeys = attachments.stream().map(PostAttachmentEntity::getFileKey).toList();
 
-        commentRepository.deleteAll(commentRepository.findByPost_Id(postId));
         attachmentRepository.deleteAll(attachments);
         postRepository.delete(post);
 
         fileStorageService.deleteAfterCommit(fileKeys);
     }
 
-    // 관리자만 접근 가능하도록 SecurityConfig에서 경로를 제한하지만, 서비스 단에서도 방어적으로 재확인한다.
-    public PostDetailResponse updatePinned(Long userId, Long postId, boolean pinned) {
+    private void ensureAdmin(Long userId) {
         UserEntity requester = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
-
-        if (requester.getRole() != UserRole.ADMIN) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-
-        PostEntity post = postRepository.findById(postId)
-                .orElseThrow(PostNotFoundException::new);
-
-        post.updatePinned(pinned);
-
-        List<PostAttachmentEntity> attachments = attachmentRepository.findByPost_Id(postId);
-        return PostDetailResponse.of(post, attachments);
+        ensureAdmin(requester);
     }
 
-    // 작성자 본인 또는 관리자만 게시글을 수정/삭제할 수 있다.
-    private void ensureEditable(Long userId, PostEntity post) {
-        if (post.isAuthor(userId)) {
-            return;
-        }
-
-        UserEntity requester = userRepository.findById(userId)
-                .orElseThrow(UserNotFoundException::new);
-
+    private void ensureAdmin(UserEntity requester) {
         if (requester.getRole() != UserRole.ADMIN) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
@@ -135,8 +111,8 @@ public class PostCommandService {
             return;
         }
 
-        // 같은 게시글에 대한 동시 첨부 요청이 카운트 검증을 동시에 통과해 최대 개수를
-        // 넘기지 않도록, 카운트 확인 전에 게시글 행을 잠근다.
+        // 같은 공지사항에 대한 동시 첨부 요청이 카운트 검증을 동시에 통과해 최대 개수를
+        // 넘기지 않도록, 카운트 확인 전에 공지사항 행을 잠근다.
         postRepository.findByIdForUpdate(post.getId()).orElseThrow(PostNotFoundException::new);
 
         long existingCount = attachmentRepository.countByPost_Id(post.getId());

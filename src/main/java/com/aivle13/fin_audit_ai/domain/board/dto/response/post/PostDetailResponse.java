@@ -12,7 +12,6 @@ public record PostDetailResponse(
         String content,
         Long authorId,
         String authorName,
-        boolean pinned,
         List<AttachmentResponse> attachments,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -24,7 +23,6 @@ public record PostDetailResponse(
                 post.getContent(),
                 post.getAuthor().getId(),
                 post.getAuthor().getName(),
-                post.isPinned(),
                 attachments.stream().map(AttachmentResponse::from).toList(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()

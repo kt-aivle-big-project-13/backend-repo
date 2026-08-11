@@ -22,13 +22,12 @@ import java.util.List;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// 게시글 작성 → 조회 → 댓글 작성 흐름 통합 테스트.
+// 관리자 공지사항 작성 → 일반 사용자 조회 흐름 통합 테스트.
 // TestContainers(Postgres+Redis)로 실제 DB에 저장/조회되는 것까지 검증한다 (컨트롤러 단위 목킹이 아님).
-// 흐름: 1) 일반 사용자로 게시글 작성 → 2) 상세 조회로 저장 확인 → 3) 관리자로 댓글 작성 → 4) 댓글 목록에 반영 확인.
+// 흐름: 1) 일반 사용자 작성 차단 → 2) 관리자 작성 → 3) 일반 사용자 상세·목록 조회.
 @AutoConfigureMockMvc
 @Transactional
 class BoardFlowIntegrationTest extends IntegrationTestSupport {
@@ -61,45 +60,35 @@ class BoardFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("게시글을 작성하고 조회한 뒤 관리자가 댓글을 달면 댓글 목록에 반영된다")
-    void createPost_thenGet_thenAdminComments_flow() throws Exception {
-        // 1) 일반 사용자가 게시글을 작성한다.
-        MvcResult createResult = mockMvc.perform(multipart("/api/v1/posts")
-                        .param("title", "통합 테스트 게시글")
-                        .param("content", "통합 테스트 본문")
+    @DisplayName("일반 사용자의 작성은 차단하고 관리자가 작성한 공지사항은 모두 조회할 수 있다")
+    void adminCreatesNotice_userReadsNotice_flow() throws Exception {
+        mockMvc.perform(multipart("/api/v1/posts")
+                        .param("title", "작성 불가")
+                        .param("content", "일반 사용자 본문")
                         .with(authentication(asUser())))
+                .andExpect(status().isForbidden());
+
+        MvcResult createResult = mockMvc.perform(multipart("/api/v1/posts")
+                        .param("title", "통합 테스트 공지사항")
+                        .param("content", "통합 테스트 본문")
+                        .with(authentication(asAdmin())))
                 .andExpect(status().isCreated())
                 .andReturn();
         Long postId = JsonPath.parse(createResult.getResponse().getContentAsString()).read("$.id", Long.class);
 
-        // 2) 방금 작성한 게시글을 상세 조회해 실제로 저장됐는지 확인한다.
         mockMvc.perform(get("/api/v1/posts/{postId}", postId)
                         .with(authentication(asUser())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("통합 테스트 게시글"))
+                .andExpect(jsonPath("$.title").value("통합 테스트 공지사항"))
                 .andExpect(jsonPath("$.content").value("통합 테스트 본문"))
-                .andExpect(jsonPath("$.attachments").isEmpty());
+                .andExpect(jsonPath("$.attachments").isEmpty())
+                .andExpect(jsonPath("$.pinned").doesNotExist());
 
         // 게시글 목록에도 반영됐는지 확인한다.
         mockMvc.perform(get("/api/v1/posts")
-                        .with(authentication(asUser())))
+                .with(authentication(asUser())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(postId));
-
-        // 3) 관리자가 해당 게시글에 댓글(답변)을 작성한다.
-        mockMvc.perform(post("/api/v1/posts/{postId}/comments", postId)
-                        .contentType("application/json")
-                        .content("{\"content\": \"관리자 답변입니다\"}")
-                        .with(authentication(asAdmin())))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.content").value("관리자 답변입니다"));
-
-        // 4) 댓글 목록에 방금 작성한 댓글이 반영된다.
-        mockMvc.perform(get("/api/v1/posts/{postId}/comments", postId)
-                        .with(authentication(asUser())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].content").value("관리자 답변입니다"))
-                .andExpect(jsonPath("$[0].authorName").value("관리자"));
+                .andExpect(jsonPath("$.content[0].id").value(postId))
+                .andExpect(jsonPath("$.content[0].commentCount").doesNotExist());
     }
 }

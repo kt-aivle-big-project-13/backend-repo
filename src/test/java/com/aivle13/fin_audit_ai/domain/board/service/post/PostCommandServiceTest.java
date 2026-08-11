@@ -3,10 +3,8 @@ package com.aivle13.fin_audit_ai.domain.board.service.post;
 import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostCreateRequest;
 import com.aivle13.fin_audit_ai.domain.board.dto.request.post.PostUpdateRequest;
 import com.aivle13.fin_audit_ai.domain.board.dto.response.post.PostDetailResponse;
-import com.aivle13.fin_audit_ai.domain.board.entity.CommentEntity;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostAttachmentEntity;
 import com.aivle13.fin_audit_ai.domain.board.entity.PostEntity;
-import com.aivle13.fin_audit_ai.domain.board.repository.CommentRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostAttachmentRepository;
 import com.aivle13.fin_audit_ai.domain.board.repository.PostRepository;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
@@ -47,9 +45,6 @@ class PostCommandServiceTest {
     private PostAttachmentRepository attachmentRepository;
 
     @Mock
-    private CommentRepository commentRepository;
-
-    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -66,7 +61,7 @@ class PostCommandServiceTest {
 
     @Test
     void 게시글을_작성하면_저장하고_상세_응답을_반환한다() {
-        UserEntity author = user(1L, UserRole.AUDITOR);
+        UserEntity author = user(1L, UserRole.ADMIN);
         given(userRepository.findById(1L)).willReturn(Optional.of(author));
         given(attachmentRepository.findByPost_Id(any())).willReturn(List.of());
 
@@ -92,8 +87,21 @@ class PostCommandServiceTest {
     }
 
     @Test
+    void 일반_사용자는_공지사항을_작성할_수_없다() {
+        UserEntity auditor = user(1L, UserRole.AUDITOR);
+        given(userRepository.findById(1L)).willReturn(Optional.of(auditor));
+
+        PostCreateRequest request = new PostCreateRequest("제목", "내용", null);
+
+        assertThatThrownBy(() -> postCommandService.create(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.ACCESS_DENIED));
+    }
+
+    @Test
     void 첨부파일이_기존과_합쳐_5개를_초과하면_예외() {
-        UserEntity author = user(1L, UserRole.AUDITOR);
+        UserEntity author = user(1L, UserRole.ADMIN);
         given(userRepository.findById(1L)).willReturn(Optional.of(author));
         // findByIdForUpdate는 락 획득(존재 확인) 목적으로만 쓰이고 반환값 자체는 로직에 쓰이지 않으므로,
         // create()에서 실제로 만들어지는 게시글과 같은 인스턴스일 필요는 없다.
@@ -115,10 +123,11 @@ class PostCommandServiceTest {
     }
 
     @Test
-    void 작성자_본인은_게시글을_수정할_수_있다() {
-        UserEntity author = user(1L, UserRole.AUDITOR);
+    void 관리자는_공지사항을_수정할_수_있다() {
+        UserEntity author = user(1L, UserRole.ADMIN);
         PostEntity post = PostEntity.create(author, "old title", "old content");
         ReflectionTestUtils.setField(post, "id", 10L);
+        given(userRepository.findById(1L)).willReturn(Optional.of(author));
         given(postRepository.findById(10L)).willReturn(Optional.of(post));
         given(attachmentRepository.findByPost_Id(10L)).willReturn(List.of());
 
@@ -131,12 +140,11 @@ class PostCommandServiceTest {
     }
 
     @Test
-    void 작성자도_관리자도_아니면_수정시_예외() {
-        UserEntity author = user(1L, UserRole.AUDITOR);
+    void 일반_사용자는_공지사항을_수정할_수_없다() {
+        UserEntity author = user(1L, UserRole.ADMIN);
         UserEntity requester = user(2L, UserRole.AUDITOR);
         PostEntity post = PostEntity.create(author, "title", "content");
         ReflectionTestUtils.setField(post, "id", 10L);
-        given(postRepository.findById(10L)).willReturn(Optional.of(post));
         given(userRepository.findById(2L)).willReturn(Optional.of(requester));
 
         PostUpdateRequest request = new PostUpdateRequest("new title", "new content", null, null);
@@ -149,9 +157,10 @@ class PostCommandServiceTest {
 
     @Test
     void 수정시_삭제_요청된_첨부파일은_S3에서도_함께_삭제된다() {
-        UserEntity author = user(1L, UserRole.AUDITOR);
+        UserEntity author = user(1L, UserRole.ADMIN);
         PostEntity post = PostEntity.create(author, "title", "content");
         ReflectionTestUtils.setField(post, "id", 10L);
+        given(userRepository.findById(1L)).willReturn(Optional.of(author));
         given(postRepository.findById(10L)).willReturn(Optional.of(post));
 
         PostAttachmentEntity attachment1 = PostAttachmentEntity.create(post, new StoredFile("key1", "a.png", "image/png", 1L));
@@ -169,49 +178,29 @@ class PostCommandServiceTest {
     }
 
     @Test
-    void 게시글_삭제시_댓글과_첨부파일도_함께_삭제된다() {
-        UserEntity author = user(1L, UserRole.AUDITOR);
+    void 공지사항_삭제시_첨부파일도_함께_삭제된다() {
+        UserEntity author = user(1L, UserRole.ADMIN);
         PostEntity post = PostEntity.create(author, "title", "content");
         ReflectionTestUtils.setField(post, "id", 10L);
+        given(userRepository.findById(1L)).willReturn(Optional.of(author));
         given(postRepository.findById(10L)).willReturn(Optional.of(post));
 
         PostAttachmentEntity attachment = PostAttachmentEntity.create(post, new StoredFile("k1", "a.png", "image/png", 1L));
         given(attachmentRepository.findByPost_Id(10L)).willReturn(List.of(attachment));
 
-        CommentEntity comment = CommentEntity.create(post, author, "댓글");
-        given(commentRepository.findByPost_Id(10L)).willReturn(List.of(comment));
-
         postCommandService.delete(1L, 10L);
 
-        verify(commentRepository).deleteAll(List.of(comment));
         verify(attachmentRepository).deleteAll(List.of(attachment));
         verify(postRepository).delete(post);
         verify(fileStorageService).deleteAfterCommit(List.of("k1"));
     }
 
     @Test
-    void 관리자는_게시글을_공지로_고정_해제할_수_있다() {
-        UserEntity admin = user(99L, UserRole.ADMIN);
-        given(userRepository.findById(99L)).willReturn(Optional.of(admin));
-
-        UserEntity author = user(1L, UserRole.AUDITOR);
-        PostEntity post = PostEntity.create(author, "title", "content");
-        ReflectionTestUtils.setField(post, "id", 10L);
-        given(postRepository.findById(10L)).willReturn(Optional.of(post));
-        given(attachmentRepository.findByPost_Id(10L)).willReturn(List.of());
-
-        PostDetailResponse response = postCommandService.updatePinned(99L, 10L, true);
-
-        assertThat(response.pinned()).isTrue();
-        assertThat(post.isPinned()).isTrue();
-    }
-
-    @Test
-    void 관리자가_아니면_공지_고정시_예외() {
+    void 일반_사용자는_공지사항을_삭제할_수_없다() {
         UserEntity requester = user(1L, UserRole.AUDITOR);
         given(userRepository.findById(1L)).willReturn(Optional.of(requester));
 
-        assertThatThrownBy(() -> postCommandService.updatePinned(1L, 10L, true))
+        assertThatThrownBy(() -> postCommandService.delete(1L, 10L))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
                         .isEqualTo(ErrorCode.ACCESS_DENIED));

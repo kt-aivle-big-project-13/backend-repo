@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<PostEntity, Long>, JpaSpecificationExecutor<PostEntity> {
 
-    // 같은 게시글에 대한 동시 첨부파일 추가 요청을 직렬화해 최대 개수 검증이 안전하게 동작하도록 한다.
+    // 같은 공지사항에 대한 동시 첨부파일 추가 요청을 직렬화해 최대 개수 검증이 안전하게 동작하도록 한다.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from PostEntity p where p.id = :id")
     Optional<PostEntity> findByIdForUpdate(@Param("id") Long id);

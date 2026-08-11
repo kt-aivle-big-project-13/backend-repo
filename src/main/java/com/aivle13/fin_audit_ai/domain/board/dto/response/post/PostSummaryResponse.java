@@ -8,17 +8,13 @@ public record PostSummaryResponse(
         Long id,
         String title,
         String authorName,
-        boolean pinned,
-        long commentCount,
         LocalDateTime createdAt
 ) {
-    public static PostSummaryResponse of(PostEntity post, long commentCount) {
+    public static PostSummaryResponse from(PostEntity post) {
         return new PostSummaryResponse(
                 post.getId(),
                 post.getTitle(),
                 post.getAuthor().getName(),
-                post.isPinned(),
-                commentCount,
                 post.getCreatedAt()
         );
     }

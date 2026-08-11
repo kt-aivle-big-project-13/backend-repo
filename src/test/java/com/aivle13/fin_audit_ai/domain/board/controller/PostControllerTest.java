@@ -35,7 +35,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -90,8 +89,8 @@ class PostControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("게시글 목록을 페이지네이션·검색·정렬 조건으로 조회한다")
     void list_success() throws Exception {
-        createPost(user, "첫 번째 공지", "내용1");
-        createPost(user, "두 번째 글", "내용2");
+        createPost(admin, "첫 번째 공지", "내용1");
+        createPost(admin, "두 번째 공지", "내용2");
 
         mockMvc.perform(get("/api/v1/posts")
                         .param("page", "1")
@@ -120,7 +119,7 @@ class PostControllerTest extends IntegrationTestSupport {
     @Test
     @DisplayName("게시글 상세를 첨부파일 목록과 함께 조회한다")
     void get_success() throws Exception {
-        PostEntity post = createPost(user, "상세 조회 테스트", "본문 내용");
+        PostEntity post = createPost(admin, "상세 조회 테스트", "본문 내용");
 
         mockMvc.perform(get("/api/v1/posts/{postId}", post.getId())
                         .with(authentication(asUser(user))))
@@ -138,15 +137,26 @@ class PostControllerTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("게시글을 작성하면 201과 함께 게시글이 생성된다")
+    @DisplayName("관리자가 공지사항을 작성하면 201과 함께 생성된다")
     void create_success() throws Exception {
         mockMvc.perform(multipart("/api/v1/posts")
                         .param("title", "새 게시글")
                         .param("content", "새 게시글 내용")
-                        .with(authentication(asUser(user))))
+                        .with(authentication(asAdmin())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("새 게시글"))
-                .andExpect(jsonPath("$.authorId").value(user.getId()));
+                .andExpect(jsonPath("$.authorId").value(admin.getId()))
+                .andExpect(jsonPath("$.pinned").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("일반 사용자가 공지사항을 작성하면 403을 반환한다")
+    void create_forbidden() throws Exception {
+        mockMvc.perform(multipart("/api/v1/posts")
+                        .param("title", "작성 불가")
+                        .param("content", "내용")
+                        .with(authentication(asUser(user))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -160,25 +170,25 @@ class PostControllerTest extends IntegrationTestSupport {
             multipartRequest.file(new MockMultipartFile("files", "file" + i + ".png", "image/png", new byte[]{1}));
         }
 
-        mockMvc.perform(multipartRequest.with(authentication(asUser(user))))
+        mockMvc.perform(multipartRequest.with(authentication(asAdmin())))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("작성자 본인이 게시글을 수정한다")
-    void update_byAuthor_success() throws Exception {
-        PostEntity post = createPost(user, "수정 전 제목", "수정 전 내용");
+    @DisplayName("관리자가 공지사항을 수정한다")
+    void update_byAdmin_success() throws Exception {
+        PostEntity post = createPost(admin, "수정 전 제목", "수정 전 내용");
 
         mockMvc.perform(multipart(HttpMethod.PATCH, "/api/v1/posts/{postId}", post.getId())
                         .param("title", "수정 후 제목")
                         .param("content", "수정 후 내용")
-                        .with(authentication(asUser(user))))
+                        .with(authentication(asAdmin())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("수정 후 제목"));
     }
 
     @Test
-    @DisplayName("작성자가 아니고 관리자도 아니면 수정 시 403을 반환한다")
+    @DisplayName("일반 사용자가 공지사항을 수정하면 403을 반환한다")
     void update_forbidden() throws Exception {
         PostEntity post = createPost(user, "제목", "내용");
 
@@ -190,12 +200,12 @@ class PostControllerTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("작성자 본인이 게시글을 삭제하면 204를 반환하고 게시글이 사라진다")
-    void delete_byAuthor_success() throws Exception {
-        PostEntity post = createPost(user, "삭제될 글", "내용");
+    @DisplayName("관리자가 공지사항을 삭제하면 204를 반환하고 공지사항이 사라진다")
+    void delete_byAdmin_success() throws Exception {
+        PostEntity post = createPost(admin, "삭제될 공지", "내용");
 
         mockMvc.perform(delete("/api/v1/posts/{postId}", post.getId())
-                        .with(authentication(asUser(user))))
+                        .with(authentication(asAdmin())))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/v1/posts/{postId}", post.getId())
@@ -204,34 +214,9 @@ class PostControllerTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("관리자가 게시글을 공지로 고정한다")
-    void pin_byAdmin_success() throws Exception {
-        PostEntity post = createPost(user, "공지 대상", "내용");
-
-        mockMvc.perform(patch("/api/v1/posts/{postId}/pin", post.getId())
-                        .contentType("application/json")
-                        .content("{\"pinned\": true}")
-                        .with(authentication(asAdmin())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pinned").value(true));
-    }
-
-    @Test
-    @DisplayName("관리자가 아니면 공지 고정 시 403을 반환한다")
-    void pin_forbidden() throws Exception {
-        PostEntity post = createPost(user, "공지 대상", "내용");
-
-        mockMvc.perform(patch("/api/v1/posts/{postId}/pin", post.getId())
-                        .contentType("application/json")
-                        .content("{\"pinned\": true}")
-                        .with(authentication(asUser(user))))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     @DisplayName("첨부파일을 다운로드한다")
     void download_success() throws Exception {
-        PostEntity post = createPost(user, "첨부파일 있는 글", "내용");
+        PostEntity post = createPost(admin, "첨부파일 있는 공지", "내용");
         PostAttachmentEntity attachment = attachmentRepository.save(PostAttachmentEntity.create(
                 post, new StoredFile("board-posts/key", "report.pdf", "application/pdf", 4L)));
 

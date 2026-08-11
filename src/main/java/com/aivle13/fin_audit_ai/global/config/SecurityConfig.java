@@ -64,12 +64,10 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        // 게시판 공지 고정: 관리자만 가능
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/*/pin").hasRole("ADMIN")
-                        // 게시글 댓글: 작성/수정/삭제는 관리자만 가능 (조회는 로그인 사용자 전체 허용)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/*/comments/*").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/*/comments/*").hasRole("ADMIN")
+                        // 공지사항 조회는 로그인 사용자 전체, 작성·수정·삭제는 관리자만 가능
+                        .requestMatchers(HttpMethod.POST, "/api/v1/posts").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/*").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
