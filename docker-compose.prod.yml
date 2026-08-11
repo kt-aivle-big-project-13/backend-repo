@@ -1,8 +1,9 @@
 services:
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # CI(ci.yml docker 잡)가 빌드·푸시한 이미지를 그대로 받아 쓴다.
+    # EC2에서 재빌드하면 인스턴스 기동이 수 분 지연되고, CI가 검증한 산출물과
+    # 실제 구동물이 달라질 수 있다.
+    image: ghcr.io/kt-aivle-big-project-13/backend-repo:${BACKEND_IMAGE_TAG:-develop}
     container_name: audit-backend
     env_file: .env
     ports:
