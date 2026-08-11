@@ -57,7 +57,7 @@ class LawRevisionApplierTest {
         article.updateSummary("옛날 요약");
 
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제31조", "새 조문 내용", LocalDate.of(2026, 7, 21), true)
+                new LawArticleRevision("제31조", "새 조문 내용", LocalDate.of(2026, 7, 21))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
                 .willReturn(Optional.of(article));
@@ -85,7 +85,7 @@ class LawRevisionApplierTest {
         LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제6조", "원문", LocalDate.of(2026, 1, 22));
 
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 1, 22), false)
+                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 1, 22))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제6조"))
                 .willReturn(Optional.of(article));
@@ -100,11 +100,12 @@ class LawRevisionApplierTest {
     @Test
     void skipsArticleWhenEffectiveDateIsNewerButContentDidNotActuallyChange() {
         // 전부개정처럼 법 전체 시행일자만 갱신되고 조문 내용은 그대로인 경우.
-        // law.go.kr이 조문변경여부=N을 내려주면 시행일자만 보고 개정으로 오판하면 안 된다.
+        // 시행일자가 최신이라는 것만으로 개정으로 오판하면 안 되고, 실제 content가
+        // 달라야만 개정으로 본다.
         LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제6조", "원문", LocalDate.of(2026, 1, 22));
 
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 7, 21), false)
+                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 7, 21))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제6조"))
                 .willReturn(Optional.of(article));
@@ -122,12 +123,12 @@ class LawRevisionApplierTest {
 
     @Test
     void appliesLaterCorrectionAtSameDateAfterSkippingDateOnlyUpdate() {
-        // 1차: 시행일자만 갱신되고 내용은 그대로(changed=N) → 개정 반영은 건너뛰지만
+        // 1차: 시행일자만 갱신되고 내용은 그대로 → 개정 반영은 건너뛰지만
         // 비교 기준일은 새 시행일자로 갱신된다.
         LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제6조", "원문", LocalDate.of(2026, 1, 22));
 
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 7, 21), false)
+                new LawArticleRevision("제6조", "원문", LocalDate.of(2026, 7, 21))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제6조"))
                 .willReturn(Optional.of(article));
@@ -137,10 +138,10 @@ class LawRevisionApplierTest {
         assertThat(firstRun).isEmpty();
         assertThat(article.getContent()).isEqualTo("원문");
 
-        // 2차: 같은 날짜(2026-07-21)인데 내용이 실제로 다른 정정 응답. changed=N이라도
-        // 비교 기준일이 같은 날짜로 이미 갱신돼 있어야 isSameDateContentFix로 잡힌다.
+        // 2차: 같은 날짜(2026-07-21)인데 내용이 실제로 다른 정정 응답. 비교 기준일이
+        // 같은 날짜로 이미 갱신돼 있어야 같은 날짜 기준 content 비교로 잡힌다.
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제6조", "정정된 조문", LocalDate.of(2026, 7, 21), false)
+                new LawArticleRevision("제6조", "정정된 조문", LocalDate.of(2026, 7, 21))
         ));
         given(reportLlmClient.generate(anyString(), eq("정정된 조문")))
                 .willReturn("정정된 요약");
@@ -157,9 +158,9 @@ class LawRevisionApplierTest {
     void appliesRevisionWhenEffectiveDateIsSameButContentDiffers() {
         LawArticleEntity article = LawArticleEntity.of(LAW_NAME, "제6조", "원문", LocalDate.of(2026, 1, 22));
 
-        // 조문변경여부가 N이어도 내용이 실제로 다르면(교정 등) 개정으로 반영해야 한다.
+        // 시행일자가 그대로여도 내용이 실제로 다르면(교정 등) 개정으로 반영해야 한다.
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제6조", "정정된 조문", LocalDate.of(2026, 1, 22), false)
+                new LawArticleRevision("제6조", "정정된 조문", LocalDate.of(2026, 1, 22))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제6조"))
                 .willReturn(Optional.of(article));
@@ -177,7 +178,7 @@ class LawRevisionApplierTest {
     @Test
     void skipsArticleNotTrackedInLawArticles() {
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제99조", "내용", LocalDate.of(2026, 7, 21), true)
+                new LawArticleRevision("제99조", "내용", LocalDate.of(2026, 7, 21))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제99조"))
                 .willReturn(Optional.empty());
@@ -194,7 +195,7 @@ class LawRevisionApplierTest {
         article.updateSummary("옛 요약");
 
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21), true)
+                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
                 .willReturn(Optional.of(article));
@@ -217,7 +218,7 @@ class LawRevisionApplierTest {
         article.updateSummary("옛 요약");
 
         given(lawApiClient.fetchArticles(OFFICIAL_LAW_NAME)).willReturn(List.of(
-                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21), true)
+                new LawArticleRevision("제31조", "새 내용", LocalDate.of(2026, 7, 21))
         ));
         given(lawArticleRepository.findByLawNameAndArticleNo(LAW_NAME, "제31조"))
                 .willReturn(Optional.of(article));
