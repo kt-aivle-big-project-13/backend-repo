@@ -6,6 +6,11 @@ services:
     image: ghcr.io/kt-aivle-big-project-13/backend-repo:${BACKEND_IMAGE_TAG:-develop}
     container_name: audit-backend
     env_file: .env
+    # Dockerfile 의 -XX:MaxRAMPercentage=75.0 은 컨테이너 제한이 없으면
+    # 호스트 전체(t3.small 2GB)를 기준으로 힙 상한을 잡는다. 그 경우 JVM 이
+    # 1.7GB 이상을 점유해 redis·OS 몫이 남지 않고 OOM Kill(Exit 137)로 이어진다.
+    # 제한을 두면 JVM 이 이 값의 75%(900m)를 힙 상한으로 계산한다.
+    mem_limit: 1200m
     ports:
       - "8080:8080"
     depends_on:
