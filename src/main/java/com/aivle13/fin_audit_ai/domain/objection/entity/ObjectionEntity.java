@@ -21,7 +21,14 @@ import java.util.Objects;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "objections")
+@Table(
+        name = "objections",
+        // 이의제기 번호는 모델 단위로만 고유하다. 같은 번호라도 다른 모델의 심사 건이면 별개로 등록된다.
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_objections_model_id_objection_no",
+                columnNames = {"model_id", "objection_no"}
+        )
+)
 public class ObjectionEntity extends BaseEntity {
 
     @Id
@@ -29,7 +36,7 @@ public class ObjectionEntity extends BaseEntity {
     @Column(name = "objection_id")
     private Long id;
 
-    @Column(name = "objection_no", nullable = false, unique = true, length = 20)
+    @Column(name = "objection_no", nullable = false, length = 20)
     private String objectionNo;
 
     // 이의제기가 어떤 AI 모델에 대한 것인지. CSV에는 모델 정보가 없어 optional로 둔다.

@@ -13,7 +13,8 @@ import java.util.Optional;
 public interface ObjectionRepository
         extends JpaRepository<ObjectionEntity, Long>, JpaSpecificationExecutor<ObjectionEntity> {
 
-    boolean existsByObjectionNo(String objectionNo);
+    // 이의제기 번호는 모델 단위로 고유하므로 중복 검사도 해당 모델 안에서만 한다.
+    boolean existsByModel_IdAndObjectionNo(Long modelId, String objectionNo);
 
     // 상세 조회·대응문서 생성·재생성 시 사용자 소유권 검증
     Optional<ObjectionEntity> findByIdAndModel_User_Id(

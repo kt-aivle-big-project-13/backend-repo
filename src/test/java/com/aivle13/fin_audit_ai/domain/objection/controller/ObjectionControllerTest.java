@@ -136,7 +136,7 @@ class ObjectionControllerTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("이미 등록된 이의제기 번호가 있으면 409를 반환하고 아무것도 저장하지 않는다")
+    @DisplayName("같은 모델에 이미 등록된 이의제기 번호가 있으면 409를 반환하고 아무것도 저장하지 않는다")
     void importCsvWithDuplicateNo() throws Exception {
         String csv = CSV_HEADER
                 + "이영희,OBJ-2026-0002,신용점수 미달,재심사 요청,재심사를 요청합니다,DAYS_EMPLOYED,근속기간 부족,2026-08-01 10:30\n"
@@ -150,6 +150,30 @@ class ObjectionControllerTest extends IntegrationTestSupport {
 
         // setUp 에서 만든 1건만 남아야 한다.
         assertThat(objectionRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("이의제기 번호는 모델 단위로만 고유하므로 다른 모델에는 같은 번호를 등록할 수 있다")
+    void importCsvReusesObjectionNoAcrossModels() throws Exception {
+        Long otherModelId = aiModelRepository.save(AiModelEntity.create(
+                userRepository.findById(userId).orElseThrow(),
+                "credit-model-v2", ModelType.XGBOOST,
+                ModelDomain.CREDIT_SCORING, "models/objection-test-v2.json", "2.0.0"
+        )).getId();
+
+        // setUp 에서 modelId 에 이미 등록한 것과 같은 번호를 다른 모델로 올린다.
+        String csv = CSV_HEADER
+                + "박민수,OBJ-2026-0001,담보 부족,거절 사유 문의,사유를 알려주세요,AMT_CREDIT,담보 대비 대출액 과다,2026-08-02 14:05\n";
+
+        mockMvc.perform(multipart("/api/v1/objections/import")
+                        .file(csvFile(csv))
+                        .param("modelId", String.valueOf(otherModelId))
+                        .with(authentication(asUser())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.importedCount").value(1))
+                .andExpect(jsonPath("$.objections[0].objectionNo").value("OBJ-2026-0001"));
+
+        assertThat(objectionRepository.count()).isEqualTo(2);
     }
 
     @Test

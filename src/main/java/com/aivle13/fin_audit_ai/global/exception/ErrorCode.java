@@ -88,7 +88,7 @@ public enum ErrorCode {
 
     // ===== Objection (EJ) =====
     INVALID_OBJECTION_FILE(HttpStatus.BAD_REQUEST, "EJ001", "이의제기 파일의 내용이 올바르지 않습니다."),
-    DUPLICATE_OBJECTION_NO(HttpStatus.CONFLICT, "EJ002", "이미 등록된 이의제기 번호입니다."),
+    DUPLICATE_OBJECTION_NO(HttpStatus.CONFLICT, "EJ002", "해당 모델에 이미 등록된 이의제기 번호입니다."),
     OBJECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "EJ003", "이의제기를 찾을 수 없습니다."),
     OBJECTION_ALREADY_PROCESSED(HttpStatus.CONFLICT, "EJ004", "이미 처리(발송)된 이의제기입니다.");
 

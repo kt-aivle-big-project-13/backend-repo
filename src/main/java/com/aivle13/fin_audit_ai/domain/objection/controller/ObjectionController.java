@@ -52,7 +52,7 @@ public class ObjectionController {
             ),
             @ApiResponse(responseCode = "400", description = "CSV 형식 또는 내용이 올바르지 않음"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "409", description = "이미 등록된 이의제기 번호가 포함됨")
+            @ApiResponse(responseCode = "409", description = "해당 모델에 이미 등록된 이의제기 번호가 포함됨")
     })
     @PostMapping(path = "/import", consumes = "multipart/form-data")
     public ResponseEntity<ObjectionImportResponse> importCsv(
