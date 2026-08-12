@@ -42,3 +42,21 @@ scrape_configs:
         target_label: instance_id
       - source_labels: [__meta_ec2_availability_zone]
         target_label: availability_zone
+
+  # AI 서버 인스턴스. 백엔드와 달리 아직 ASG 소속이 아니라 ASG 태그로는 잡히지
+  # 않으므로 Name 태그로 찾는다. ALB·ASG 전환(ai-repo#87) 이후에도 시작 템플릿이
+  # 같은 Name 태그를 전파하면 이 설정을 그대로 쓸 수 있다.
+  - job_name: 'node-ai'
+    ec2_sd_configs:
+      - region: ap-northeast-2
+        port: 9100
+        filters:
+          - name: 'tag:Name'
+            values: ['aivle-audit-ai']
+          - name: 'instance-state-name'
+            values: ['running']
+    relabel_configs:
+      - source_labels: [__meta_ec2_instance_id]
+        target_label: instance_id
+      - source_labels: [__meta_ec2_availability_zone]
+        target_label: availability_zone
