@@ -227,8 +227,9 @@ public class ObjectionCommandService {
         if (!objectionNosInFile.add(objectionNo)) {
             throw new DuplicateObjectionNoException(rowNumber + "번째 행: 파일 내에 중복된 이의제기 번호입니다 (" + objectionNo + ")");
         }
-        if (objectionRepository.existsByObjectionNo(objectionNo)) {
-            throw new DuplicateObjectionNoException(rowNumber + "번째 행: 이미 등록된 이의제기 번호입니다 (" + objectionNo + ")");
+        if (objectionRepository.existsByModel_IdAndObjectionNo(model.getId(), objectionNo)) {
+            throw new DuplicateObjectionNoException(
+                    rowNumber + "번째 행: 해당 모델에 이미 등록된 이의제기 번호입니다 (" + objectionNo + ")");
         }
 
         LocalDateTime submittedAt;
