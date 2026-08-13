@@ -46,8 +46,14 @@ public class AsyncConfig {
      * 다운로드할 때 기존 경로로 생성된다. 반면 밀려나는 쪽은 본 작업인 분석이므로, 둘이
      * 경합하면 선생성이 양보하는 것이 맞다.
      *
+     * <p>{@code queueCapacity} 도 함께 줄인다. 같은 큐 길이라도 코어가 3에서 1로 줄면 대기가
+     * 해소되는 데 걸리는 시간은 3배가 된다(50건 / 동시 3건 ≈ 17 사이클 → 50 사이클). 리포트
+     * 한 건이 수십 초라 50 사이클이면 30분이 넘는 대기가 쌓이고, 그동안 밀린 선생성 요청이
+     * 새로 시작한 감사의 분석과 계속 경합한다. 대기 해소 시간을 이전과 비슷하게 유지하도록
+     * 20으로 맞춘다.
+     *
      * <p>{@code maxPoolSize} 는 평상시에는 쓰이지 않는다. {@code ThreadPoolExecutor} 는 큐가
-     * 가득 찬 뒤에야 코어를 넘어 스레드를 늘리므로, 대기가 50건을 넘는 폭주 상황에서만 2개까지
+     * 가득 찬 뒤에야 코어를 넘어 스레드를 늘리므로, 대기가 20건을 넘는 폭주 상황에서만 2개까지
      * 늘어나는 마지막 완충 장치다. 거기까지 넘치면 버린다 — 위와 같은 이유로 버려져도 되기
      * 때문이다.
      */
@@ -58,7 +64,7 @@ public class AsyncConfig {
 
         executor.setCorePoolSize(1);
         executor.setMaxPoolSize(2);
-        executor.setQueueCapacity(50);
+        executor.setQueueCapacity(20);
         executor.setThreadNamePrefix("report-pregen-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
