@@ -34,22 +34,40 @@ public class AsyncConfig {
      * <p>분석용 풀과 나눈 이유는 리포트 생성이 건당 수십 초이기 때문이다(LLM 호출 + PDF 렌더).
      * 같은 풀을 쓰면 리포트가 스레드를 오래 붙잡아 다른 감사의 분석이 밀린다.
      *
-     * <p>평상시 동시 실행은 코어 스레드 수인 3개다. 한 감사가 분석 직후 제출하는 3종을 한 번에
-     * 만들 수 있는 크기이면서, 그 이상은 큐에 쌓아 AI 서버에 한꺼번에 몰리지 않게 한다.
+     * <p>평상시 동시 실행은 코어 스레드 수인 1개다. 한 감사가 제출하는 리포트들을 한꺼번에
+     * 보내지 않고 한 건씩 순차로 만든다.
+     *
+     * <p>코어를 3에서 1로 줄인 이유는 받는 쪽이 감당하지 못했기 때문이다. AI 서버는 uvicorn
+     * 워커 1개에 vCPU 2개인데, 리포트 요청 하나가 LLM 호출·figure 생성·Chromium 실행을 모두
+     * 포함한다. 감사 2건이 겹쳤을 때 리포트 6건이 분석 요청과 함께 물려 AI 서버 프로세스가
+     * 메모리 고갈로 강제 종료됐고, 진행 중이던 SHAP 분석이 사라져 감사가 실패로 끝났다.
+     *
+     * <p>선생성은 부수 작업이라 늦어지거나 버려져도 기능에 영향이 없다. 조회·다운로드 경로
+     * ({@code BiasReportQueryService} 등)는 저장된 행만 읽고 없으면 404 를 주지만, 클라이언트가
+     * 다운로드 전에 생성 엔드포인트({@code POST /audits/{auditId}/reports/*})를 먼저 호출한다
+     * — 조회가 404 면 생성부터 하고 다시 조회한다. 그래서 선생성이 버려진 리포트도 사용자에게는
+     * 404 가 아니라 생성 시간만큼의 대기로 나타난다. 반면 밀려나는 쪽은 본 작업인 분석이므로,
+     * 둘이 경합하면 선생성이 양보하는 것이 맞다.
+     *
+     * <p>{@code queueCapacity} 도 함께 줄인다. 같은 큐 길이라도 코어가 3에서 1로 줄면 대기가
+     * 해소되는 데 걸리는 시간은 3배가 된다(50건 / 동시 3건 ≈ 17 사이클 → 50 사이클). 리포트
+     * 한 건이 수십 초라 50 사이클이면 30분이 넘는 대기가 쌓이고, 그동안 밀린 선생성 요청이
+     * 새로 시작한 감사의 분석과 계속 경합한다. 대기 해소 시간을 이전과 비슷하게 유지하도록
+     * 20으로 맞춘다.
      *
      * <p>{@code maxPoolSize} 는 평상시에는 쓰이지 않는다. {@code ThreadPoolExecutor} 는 큐가
-     * 가득 찬 뒤에야 코어를 넘어 스레드를 늘리므로, 대기가 50건을 넘는 폭주 상황에서만 6개까지
-     * 늘어나는 마지막 완충 장치다. 거기까지 넘치면 버린다 — 선생성은 부수 작업이고, 버려져도
-     * 사용자가 다운로드할 때 기존 경로로 만들어지기 때문이다.
+     * 가득 찬 뒤에야 코어를 넘어 스레드를 늘리므로, 대기가 20건을 넘는 폭주 상황에서만 2개까지
+     * 늘어나는 마지막 완충 장치다. 즉 한꺼번에 몰리면 실행 2건 + 대기 20건까지 22건을 받고
+     * 나머지는 {@code DiscardPolicy} 로 버린다 — 위와 같은 이유로 버려져도 되기 때문이다.
      */
     @Bean(name = "reportTaskExecutor")
     public Executor reportTaskExecutor() {
         ThreadPoolTaskExecutor executor =
                 new ThreadPoolTaskExecutor();
 
-        executor.setCorePoolSize(3);
-        executor.setMaxPoolSize(6);
-        executor.setQueueCapacity(50);
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(20);
         executor.setThreadNamePrefix("report-pregen-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
