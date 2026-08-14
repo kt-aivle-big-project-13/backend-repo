@@ -99,6 +99,7 @@ public class DefaultReportDocumentGenerator
             PdfCanvas canvas = new PdfCanvas(document, font);
 
             try {
+                canvas.write(new ReportBlock.Heading(1, "최종보고서"));
                 for (ReportBlock block : blocks) {
                     canvas.write(block);
                 }
@@ -463,6 +464,8 @@ public class DefaultReportDocumentGenerator
                 XWPFDocument document = new XWPFDocument();
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
         ) {
+            writeWordHeading(document, new ReportBlock.Heading(1, "최종보고서"));
+
             for (ReportBlock block : blocks) {
                 switch (block) {
                     case ReportBlock.Heading heading ->
