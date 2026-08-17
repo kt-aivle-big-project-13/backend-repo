@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -65,15 +66,36 @@ public class ReportGenerationGuard {
             ReportFormat primaryFormat,
             Supplier<Long> generator
     ) {
-        Long existing = findCompleted(userId, auditId, reportType, primaryFormat);
+        return generateOnce(
+                auditId,
+                reportType,
+                () -> Optional.ofNullable(
+                        findCompletedReportId(userId, auditId, reportType, primaryFormat)
+                ),
+                generator
+        );
+    }
 
-        if (existing != null) {
+    /**
+     * 포맷이 여럿이라 결과가 id 하나로 떨어지지 않는 리포트에 쓴다.
+     *
+     * @param findExisting 이미 만들어진 결과. 비어 있으면 새로 만든다.
+     */
+    public <T> T generateOnce(
+            Long auditId,
+            ReportType reportType,
+            Supplier<Optional<T>> findExisting,
+            Supplier<T> generator
+    ) {
+        Optional<T> existing = findExisting.get();
+
+        if (existing.isPresent()) {
             log.info(
-                    "이미 생성된 리포트를 재사용합니다: auditId={}, reportType={}, reportId={}",
-                    auditId, reportType, existing
+                    "이미 생성된 리포트를 재사용합니다: auditId={}, reportType={}",
+                    auditId, reportType
             );
 
-            return existing;
+            return existing.get();
         }
 
         String key = key(auditId, reportType);
@@ -81,15 +103,15 @@ public class ReportGenerationGuard {
 
         try {
             // 잠금을 기다리는 동안 다른 요청이 생성을 끝냈을 수 있다.
-            Long generatedByOther = findCompleted(userId, auditId, reportType, primaryFormat);
+            Optional<T> generatedByOther = findExisting.get();
 
-            if (generatedByOther != null) {
+            if (generatedByOther.isPresent()) {
                 log.info(
-                        "다른 요청이 생성한 리포트를 재사용합니다: auditId={}, reportType={}, reportId={}",
-                        auditId, reportType, generatedByOther
+                        "다른 요청이 생성한 리포트를 재사용합니다: auditId={}, reportType={}",
+                        auditId, reportType
                 );
 
-                return generatedByOther;
+                return generatedByOther.get();
             }
 
             return generator.get();
@@ -105,7 +127,7 @@ public class ReportGenerationGuard {
      *
      * <p>소유자까지 조건에 넣어, 남의 감사 리포트를 재사용해 돌려주지 않게 한다.
      */
-    private Long findCompleted(
+    public Long findCompletedReportId(
             Long userId,
             Long auditId,
             ReportType reportType,

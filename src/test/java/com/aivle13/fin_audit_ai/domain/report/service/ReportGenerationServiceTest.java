@@ -15,17 +15,21 @@ import com.aivle13.fin_audit_ai.global.s3.dto.StoredFile;
 import com.aivle13.fin_audit_ai.global.s3.service.FileStorageService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationGuard;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,8 +54,26 @@ class ReportGenerationServiceTest {
     @Mock
     private ReportPersistenceService reportPersistenceService;
 
+    @Mock
+    private ReportGenerationGuard generationGuard;
+
     @InjectMocks
     private ReportGenerationService reportGenerationService;
+
+    /**
+     * 중복 방지 가드는 그대로 통과시킨다.
+     *
+     * <p>이 테스트가 보려는 것은 생성 본문이지 가드가 아니다. 가드 자체는
+     * {@link ReportGenerationGuardTest} 에서 따로 본다.
+     */
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void passThroughGenerationGuard() {
+        lenient()
+                .when(generationGuard.generateOnce(any(), any(), any(), any()))
+                .thenAnswer(invocation ->
+                        ((Supplier<Object>) invocation.getArgument(3)).get());
+    }
 
     @Test
     void generatesReportWithoutAnyPendingMappingGate() {
