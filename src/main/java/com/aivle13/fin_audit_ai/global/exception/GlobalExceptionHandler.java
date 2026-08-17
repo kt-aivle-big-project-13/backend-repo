@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.global.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,11 +20,15 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    // PostgreSQL unique_violation. 중복 저장 시도라 클라이언트가 고칠 수 있는 상황이다.
+    private static final String UNIQUE_VIOLATION_SQL_STATE = "23505";
 
     @ExceptionHandler(BusinessException.class)
     protected ResponseEntity<ErrorResponse> handleBusinessException(
@@ -151,6 +156,48 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     protected void handleAsyncRequestNotUsable(AsyncRequestNotUsableException ex, HttpServletRequest request) {
         log.warn("Client disconnected before response completed: path={}", request.getRequestURI());
+    }
+
+    /**
+     * DB 제약 위반. 사전 검사와 저장 사이의 틈에서 동시 요청이 들어오면 검사를 통과하고도
+     * 여기로 떨어지므로, 사전 검사만으로는 막을 수 없다.
+     *
+     * <p>중복 키만 409 로 돌린다. NOT NULL·체크 제약 위반은 클라이언트가 무엇을 바꿔도
+     * 달라지지 않는 서버 결함이라 500 이 맞다. 응답에는 제약명을 싣지 않는다 — 스키마
+     * 구조가 그대로 드러나기 때문이고, 원인 추적은 로그로 한다.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    protected ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+
+        String sqlState = resolveSqlState(ex);
+
+        if (UNIQUE_VIOLATION_SQL_STATE.equals(sqlState)) {
+            log.warn("DataIntegrityViolation(duplicate): path={}, cause={}",
+                    request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ErrorResponse.of(ErrorCode.DUPLICATE_RESOURCE, request.getRequestURI()));
+        }
+
+        log.error("DataIntegrityViolation: sqlState={}, path={}", sqlState, request.getRequestURI(), ex);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, request.getRequestURI()));
+    }
+
+    // 예외 체인 어디에 SQLException 이 있을지는 드라이버·JPA 구현에 따라 다르므로 끝까지 훑는다.
+    private String resolveSqlState(DataIntegrityViolationException ex) {
+        Throwable cause = ex.getCause();
+
+        while (cause != null) {
+            if (cause instanceof SQLException sqlException) {
+                return sqlException.getSQLState();
+            }
+            cause = cause.getCause();
+        }
+
+        return null;
     }
 
     @ExceptionHandler(Exception.class)
