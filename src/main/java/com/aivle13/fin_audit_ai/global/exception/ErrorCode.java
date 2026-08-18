@@ -18,6 +18,7 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "EC007", "인증이 필요합니다."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "EC008", "지원하지 않는 미디어 타입입니다."),
     TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "EC009", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
+    DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "EC010", "이미 등록된 값이 포함되어 있습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "EC999", "서버 오류가 발생했습니다."),
 
     // ===== User / Auth (EU) =====
