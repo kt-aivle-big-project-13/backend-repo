@@ -107,8 +107,12 @@ app:
   demo:
     enabled: ${DEMO_ENABLED:false}
     # 게스트마다 모델·데이터셋 행은 따로 만들지만 파일은 이 둘을 함께 가리킨다.
+    # enabled 가 true 인데 비어 있으면 기동에서 막는다 (DemoPropertiesValidator).
     model-s3-key: ${DEMO_MODEL_S3_KEY:}
     dataset-s3-key: ${DEMO_DATASET_S3_KEY:}
+    # 같은 IP 에서 한 시간 동안 발급할 수 있는 게스트 수. 인증 없이 열린 경로라
+    # 반복 호출만으로 DB 를 채울 수 있어 상한을 둔다.
+    issue-limit-per-hour: ${DEMO_ISSUE_LIMIT_PER_HOUR:20}
     # 미리 선택해 두지 않으면 게스트가 감사를 바로 시작할 수 없다.
     sensitive-attributes: ${DEMO_SENSITIVE_ATTRIBUTES:CODE_GENDER,AGE_GROUP}
     dataset-row-count: ${DEMO_DATASET_ROW_COUNT:10000}

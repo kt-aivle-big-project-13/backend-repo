@@ -2,6 +2,8 @@ package com.aivle13.fin_audit_ai.domain.demo.controller;
 
 import com.aivle13.fin_audit_ai.domain.auth.dto.response.TokenResponse;
 import com.aivle13.fin_audit_ai.domain.demo.service.DemoAccountService;
+import com.aivle13.fin_audit_ai.domain.demo.service.DemoIssueRateLimiter;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemoAuthController {
 
     private final DemoAccountService demoAccountService;
+    private final DemoIssueRateLimiter rateLimiter;
 
     @Operation(
             summary = "테스트 로그인",
@@ -34,10 +37,15 @@ public class DemoAuthController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "게스트 계정 발급 성공"),
-            @ApiResponse(responseCode = "404", description = "시연 모드가 꺼져 있음")
+            @ApiResponse(responseCode = "404", description = "시연 모드가 꺼져 있음"),
+            @ApiResponse(responseCode = "429", description = "같은 IP 에서 발급 횟수 초과")
     })
     @PostMapping("/demo")
-    public ResponseEntity<TokenResponse> issueGuest() {
+    public ResponseEntity<TokenResponse> issueGuest(HttpServletRequest request) {
+        // 인증 없이 열린 경로라 발급 자체를 먼저 막는다. 요청 한 번마다 계정과 데모
+        // 데이터가 통째로 생기므로 반복 호출만으로 DB 를 채울 수 있다.
+        rateLimiter.checkAndIncrease(request);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(demoAccountService.issueGuest());
