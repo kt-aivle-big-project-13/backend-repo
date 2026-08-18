@@ -34,6 +34,8 @@ public class SecurityConfig {
 
             "/api/v1/auth/signup",
             "/api/v1/auth/login",
+            // 시연용 게스트 발급. app.demo.enabled 가 꺼져 있으면 404 로 응답한다.
+            "/api/v1/auth/demo",
             "/api/v1/auth/reissue",
             "/api/v1/auth/password/find",
             "/api/v1/auth/password/reset",

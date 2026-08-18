@@ -124,6 +124,16 @@ public class AuthService {
         refreshTokenService.revoke(userId, accessToken);
     }
 
+    /**
+     * 비밀번호 확인 없이 토큰을 발급한다.
+     *
+     * <p>시연용 게스트 계정처럼 서버가 방금 만든 사용자에게 쓴다. 리프레시 토큰 저장까지
+     * 로그인과 같은 경로를 타야 재발급·로그아웃이 동일하게 동작하므로 여기에 둔다.
+     */
+    public TokenResponse issueTokensWithoutCredentials(UserEntity user) {
+        return issueTokens(user, false);
+    }
+
     private TokenResponse issueTokens(UserEntity user, boolean rememberMe) {
         String accessToken = jwtProvider.createAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtProvider.createRefreshToken(user.getId(), user.getRole(), rememberMe);

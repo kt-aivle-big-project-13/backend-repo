@@ -103,6 +103,29 @@ app:
 
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
 
+  # 시연용 게스트 접속. 켜면 누구나 계정 없이 데이터를 만들 수 있으므로 기본은 꺼짐이다.
+  demo:
+    enabled: ${DEMO_ENABLED:false}
+    # 게스트마다 모델·데이터셋 행은 따로 만들지만 파일은 이 둘을 함께 가리킨다.
+    # enabled 가 true 인데 비어 있으면 기동에서 막는다 (DemoPropertiesValidator).
+    model-s3-key: ${DEMO_MODEL_S3_KEY:}
+    dataset-s3-key: ${DEMO_DATASET_S3_KEY:}
+    # 같은 IP 에서 한 시간 동안 발급할 수 있는 게스트 수. 인증 없이 열린 경로라
+    # 반복 호출만으로 DB 를 채울 수 있어 상한을 둔다.
+    issue-limit-per-hour: ${DEMO_ISSUE_LIMIT_PER_HOUR:20}
+    # 미리 선택해 두지 않으면 게스트가 감사를 바로 시작할 수 없다.
+    sensitive-attributes: ${DEMO_SENSITIVE_ATTRIBUTES:CODE_GENDER,AGE_GROUP}
+    dataset-row-count: ${DEMO_DATASET_ROW_COUNT:10000}
+    dataset-columns: ${DEMO_DATASET_COLUMNS:SK_ID_CURR,TARGET,CODE_GENDER,AGE_GROUP,EXT_SOURCE_2,EXT_SOURCE_3,AMT_CREDIT,AMT_INCOME_TOTAL,AMT_ANNUITY,DAYS_EMPLOYED,DAYS_BIRTH,NAME_EDUCATION_TYPE,OWN_CAR_AGE}
+    guest-ttl: ${DEMO_GUEST_TTL:24h}
+    cleanup-cron: ${DEMO_CLEANUP_CRON:0 0 * * * *}
+    # 미리 올려 둔 리포트 파일을 게스트 감사의 산출물로 연결한다. 연결하지 않으면
+    # 다운로드를 누를 때마다 실제 생성이 도는데, AI 서버는 리포트를 한 번에 1건만
+    # 처리해 시연에서 줄줄이 밀린다. 준비한 것만 채우면 되고, 비운 종류는 기존대로
+    # 다운로드 시점에 생성된다. 키 형식은 app.demo.reports.<종류>.<포맷> 이다.
+    #   예) app.demo.reports.BIAS_REPORT.PDF=demo/reports/bias.pdf
+    reports: {}
+
   ai-server:
     enabled: ${AI_SERVER_ENABLED:false}
     base-url: ${AI_SERVER_BASE_URL:http://localhost:8000}
