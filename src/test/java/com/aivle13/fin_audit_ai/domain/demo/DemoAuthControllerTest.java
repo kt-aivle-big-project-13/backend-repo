@@ -7,6 +7,8 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
+import com.aivle13.fin_audit_ai.domain.objection.repository.ObjectionRepository;
+import com.aivle13.fin_audit_ai.domain.objection.type.ObjectionStatus;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportStatus;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
@@ -74,6 +76,9 @@ class DemoAuthControllerTest extends IntegrationTestSupport {
 
     @Autowired
     private ReportRepository reportRepository;
+
+    @Autowired
+    private ObjectionRepository objectionRepository;
 
     @Test
     @DisplayName("인증 없이 게스트 계정을 발급받는다")
@@ -172,6 +177,39 @@ class DemoAuthControllerTest extends IntegrationTestSupport {
         assertThat(reports)
                 .extracting(report -> report.getFilePath())
                 .allSatisfy(path -> assertThat(path).startsWith("demo/reports/"));
+    }
+
+    @Test
+    @DisplayName("게스트에게 상태가 다른 이의제기 세 건이 생긴다")
+    void provisionsObjectionsInEachStatus() throws Exception {
+        Long guestId = issueGuestId();
+
+        Long modelId = aiModelRepository.findAll().stream()
+                .filter(model -> model.getUser().getId().equals(guestId))
+                .findFirst()
+                .orElseThrow()
+                .getId();
+
+        var objections = objectionRepository.findAll().stream()
+                .filter(objection -> objection.getModel().getId().equals(modelId))
+                .toList();
+
+        assertThat(objections).hasSize(3);
+
+        // 초안·승인·발송이 한 화면에 다 보여야 무엇을 하는 곳인지 전달된다.
+        assertThat(objections)
+                .extracting(objection -> objection.getStatus())
+                .containsExactlyInAnyOrder(
+                        ObjectionStatus.DRAFT,
+                        ObjectionStatus.APPROVED,
+                        ObjectionStatus.DELIVERED
+                );
+
+        // 승인·발송 건은 대응문서가 이미 있어야 생성을 기다리지 않는다.
+        assertThat(objections)
+                .filteredOn(objection -> objection.getStatus() != ObjectionStatus.DRAFT)
+                .allSatisfy(objection ->
+                        assertThat(objection.getDraftContent()).isNotBlank());
     }
 
     @Test

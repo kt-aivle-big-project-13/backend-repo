@@ -16,6 +16,7 @@ import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
+import com.aivle13.fin_audit_ai.domain.objection.repository.ObjectionRepository;
 import com.aivle13.fin_audit_ai.domain.report.entity.ReportEntity;
 import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
@@ -54,12 +55,16 @@ public class DemoDataProvisioner {
     private final XaiResultRepository xaiResultRepository;
     private final ShapFeatureImportanceRepository shapFeatureImportanceRepository;
     private final ReportRepository reportRepository;
+    private final ObjectionRepository objectionRepository;
 
     public void provision(UserEntity guest) {
         AiModelEntity model = createModel(guest);
         DatasetEntity dataset = createDataset(model);
 
         createCompletedAudit(guest, model, dataset);
+
+        // 이의제기는 감사와 별개 화면이라 비어 있으면 무엇을 하는 곳인지 보이지 않는다.
+        objectionRepository.saveAll(DemoObjectionFixture.objections(model, guest));
     }
 
     private AiModelEntity createModel(UserEntity guest) {
