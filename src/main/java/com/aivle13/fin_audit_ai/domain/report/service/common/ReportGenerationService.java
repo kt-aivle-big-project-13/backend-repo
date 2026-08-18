@@ -16,9 +16,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -32,6 +34,7 @@ public class ReportGenerationService {
     private final ReportDocumentGenerator reportDocumentGenerator;
     private final FileStorageService fileStorageService;
     private final ReportPersistenceService reportPersistenceService;
+    private final ReportGenerationGuard generationGuard;
 
     // 선택된 포맷별로 최종 감사 보고서를 생성한다.
     // 여러 포맷을 선택해도 LLM 본문은 한 번만 생성한다.
@@ -49,6 +52,51 @@ public class ReportGenerationService {
 
         List<ReportFormat> distinctFormats = formats.stream().distinct().toList();
 
+        // 선생성과 사용자 요청이 겹치면 같은 보고서를 두 번 만들게 된다.
+        // 이미 있으면 그것을 쓰고, 만드는 중이면 끝날 때까지 기다린다.
+        return generationGuard.generateOnce(
+                auditId,
+                ReportType.FINAL_AUDIT_REPORT,
+                () -> findExisting(userId, auditId, distinctFormats),
+                () -> doGenerate(auditId, distinctFormats)
+        );
+    }
+
+    /**
+     * 요청한 포맷이 모두 이미 만들어져 있으면 그 결과. 하나라도 없으면 비어 있다.
+     *
+     * <p>일부만 있는 상태에서 그것만 돌려주면 요청한 포맷이 빠진 응답이 나가므로,
+     * 그때는 전부 다시 만든다.
+     */
+    private Optional<List<GeneratedReportResponse>> findExisting(
+            Long userId,
+            Long auditId,
+            List<ReportFormat> formats
+    ) {
+        List<GeneratedReportResponse> found = new ArrayList<>();
+
+        for (ReportFormat format : formats) {
+            Long reportId = generationGuard.findCompletedReportId(
+                    userId,
+                    auditId,
+                    ReportType.FINAL_AUDIT_REPORT,
+                    format
+            );
+
+            if (reportId == null) {
+                return Optional.empty();
+            }
+
+            found.add(GeneratedReportResponse.completed(reportId, format));
+        }
+
+        return Optional.of(found);
+    }
+
+    private List<GeneratedReportResponse> doGenerate(
+            Long auditId,
+            List<ReportFormat> distinctFormats
+    ) {
         ReportGenerationContext context = contextLoader.load(auditId);
 
         String generatedContent = generateContent(context);

@@ -2,6 +2,7 @@ package com.aivle13.fin_audit_ai.domain.report.service.bias;
 
 import com.aivle13.fin_audit_ai.domain.audit.entity.AuditEntity;
 import com.aivle13.fin_audit_ai.domain.audit.repository.AuditRepository;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationGuard;
 import com.aivle13.fin_audit_ai.domain.report.service.common.ReportNarrativeRecorder;
 import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPersistenceService;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
@@ -26,8 +27,23 @@ public class BiasReportGenerationService {
     private final BiasReportClient reportClient;
     private final ReportPersistenceService reportPersistenceService;
     private final ReportNarrativeRecorder narrativeRecorder;
+    private final ReportGenerationGuard generationGuard;
 
+    // 이미 만들어져 있거나 만드는 중이면 AI 호출 없이 그 결과를 쓴다.
     public Long generateAndSave(
+            Long userId,
+            Long auditId
+    ) {
+        return generationGuard.generateOnce(
+                userId,
+                auditId,
+                ReportType.BIAS_REPORT,
+                ReportFormat.HTML,
+                () -> doGenerateAndSave(userId, auditId)
+        );
+    }
+
+    private Long doGenerateAndSave(
             Long userId,
             Long auditId
     ) {

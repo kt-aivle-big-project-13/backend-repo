@@ -10,6 +10,7 @@ import com.aivle13.fin_audit_ai.domain.diagnosis.type.DiagnosisResult;
 import com.aivle13.fin_audit_ai.domain.model.entity.AiModelEntity;
 import com.aivle13.fin_audit_ai.domain.report.service.common.ReportPersistenceService;
 import com.aivle13.fin_audit_ai.domain.report.service.highimpact.HighImpactReportGenerationService;
+import com.aivle13.fin_audit_ai.domain.report.service.common.ReportGenerationGuard;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportFormat;
 import com.aivle13.fin_audit_ai.domain.report.type.ReportType;
 import com.aivle13.fin_audit_ai.global.ai.client.report.HighImpactReportClient;
@@ -18,6 +19,7 @@ import com.aivle13.fin_audit_ai.global.ai.dto.report.response.HighImpactReportRe
 import com.aivle13.fin_audit_ai.global.exception.model.audit.AuditFailedException;
 import com.aivle13.fin_audit_ai.global.exception.BusinessException;
 import com.aivle13.fin_audit_ai.global.exception.diagnosis.PreDiagnosisNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -71,8 +75,26 @@ class HighImpactReportGenerationServiceTest {
     @Mock
     private PreDiagnosisEntity diagnosis;
 
+    @Mock
+    private ReportGenerationGuard generationGuard;
+
     @InjectMocks
     private HighImpactReportGenerationService service;
+
+    /**
+     * 중복 방지 가드는 그대로 통과시킨다.
+     *
+     * <p>이 테스트들이 보려는 것은 생성 본문이지 가드가 아니다. 가드 자체는
+     * {@code ReportGenerationGuardTest} 에서 따로 본다.
+     */
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void passThroughGenerationGuard() {
+        lenient()
+                .when(generationGuard.generateOnce(any(), any(), any(), any(), any()))
+                .thenAnswer(invocation ->
+                        ((Supplier<Long>) invocation.getArgument(4)).get());
+    }
 
     @Test
     void generatesAndSavesPdfAndWordReports() {
