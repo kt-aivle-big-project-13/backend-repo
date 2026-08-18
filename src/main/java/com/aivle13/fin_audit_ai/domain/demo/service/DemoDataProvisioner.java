@@ -16,11 +16,15 @@ import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
 import com.aivle13.fin_audit_ai.domain.model.type.DataSource;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelDomain;
 import com.aivle13.fin_audit_ai.domain.model.type.ModelType;
+import com.aivle13.fin_audit_ai.domain.report.entity.ReportEntity;
+import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
 import com.aivle13.fin_audit_ai.domain.user.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 게스트에게 바로 둘러볼 거리를 만들어 준다.
@@ -49,6 +53,7 @@ public class DemoDataProvisioner {
     private final FairnessGroupStatRepository fairnessGroupStatRepository;
     private final XaiResultRepository xaiResultRepository;
     private final ShapFeatureImportanceRepository shapFeatureImportanceRepository;
+    private final ReportRepository reportRepository;
 
     public void provision(UserEntity guest) {
         AiModelEntity model = createModel(guest);
@@ -124,5 +129,36 @@ public class DemoDataProvisioner {
         fairnessGroupStatRepository.saveAll(DemoAuditFixture.groupStats(saved));
         xaiResultRepository.saveAll(DemoAuditFixture.xaiResults(saved));
         shapFeatureImportanceRepository.saveAll(DemoAuditFixture.shapFeatures(saved));
+
+        attachReports(saved);
+    }
+
+    /**
+     * 미리 올려 둔 리포트 파일을 이 감사의 산출물로 연결한다.
+     *
+     * <p>연결해 두지 않으면 게스트가 다운로드를 누를 때마다 실제 생성이 돈다. 리포트 한 건이
+     * LLM 호출·figure 생성·PDF 렌더를 포함해 수십 초인데다 AI 서버는 리포트를 한 번에
+     * 1건만 처리하므로, 시연에서 여러 명이 누르면 줄줄이 밀린다.
+     *
+     * <p>파일도 모델·데이터셋과 같이 공용 객체를 함께 가리킨다. 설정하지 않은 종류는
+     * 심지 않으며, 그때는 기존대로 다운로드 시점에 생성된다.
+     */
+    private void attachReports(AuditEntity audit) {
+        List<ReportEntity> reports = demoProperties.reports().entrySet().stream()
+                .flatMap(byType -> byType.getValue().entrySet().stream()
+                        .filter(byFormat -> StringUtils.hasText(byFormat.getValue()))
+                        .map(byFormat -> ReportEntity.create(
+                                audit,
+                                byType.getKey(),
+                                byFormat.getKey(),
+                                byFormat.getValue()
+                        )))
+                .toList();
+
+        if (reports.isEmpty()) {
+            return;
+        }
+
+        reportRepository.saveAll(reports);
     }
 }

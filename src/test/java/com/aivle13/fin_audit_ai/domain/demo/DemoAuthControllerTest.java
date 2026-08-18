@@ -7,6 +7,8 @@ import com.aivle13.fin_audit_ai.domain.audit.repository.XaiResultRepository;
 import com.aivle13.fin_audit_ai.domain.audit.type.core.AuditStatus;
 import com.aivle13.fin_audit_ai.domain.model.repository.AiModelRepository;
 import com.aivle13.fin_audit_ai.domain.model.repository.DatasetRepository;
+import com.aivle13.fin_audit_ai.domain.report.repository.ReportRepository;
+import com.aivle13.fin_audit_ai.domain.report.type.ReportStatus;
 import com.aivle13.fin_audit_ai.domain.user.repository.UserRepository;
 import com.aivle13.fin_audit_ai.support.IntegrationTestSupport;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,7 +37,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "app.demo.enabled=true",
         "app.demo.model-s3-key=demo/credit_model.json",
-        "app.demo.dataset-s3-key=demo/audit_dataset.csv"
+        "app.demo.dataset-s3-key=demo/audit_dataset.csv",
+        "app.demo.reports.BIAS_REPORT.PDF=demo/reports/bias.pdf",
+        "app.demo.reports.BIAS_REPORT.HTML=demo/reports/bias.html",
+        // 비워 둔 포맷은 심지 않는다.
+        "app.demo.reports.BIAS_REPORT.WORD=",
+        "app.demo.reports.XAI_REPORT.PDF=demo/reports/xai.pdf"
 })
 class DemoAuthControllerTest extends IntegrationTestSupport {
 
@@ -64,6 +71,9 @@ class DemoAuthControllerTest extends IntegrationTestSupport {
 
     @Autowired
     private ShapFeatureImportanceRepository shapFeatureImportanceRepository;
+
+    @Autowired
+    private ReportRepository reportRepository;
 
     @Test
     @DisplayName("인증 없이 게스트 계정을 발급받는다")
@@ -126,6 +136,42 @@ class DemoAuthControllerTest extends IntegrationTestSupport {
         assertThat(fairnessResultRepository.findAllByAudit_Id(auditId)).isNotEmpty();
         assertThat(xaiResultRepository.findAllByAudit_Id(auditId)).isNotEmpty();
         assertThat(shapFeatureImportanceRepository.findAllByAudit_IdOrderByRankAsc(auditId)).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("미리 올려 둔 리포트가 게스트 감사의 산출물로 연결된다")
+    void attachesPreparedReports() throws Exception {
+        Long guestId = issueGuestId();
+
+        Long auditId = auditRepository.findAll().stream()
+                .filter(audit -> audit.getUser().getId().equals(guestId))
+                .findFirst()
+                .orElseThrow()
+                .getId();
+
+        var reports = reportRepository.findAll().stream()
+                .filter(report -> report.getAudit().getId().equals(auditId))
+                .toList();
+
+        // 지정한 3건만 연결되고, 비워 둔 WORD 는 심지 않는다.
+        assertThat(reports).hasSize(3);
+
+        assertThat(reports)
+                .allSatisfy(report ->
+                        assertThat(report.getStatus()).isEqualTo(ReportStatus.COMPLETED));
+
+        assertThat(reports)
+                .extracting(report -> report.getReportType() + "." + report.getFormat())
+                .containsExactlyInAnyOrder(
+                        "BIAS_REPORT.PDF",
+                        "BIAS_REPORT.HTML",
+                        "XAI_REPORT.PDF"
+                );
+
+        // 파일은 공용 데모 객체를 그대로 가리킨다.
+        assertThat(reports)
+                .extracting(report -> report.getFilePath())
+                .allSatisfy(path -> assertThat(path).startsWith("demo/reports/"));
     }
 
     @Test
