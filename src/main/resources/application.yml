@@ -103,6 +103,19 @@ app:
 
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
 
+  # 시연용 게스트 접속. 켜면 누구나 계정 없이 데이터를 만들 수 있으므로 기본은 꺼짐이다.
+  demo:
+    enabled: ${DEMO_ENABLED:false}
+    # 게스트마다 모델·데이터셋 행은 따로 만들지만 파일은 이 둘을 함께 가리킨다.
+    model-s3-key: ${DEMO_MODEL_S3_KEY:}
+    dataset-s3-key: ${DEMO_DATASET_S3_KEY:}
+    # 미리 선택해 두지 않으면 게스트가 감사를 바로 시작할 수 없다.
+    sensitive-attributes: ${DEMO_SENSITIVE_ATTRIBUTES:CODE_GENDER,AGE_GROUP}
+    dataset-row-count: ${DEMO_DATASET_ROW_COUNT:10000}
+    dataset-columns: ${DEMO_DATASET_COLUMNS:SK_ID_CURR,TARGET,CODE_GENDER,AGE_GROUP,EXT_SOURCE_2,EXT_SOURCE_3,AMT_CREDIT,AMT_INCOME_TOTAL,AMT_ANNUITY,DAYS_EMPLOYED,DAYS_BIRTH,NAME_EDUCATION_TYPE,OWN_CAR_AGE}
+    guest-ttl: ${DEMO_GUEST_TTL:24h}
+    cleanup-cron: ${DEMO_CLEANUP_CRON:0 0 * * * *}
+
   ai-server:
     enabled: ${AI_SERVER_ENABLED:false}
     base-url: ${AI_SERVER_BASE_URL:http://localhost:8000}
